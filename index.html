@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Построение сотовой сети</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { margin:0; padding:0; height:100vh; overflow:hidden; background:#0a0e14; font-family:system-ui,sans-serif; color:#ddd; }
+        #map { position:absolute; inset:0; z-index:0; }
+        #c { position:absolute; inset:0; z-index:1; image-rendering:crisp-edges; pointer-events:none; }
+        #c.active { pointer-events:auto; cursor: pointer; }
+        #controls {
+            position:absolute; top:12px; left:12px; z-index:10;
+            background:rgba(20,25,35,0.92); padding:16px; border-radius:10px;
+            min-width:340px; box-shadow:0 4px 18px #0006;
+        }
+        label { display:block; margin:10px 0 4px; font-size:0.9em; }
+        input[type=text], input[type=file], select {
+            width:100%; padding:8px 10px; border-radius:6px;
+            border:1px solid #3a4454; background:#1a2230; color:white;
+            box-sizing:border-box;
+        }
+        input[type=range] { width:100%; margin:4px 0 10px 0; }
+        .row { margin:12px 0; }
+        button {
+            margin-top:8px; padding:8px 16px;
+            background:#2a3444; color:#ddd; border:none; border-radius:6px;
+            cursor:pointer;
+        }
+        button:hover { background:#3a4454; }
+        button.active { background:#4af; color:#000; }
+        .checkbox-row { margin:8px 0; display:flex; align-items:center; gap:8px; }
+        .hex-info {
+            position:absolute; bottom:12px; right:12px; z-index:10;
+            background:rgba(20,25,35,0.92); padding:12px; border-radius:10px;
+            font-size:0.9em;
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<canvas id="c"></canvas>
+<div id="controls">
+    <label for="bgMode">Фон / карта:</label>
+    <select id="bgMode" onchange="toggleBgMode()">
+        <option value="osm">OpenStreetMap</option>
+        <option value="google-sat">Google Спутник</option>
+        <option value="google-hybrid">Google Гибрид</option>
+        <option value="yandex-sat">Яндекс Спутник</option>
+        <option value="image">Свое изображение</option>
+    </select>
+    <div id="imageUpload" style="display:none; margin-top:10px;">
+        <label for="bgImage">Выберите изображение:</label>
+        <input type="file" id="bgImage" accept="image/*">
+    </div>
+    <button id="buildToggle" onclick="toggleBuild()">Включить построение</button>
+    <div class="row">
+        <label>Радиус (10…300):</label>
+        <input type="range" id="radiusSlider" min="10" max="300" value="60" step="0.1">
+        <input type="text" id="radiusText" value="60.00000">
+    </div>
+    <div class="row">
+        <label>Вращение (-60…+60°):</label>
+        <input type="range" id="rotSlider" min="-60" max="60" value="0" step="0.1">
+        <input type="text" id="rotText" value="0.00000">
+    </div>
+    <div class="checkbox-row">
+        <input type="checkbox" id="showHex" checked><label for="showHex">Соты</label>
+    </div>
+    <div class="checkbox-row">
+        <input type="checkbox" id="showCenters" checked><label for="showCenters">Центры</label>
+    </div>
+    <div class="checkbox-row">
+        <input type="checkbox" id="showCircles"><label for="showCircles">Радиусы</label>
+    </div>
+    <button onclick="reset()">Сброс</button>
+</div>
+<div id="hexInfo" class="hex-info" style="display:none;">Сот: <span id="hexCount">0</span></div>
+<script>
+// Переменные
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let leafletMap = null;
+let customImage = null;
+let bgMode = 'osm';
+let radius = 60; // Радиус в метрах на уровне земли
+let rotation = 0;
+let showHex = true;
+let showCenters = true;
+let showCircles = false;
+let buildEnabled = false;
+
+// Хранилища для сот
+let cells = []; // {q, r, lat, lng} - добавленные соты
+let availableCells = []; // {q, r, lat, lng} - доступные позиции
+
+// Константы
+const BASE_ZOOM = 12; // Базовый зум для расчетов
+const EARTH_RADIUS = 6378137; // Радиус Земли в метрах (WGS84)
+
+// Слои карты
+const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+    maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], attribution: '© Google'
+});
+const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], attribution: '© Google'
+});
+const yandexSat = L.tileLayer('https://core-sat.maps.yandex.net/tiles?l=sat&v=23.10.26-0&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
+    maxZoom: 19, attribution: '© Яндекс'
+});
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    draw();
+}
+
+function parseNum(str, fallback = 0) {
+    if (!str.trim()) return fallback;
+    const cleaned = str.trim().replace(',', '.');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? fallback : num;
+}
+
+function applyRadius() {
+    const slider = document.getElementById('radiusSlider');
+    const text = document.getElementById('radiusText');
+    radius = parseFloat(slider.value) || parseNum(text.value, radius);
+    radius = Math.max(10, Math.min(300, radius));
+    slider.value = radius;
+    text.value = radius.toFixed(5);
+    
+    // Пересчитываем координаты всех сот при изменении радиуса
+    recalculateAllCellCoordinates();
+    updateAvailableCells();
+    draw();
+}
+
+function applyRotation() {
+    const slider = document.getElementById('rotSlider');
+    const text = document.getElementById('rotText');
+    rotation = parseFloat(slider.value) || parseNum(text.value, rotation);
+    rotation = Math.max(-60, Math.min(60, rotation));
+    slider.value = rotation;
+    text.value = rotation.toFixed(5);
+    
+    // Пересчитываем координаты всех сот при изменении вращения
+    recalculateAllCellCoordinates();
+    updateAvailableCells();
+    draw();
+}
+
+// Преобразование метров в градусы на широте
+function metersToDegrees(meters, lat) {
+    const latRad = lat * Math.PI / 180;
+    const metersPerDegreeLat = 111132.92 - 559.82 * Math.cos(2 * latRad) + 1.175 * Math.cos(4 * latRad);
+    const metersPerDegreeLng = 111412.84 * Math.cos(latRad) - 93.5 * Math.cos(3 * latRad);
+    
+    return {
+        lat: meters / metersPerDegreeLat,
+        lng: meters / metersPerDegreeLng
+    };
+}
+
+// Получение географических координат ячейки по осевым координатам
+function getCellCoordinates(q, r, referenceLat, referenceLng) {
+    // Высота шестиугольника (расстояние между центрами по вертикали) в метрах
+    const hexHeightMeters = Math.sqrt(3) * radius;
+    
+    // Смещение в метрах относительно базовой точки
+    const dxMeters = hexHeightMeters * (q + r/2);
+    const dyMeters = hexHeightMeters * r * Math.sqrt(3)/2;
+    
+    // Поворачиваем координаты
+    const angle = rotation * Math.PI / 180;
+    const rotatedXMeters = dxMeters * Math.cos(angle) - dyMeters * Math.sin(angle);
+    const rotatedYMeters = dxMeters * Math.sin(angle) + dyMeters * Math.cos(angle);
+    
+    // Преобразуем метры в градусы
+    const latDegrees = metersToDegrees(rotatedYMeters, referenceLat).lat;
+    const lngDegrees = metersToDegrees(rotatedXMeters, referenceLat).lng;
+    
+    // Возвращаем новые координаты
+    return {
+        lat: referenceLat - latDegrees, // Ось Y направлена на север (уменьшение широты)
+        lng: referenceLng + lngDegrees  // Ось X направлена на восток (увеличение долготы)
+    };
+}
+
+// Пересчет координат всех сот
+function recalculateAllCellCoordinates() {
+    if (cells.length === 0) return;
+    
+    // Используем первую соту как опорную точку
+    const referenceCell = cells[0];
+    
+    // Пересчитываем координаты всех сот относительно опорной
+    cells.forEach(cell => {
+        if (cell === referenceCell) return; // Пропускаем опорную соту
+        
+        const coords = getCellCoordinates(cell.q, cell.r, referenceCell.lat, referenceCell.lng);
+        cell.lat = coords.lat;
+        cell.lng = coords.lng;
+    });
+}
+
+function toggleBuild() {
+    buildEnabled = !buildEnabled;
+    const btn = document.getElementById('buildToggle');
+    const canvasElem = document.getElementById('c');
+    
+    if (buildEnabled) {
+        btn.textContent = 'Выключить построение';
+        btn.classList.add('active');
+        canvasElem.classList.add('active');
+        document.getElementById('hexInfo').style.display = 'block';
+        
+        // Если это первое включение, добавляем начальную соту в центре карты
+        if (cells.length === 0 && leafletMap) {
+            const center = leafletMap.getCenter();
+            cells.push({q: 0, r: 0, lat: center.lat, lng: center.lng});
+            updateAvailableCells();
+        } else if (cells.length > 0) {
+            // Если соты уже есть, просто обновляем доступные
+            updateAvailableCells();
+        }
+    } else {
+        btn.textContent = 'Включить построение';
+        btn.classList.remove('active');
+        canvasElem.classList.remove('active');
+        document.getElementById('hexInfo').style.display = 'none';
+        
+        // Очищаем доступные соты при выключении
+        availableCells = [];
+    }
+    
+    updateHexCount();
+    draw();
+}
+
+// Направления для шестиугольной сетки
+const hexDirections = [
+    {q: 1, r: 0}, {q: 1, r: -1}, {q: 0, r: -1},
+    {q: -1, r: 0}, {q: -1, r: 1}, {q: 0, r: 1}
+];
+
+// Обновление доступных позиций для сот
+function updateAvailableCells() {
+    if (!buildEnabled || cells.length === 0) {
+        availableCells = [];
+        return;
+    }
+    
+    const newAvailable = [];
+    
+    // Для каждой существующей соты находим всех соседей
+    cells.forEach(cell => {
+        hexDirections.forEach(dir => {
+            const neighborQ = cell.q + dir.q;
+            const neighborR = cell.r + dir.r;
+            
+            // Проверяем, не существует ли уже такая сота среди добавленных
+            const existsInCells = cells.some(c => c.q === neighborQ && c.r === neighborR);
+            if (existsInCells) return;
+            
+            // Проверяем, не существует ли уже такая сота среди доступных
+            const existsInAvailable = newAvailable.some(c => c.q === neighborQ && c.r === neighborR);
+            if (existsInAvailable) return;
+            
+            // Вычисляем координаты для новой доступной соты
+            // Используем первую соту как опорную для вычисления координат
+            const referenceCell = cells[0];
+            const coords = getCellCoordinates(neighborQ, neighborR, referenceCell.lat, referenceCell.lng);
+            newAvailable.push({
+                q: neighborQ,
+                r: neighborR,
+                lat: coords.lat,
+                lng: coords.lng
+            });
+        });
+    });
+    
+    availableCells = newAvailable;
+}
+
+// Проверка, находится ли точка рядом с сотой
+function isPointNearCell(x, y, cell) {
+    if (!leafletMap) return false;
+    
+    const point = leafletMap.latLngToContainerPoint(L.latLng(cell.lat, cell.lng));
+    
+    // Масштабируем радиус для определения зоны клика
+    const zoom = leafletMap.getZoom();
+    const scale = Math.pow(2, zoom - BASE_ZOOM);
+    const scaledRadius = radius * scale;
+    const clickRadius = scaledRadius * 0.5;
+    
+    const distance = Math.sqrt(
+        Math.pow(x - point.x, 2) + 
+        Math.pow(y - point.y, 2)
+    );
+    
+    return distance < clickRadius;
+}
+
+// Проверка клика по соте
+function checkHexClick(x, y) {
+    if (!buildEnabled || !leafletMap) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const clickX = x - rect.left;
+    const clickY = y - rect.top;
+    
+    // Сначала проверяем существующие соты (для удаления)
+    for (let i = cells.length - 1; i >= 0; i--) {
+        const cell = cells[i];
+        if (isPointNearCell(clickX, clickY, cell)) {
+            // Удаляем соту
+            cells.splice(i, 1);
+            
+            // После удаления соты пересчитываем доступные позиции
+            updateAvailableCells();
+            updateHexCount();
+            draw();
+            return;
+        }
+    }
+    
+    // Проверяем доступные соты (для добавления)
+    for (let i = availableCells.length - 1; i >= 0; i--) {
+        const cell = availableCells[i];
+        if (isPointNearCell(clickX, clickY, cell)) {
+            // Добавляем соту
+            cells.push({...cell});
+            updateAvailableCells();
+            updateHexCount();
+            draw();
+            return;
+        }
+    }
+}
+
+// Обработчик клика по канвасу
+canvas.addEventListener('click', function(e) {
+    if (!buildEnabled) return;
+    checkHexClick(e.clientX, e.clientY);
+});
+
+function updateHexCount() {
+    document.getElementById('hexCount').textContent = cells.length;
+}
+
+function initBackground() {
+    if (leafletMap) {
+        leafletMap.off();
+        leafletMap.remove();
+        leafletMap = null;
+    }
+    const mapDiv = document.getElementById('map');
+    mapDiv.innerHTML = '';
+    mapDiv.style.background = '';
+    const selectedMode = document.getElementById('bgMode').value;
+    bgMode = selectedMode;
+    if (['osm', 'google-sat', 'google-hybrid', 'yandex-sat'].includes(selectedMode)) {
+        leafletMap = L.map('map', {
+            zoomControl: false,
+            attributionControl: true,
+            zoomAnimation: false,
+            fadeAnimation: false
+        }).setView([54.7388, 55.9722], BASE_ZOOM);
+        let baseLayer;
+        if (selectedMode === 'osm') {
+            baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            });
+        } else if (selectedMode === 'google-sat') {
+            baseLayer = googleSat;
+        } else if (selectedMode === 'google-hybrid') {
+            baseLayer = googleHybrid;
+        } else if (selectedMode === 'yandex-sat') {
+            baseLayer = yandexSat;
+        }
+        baseLayer.addTo(leafletMap);
+        leafletMap.on('move zoom movestart zoomstart moveend zoomend viewreset', draw);
+    } else if (selectedMode === 'image' && customImage) {
+        mapDiv.style.background = `url(${customImage}) center/contain no-repeat`;
+    } else {
+        mapDiv.style.background = '#0a0e14';
+    }
+    draw();
+}
+
+function toggleBgMode() {
+    document.getElementById('imageUpload').style.display =
+        document.getElementById('bgMode').value === 'image' ? 'block' : 'none';
+    initBackground();
+}
+
+document.getElementById('bgImage').onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        customImage = ev.target.result;
+        initBackground();
+    };
+    reader.readAsDataURL(file);
+};
+
+// Функции для рисования шестиугольников
+function drawHexagon(ctx, centerX, centerY, radius, color = '#4af', lineWidth = 2) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        const angle = i * Math.PI / 3 - Math.PI / 2;
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+}
+
+function drawCenter(ctx, centerX, centerY, radius, color = '#f44') {
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+}
+
+function drawCircle(ctx, centerX, centerY, radius, color = 'rgba(244,68,68,0.5)') {
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = color;
+    ctx.stroke();
+}
+
+// Основная функция отрисовки
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (!leafletMap) return;
+    
+    // Получаем текущий зум для масштабирования
+    const zoom = leafletMap.getZoom();
+    const scale = Math.pow(2, zoom - BASE_ZOOM);
+    
+    // Рисуем доступные соты (только в режиме построения)
+    if (buildEnabled && availableCells.length > 0) {
+        availableCells.forEach(cell => {
+            const point = leafletMap.latLngToContainerPoint(L.latLng(cell.lat, cell.lng));
+            
+            ctx.save();
+            ctx.translate(point.x, point.y);
+            ctx.rotate(rotation * Math.PI / 180);
+            
+            // Доступные соты рисуем серыми с учетом масштаба
+            const scaledRadius = radius * scale;
+            if (showHex) {
+                drawHexagon(ctx, 0, 0, scaledRadius, '#888', 1.5);
+            }
+            
+            if (showCenters) {
+                drawCenter(ctx, 0, 0, 3, '#888');
+            }
+            
+            if (showCircles) {
+                drawCircle(ctx, 0, 0, scaledRadius, 'rgba(136,136,136,0.5)');
+            }
+            
+            ctx.restore();
+        });
+    }
+    
+    // Рисуем добавленные соты
+    cells.forEach(cell => {
+        const point = leafletMap.latLngToContainerPoint(L.latLng(cell.lat, cell.lng));
+        
+        ctx.save();
+        ctx.translate(point.x, point.y);
+        ctx.rotate(rotation * Math.PI / 180);
+        
+        // Главный шестиугольник с учетом масштаба
+        const scaledRadius = radius * scale;
+        if (showHex) {
+            drawHexagon(ctx, 0, 0, scaledRadius, '#4af', 2);
+        }
+        
+        // Центр главного шестиугольника
+        if (showCenters) {
+            drawCenter(ctx, 0, 0, 4, '#f44');
+        }
+        
+        // Круг главного шестиугольника
+        if (showCircles) {
+            drawCircle(ctx, 0, 0, scaledRadius, 'rgba(244,68,68,0.5)');
+        }
+        
+        ctx.restore();
+    });
+}
+
+// Обработчики интерфейса
+document.getElementById('radiusSlider').oninput = function() {
+    radius = +this.value;
+    document.getElementById('radiusText').value = radius.toFixed(5);
+    applyRadius();
+};
+
+document.getElementById('radiusText').addEventListener('blur', function() {
+    const val = parseNum(this.value, radius);
+    radius = Math.max(10, Math.min(300, val));
+    document.getElementById('radiusSlider').value = radius;
+    this.value = radius.toFixed(5);
+    applyRadius();
+});
+
+document.getElementById('radiusText').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        this.blur();
+    }
+});
+
+document.getElementById('rotSlider').oninput = function() {
+    rotation = +this.value;
+    document.getElementById('rotText').value = rotation.toFixed(5);
+    applyRotation();
+};
+
+document.getElementById('rotText').addEventListener('blur', function() {
+    const val = parseNum(this.value, rotation);
+    rotation = Math.max(-60, Math.min(60, val));
+    document.getElementById('rotSlider').value = rotation;
+    this.value = rotation.toFixed(5);
+    applyRotation();
+});
+
+document.getElementById('rotText').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        this.blur();
+    }
+});
+
+document.getElementById('showHex').onchange = function() {
+    showHex = this.checked;
+    draw();
+};
+
+document.getElementById('showCenters').onchange = function() {
+    showCenters = this.checked;
+    draw();
+};
+
+document.getElementById('showCircles').onchange = function() {
+    showCircles = this.checked;
+    draw();
+};
+
+function reset() {
+    radius = 60;
+    rotation = 0;
+    buildEnabled = false;
+    cells = [];
+    availableCells = [];
+    showHex = true;
+    showCenters = true;
+    showCircles = false;
+    
+    const canvasElem = document.getElementById('c');
+    canvasElem.classList.remove('active');
+    
+    document.getElementById('buildToggle').textContent = 'Включить построение';
+    document.getElementById('buildToggle').classList.remove('active');
+    document.getElementById('hexInfo').style.display = 'none';
+    document.getElementById('showHex').checked = true;
+    document.getElementById('showCenters').checked = true;
+    document.getElementById('showCircles').checked = false;
+    document.getElementById('bgMode').value = 'osm';
+    document.getElementById('bgImage').value = '';
+    document.getElementById('radiusText').value = '60.00000';
+    document.getElementById('rotText').value = '0.00000';
+    document.getElementById('radiusSlider').value = 60;
+    document.getElementById('rotSlider').value = 0;
+    updateHexCount();
+    toggleBgMode();
+}
+
+window.onresize = resize;
+window.onload = () => {
+    resize();
+    toggleBgMode();
+    document.getElementById('radiusText').value = '60.00000';
+    document.getElementById('rotText').value = '0.00000';
+};
+</script>
+</body>
+</html>
