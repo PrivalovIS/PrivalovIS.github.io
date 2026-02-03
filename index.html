@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Построение сотовой сети</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -31,18 +32,6 @@
         button:hover { background:#3a4454; }
         button.active { background:#4af; color:#000; }
         .checkbox-row { margin:8px 0; display:flex; align-items:center; gap:8px; }
-        .tooltip {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            z-index: 10;
-            background: rgba(20,25,35,0.92);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.9em;
-            color: #ddd;
-            box-shadow: 0 4px 18px #0006;
-        }
     </style>
 </head>
 <body>
@@ -68,9 +57,12 @@
         <input type="text" id="radiusText" value="500">
     </div>
     <div class="row">
-        <label>Вращение (-60…+60°):</label>
-        <input type="range" id="rotSlider" min="-60" max="60" value="0">
+        <label>Вращение (-180…+180°):</label>
+        <input type="range" id="rotSlider" min="-180" max="180" value="0">
         <input type="text" id="rotText" value="0">
+    </div>
+    <div class="checkbox-row">
+        <input type="checkbox" id="moveGrid"><label for="moveGrid">Перемещать сетку</label>
     </div>
     <div class="checkbox-row">
         <input type="checkbox" id="showHex" checked><label for="showHex">Соты</label>
@@ -82,10 +74,6 @@
         <input type="checkbox" id="showCircles"><label for="showCircles">Радиусы</label>
     </div>
     <button onclick="reset()">Сброс</button>
-</div>
-<div id="tooltip" class="tooltip" style="display: none;">
-    Клик на возможную соту - добавить<br>
-    Клик на активную соту - удалить
 </div>
 <script>
 // Переменные
@@ -100,6 +88,12 @@ let showHex = true;
 let showCenters = true;
 let showCircles = false;
 let buildEnabled = false;
+let moveGridEnabled = false; // Режим перемещения сетки
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let gridOffsetX = 0;
+let gridOffsetY = 0;
 
 // Центр сетки в географических координатах
 let gridCenterLat = null;
@@ -132,31 +126,60 @@ const yandexSat = L.tileLayer('https://core-sat.maps.yandex.net/tiles?l=sat&v=23
 
 // Получение радиуса в пикселях на текущем зуме
 function getRadiusInPixels() {
-    if (!leafletMap) return 60; // Фиксированный радиус для своего изображения
+    if (!leafletMap) return radiusMeters; // Для своего изображения возвращаем метры как пиксели
     
-    // Получаем центр карты
-    const center = leafletMap.getCenter();
+    // Получаем центр сетки
+    const center = leafletMap.latLngToContainerPoint([gridCenterLat, gridCenterLng]);
     
     // Создаем точку на расстоянии radiusMeters к востоку от центра
-    // Приблизительно 111111 метров в одном градусе широты на экваторе
-    const degreesPerMeter = 1 / (111111 * Math.cos(center.lat * Math.PI / 180));
-    const eastPoint = L.latLng(center.lat, center.lng + radiusMeters * degreesPerMeter);
+    const degreesPerMeter = 1 / (111111 * Math.cos(gridCenterLat * Math.PI / 180));
+    const eastPoint = L.latLng(gridCenterLat, gridCenterLng + radiusMeters * degreesPerMeter);
     
     // Конвертируем географические координаты в пиксели
-    const centerPx = leafletMap.latLngToContainerPoint(center);
     const eastPx = leafletMap.latLngToContainerPoint(eastPoint);
     
     // Вычисляем расстояние в пикселях
-    return Math.abs(eastPx.x - centerPx.x);
+    return Math.abs(eastPx.x - center.x);
 }
 
-// Получение координат центра сетки в пикселях
+// Получение центра построенной сетки в пикселях
 function getGridCenterInPixels() {
     if (leafletMap && gridCenterLat !== null && gridCenterLng !== null) {
-        return leafletMap.latLngToContainerPoint([gridCenterLat, gridCenterLng]);
+        const centerPx = leafletMap.latLngToContainerPoint([gridCenterLat, gridCenterLng]);
+        // Добавляем смещение от перетаскивания
+        return { 
+            x: centerPx.x + gridOffsetX, 
+            y: centerPx.y + gridOffsetY 
+        };
     } else {
-        return { x: canvas.width / 2, y: canvas.height / 2 };
+        return { 
+            x: canvas.width / 2 + gridOffsetX, 
+            y: canvas.height / 2 + gridOffsetY 
+        };
     }
+}
+
+// Получение геометрического центра активных сот
+function getActiveGridCenter() {
+    if (activeHexes.size === 0) {
+        return { x: 0, y: 0 };
+    }
+    
+    let sumX = 0;
+    let sumY = 0;
+    let count = 0;
+    
+    for (const hex of activeHexes.values()) {
+        const relativeCoords = hexToRelativeCoords(hex.q, hex.r);
+        sumX += relativeCoords.x;
+        sumY += relativeCoords.y;
+        count++;
+    }
+    
+    return {
+        x: sumX / count,
+        y: sumY / count
+    };
 }
 
 // Преобразование гексагональных координат (q, r) в относительные координаты
@@ -192,7 +215,7 @@ function rotatePointAroundCenter(pointX, pointY, centerX, centerY, angle) {
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    canvas.style.pointerEvents = buildEnabled ? 'auto' : 'none';
+    canvas.style.pointerEvents = (buildEnabled || moveGridEnabled) ? 'auto' : 'none';
     draw();
 }
 
@@ -238,11 +261,14 @@ function applyRotation() {
         rotation = parseFloat(slider.value) || rotation;
     }
     
-    rotation = Math.max(-60, Math.min(60, rotation));
+    // Нормализуем угол в диапазон -180..180
+    while (rotation < -180) rotation += 360;
+    while (rotation > 180) rotation -= 360;
     
     // Обновляем значения в элементах
-    slider.value = rotation;
-    text.value = Math.round(rotation * 100) / 100;
+    const displayRotation = rotation;
+    slider.value = displayRotation;
+    text.value = Math.round(displayRotation * 100) / 100;
     
     draw();
 }
@@ -252,10 +278,7 @@ function toggleBuild() {
     const btn = document.getElementById('buildToggle');
     btn.textContent = buildEnabled ? 'Выключить построение' : 'Включить построение';
     btn.classList.toggle('active', buildEnabled);
-    canvas.style.pointerEvents = buildEnabled ? 'auto' : 'none';
-    
-    // Показать/скрыть подсказку
-    document.getElementById('tooltip').style.display = buildEnabled ? 'block' : 'none';
+    canvas.style.pointerEvents = (buildEnabled || moveGridEnabled) ? 'auto' : 'none';
     
     if (buildEnabled && ((leafletMap && gridCenterLat === null && gridCenterLng === null) || (!leafletMap && gridCenterLat === null))) {
         if (leafletMap) {
@@ -320,14 +343,17 @@ function updatePossibleHexes() {
 function getHexScreenPosition(q, r) {
     const gridCenterPx = getGridCenterInPixels();
     const relativeCoords = hexToRelativeCoords(q, r);
+    const activeGridCenter = getActiveGridCenter();
     
-    // Без вращения
+    // Вычисляем координаты относительно центра сетки
     let x = gridCenterPx.x + relativeCoords.x;
     let y = gridCenterPx.y + relativeCoords.y;
     
-    // Применяем вращение всей сетки вокруг её центра
+    // Применяем вращение всей сетки вокруг геометрического центра активных сот
     if (rotation !== 0) {
-        const rotated = rotatePointAroundCenter(x, y, gridCenterPx.x, gridCenterPx.y, rotation);
+        const centerX = gridCenterPx.x + activeGridCenter.x;
+        const centerY = gridCenterPx.y + activeGridCenter.y;
+        const rotated = rotatePointAroundCenter(x, y, centerX, centerY, rotation);
         x = rotated.x;
         y = rotated.y;
     }
@@ -343,15 +369,19 @@ function getHexScreenPosition(q, r) {
 function isPointInHexagon(px, py, hexX, hexY, hexRadius) {
     // Вращаем точку клика обратно, чтобы проверить в невращенной системе координат
     const gridCenterPx = getGridCenterInPixels();
+    const activeGridCenter = getActiveGridCenter();
     
     if (rotation !== 0) {
+        const centerX = gridCenterPx.x + activeGridCenter.x;
+        const centerY = gridCenterPx.y + activeGridCenter.y;
+        
         // Вращаем точку клика обратно (отрицательный угол)
-        const unrotatedPoint = rotatePointAroundCenter(px, py, gridCenterPx.x, gridCenterPx.y, -rotation);
+        const unrotatedPoint = rotatePointAroundCenter(px, py, centerX, centerY, -rotation);
         px = unrotatedPoint.x;
         py = unrotatedPoint.y;
         
         // Получаем координаты центра соты без вращения
-        const unrotatedCenter = rotatePointAroundCenter(hexX, hexY, gridCenterPx.x, gridCenterPx.y, -rotation);
+        const unrotatedCenter = rotatePointAroundCenter(hexX, hexY, centerX, centerY, -rotation);
         hexX = unrotatedCenter.x;
         hexY = unrotatedCenter.y;
     }
@@ -386,106 +416,100 @@ function isPointInHexagon(px, py, hexX, hexY, hexRadius) {
     return distance <= maxDistance;
 }
 
-// Проверка, можно ли удалить соту (не нарушит связность)
-function canRemoveHex(q, r) {
-    // Нельзя удалить последнюю соту
-    if (activeHexes.size <= 1) return false;
-    
-    // Создаем временную копию активных сот без проверяемой соты
-    const tempActiveHexes = new Map(activeHexes);
-    const keyToRemove = `${q},${r}`;
-    tempActiveHexes.delete(keyToRemove);
-    
-    // Проверяем связность оставшейся сетки
-    // Если после удаления сетка остается связной - можно удалять
-    // Используем поиск в ширину для проверки связности
-    
-    const visited = new Set();
-    const queue = [];
-    
-    // Берем первую соту из оставшихся
-    const firstHex = tempActiveHexes.values().next().value;
-    if (!firstHex) return true; // если осталась одна сота
-    
-    queue.push(firstHex);
-    visited.add(`${firstHex.q},${firstHex.r}`);
-    
-    while (queue.length > 0) {
-        const current = queue.shift();
-        
-        // Проверяем всех соседей текущей соты
-        const neighbors = getHexNeighbors(current.q, current.r);
-        
-        for (const neighbor of neighbors) {
-            const neighborKey = `${neighbor.q},${neighbor.r}`;
-            
-            // Если сосед активен и еще не посещен
-            if (tempActiveHexes.has(neighborKey) && !visited.has(neighborKey)) {
-                visited.add(neighborKey);
-                queue.push(neighbor);
-            }
-        }
-    }
-    
-    // Если количество посещенных сот равно количеству оставшихся - сетка связна
-    return visited.size === tempActiveHexes.size;
-}
-
 // Обработка клика по канвасу
 canvas.addEventListener('click', function(e) {
-    if (!buildEnabled) return;
+    if (!buildEnabled && !moveGridEnabled) return;
     
     const rect = canvas.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
     
-    // Сначала проверяем клик по активной соте (для удаления)
-    let clickedActiveHex = null;
-    for (const hex of activeHexes.values()) {
-        const screenPos = getHexScreenPosition(hex.q, hex.r);
-        
-        // Проверяем, находится ли точка внутри шестиугольника
-        if (isPointInHexagon(clickX, clickY, screenPos.x, screenPos.y, screenPos.radius)) {
-            clickedActiveHex = hex;
-            break;
+    // Если включен режим построения - обрабатываем клики по сотам
+    if (buildEnabled) {
+        // Сначала проверяем клик по активной соте (для удаления)
+        let clickedActiveHex = null;
+        for (const hex of activeHexes.values()) {
+            const screenPos = getHexScreenPosition(hex.q, hex.r);
+            
+            // Проверяем, находится ли точка внутри шестиугольника
+            if (isPointInHexagon(clickX, clickY, screenPos.x, screenPos.y, screenPos.radius)) {
+                clickedActiveHex = hex;
+                break;
+            }
         }
-    }
-    
-    // Если кликнули по активной соте - удаляем её
-    if (clickedActiveHex) {
-        // Проверяем, можно ли удалить эту соту
-        if (canRemoveHex(clickedActiveHex.q, clickedActiveHex.r)) {
-            const key = `${clickedActiveHex.q},${clickedActiveHex.r}`;
-            activeHexes.delete(key);
+        
+        // Если кликнули по активной соте - удаляем её
+        if (clickedActiveHex) {
+            // Нельзя удалить последнюю соту
+            if (activeHexes.size > 1) {
+                const key = `${clickedActiveHex.q},${clickedActiveHex.r}`;
+                activeHexes.delete(key);
+                updatePossibleHexes();
+                draw();
+            }
+            return;
+        }
+        
+        // Если кликнули не по активной соте, проверяем возможные соты (для добавления)
+        if (possibleHexes.size === 0) return;
+        
+        let clickedPossibleHex = null;
+        for (const hex of possibleHexes.values()) {
+            const screenPos = getHexScreenPosition(hex.q, hex.r);
+            
+            // Проверяем, находится ли точка внутри шестиугольника
+            if (isPointInHexagon(clickX, clickY, screenPos.x, screenPos.y, screenPos.radius)) {
+                clickedPossibleHex = hex;
+                break;
+            }
+        }
+        
+        if (clickedPossibleHex) {
+            const key = `${clickedPossibleHex.q},${clickedPossibleHex.r}`;
+            activeHexes.set(key, clickedPossibleHex);
             updatePossibleHexes();
             draw();
-        } else {
-            // Если нельзя удалить (нарушит связность)
-            alert("Нельзя удалить эту соту, так как это нарушит связность сети!\nУдалите сначала соседние соты.");
-        }
-        return;
-    }
-    
-    // Если кликнули не по активной соте, проверяем возможные соты (для добавления)
-    if (possibleHexes.size === 0) return;
-    
-    let clickedPossibleHex = null;
-    for (const hex of possibleHexes.values()) {
-        const screenPos = getHexScreenPosition(hex.q, hex.r);
-        
-        // Проверяем, находится ли точка внутри шестиугольника
-        if (isPointInHexagon(clickX, clickY, screenPos.x, screenPos.y, screenPos.radius)) {
-            clickedPossibleHex = hex;
-            break;
         }
     }
+});
+
+// Обработка перетаскивания сетки
+canvas.addEventListener('mousedown', function(e) {
+    if (!moveGridEnabled || activeHexes.size === 0) return;
     
-    if (clickedPossibleHex) {
-        const key = `${clickedPossibleHex.q},${clickedPossibleHex.r}`;
-        activeHexes.set(key, clickedPossibleHex);
-        updatePossibleHexes();
-        draw();
-    }
+    const rect = canvas.getBoundingClientRect();
+    dragStartX = e.clientX - rect.left;
+    dragStartY = e.clientY - rect.top;
+    isDragging = true;
+    
+    // Блокируем выделение текста при перетаскивании
+    e.preventDefault();
+});
+
+canvas.addEventListener('mousemove', function(e) {
+    if (!isDragging || !moveGridEnabled) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const currentX = e.clientX - rect.left;
+    const currentY = e.clientY - rect.top;
+    
+    // Вычисляем смещение
+    gridOffsetX += currentX - dragStartX;
+    gridOffsetY += currentY - dragStartY;
+    
+    // Обновляем начальные координаты для следующего перемещения
+    dragStartX = currentX;
+    dragStartY = currentY;
+    
+    draw();
+});
+
+canvas.addEventListener('mouseup', function() {
+    isDragging = false;
+});
+
+canvas.addEventListener('mouseleave', function() {
+    isDragging = false;
 });
 
 function initBackground() {
@@ -587,15 +611,28 @@ function drawCircle(ctx, centerX, centerY, radius, color = 'rgba(244,68,68,0.5)'
 // Отрисовка всей сетки как единого слоя
 // ────────────────────────────────────────────────
 function drawGrid() {
+    const gridCenterPx = getGridCenterInPixels();
+    const activeGridCenter = getActiveGridCenter();
+    
     // Рисуем возможные соты (серые) - только при включенном построении
     if (buildEnabled) {
         for (const hex of possibleHexes.values()) {
-            const screenPos = getHexScreenPosition(hex.q, hex.r);
-            const { x, y, radius: currentRadius } = screenPos;
+            const relativeCoords = hexToRelativeCoords(hex.q, hex.r);
+            let x = gridCenterPx.x + relativeCoords.x;
+            let y = gridCenterPx.y + relativeCoords.y;
+            
+            // Применяем вращение всей сетки вокруг геометрического центра
+            if (rotation !== 0) {
+                const centerX = gridCenterPx.x + activeGridCenter.x;
+                const centerY = gridCenterPx.y + activeGridCenter.y;
+                const rotated = rotatePointAroundCenter(x, y, centerX, centerY, rotation);
+                x = rotated.x;
+                y = rotated.y;
+            }
             
             // Шестиугольники возможных сот с учетом вращения
             if (showHex) {
-                drawHexagon(ctx, x, y, currentRadius, '#888', 1.5, rotation * Math.PI / 180);
+                drawHexagon(ctx, x, y, relativeCoords.radius, '#888', 1.5, rotation * Math.PI / 180);
             }
             
             // Центры возможных сот
@@ -605,19 +642,29 @@ function drawGrid() {
             
             // Круги возможных сот
             if (showCircles) {
-                drawCircle(ctx, x, y, currentRadius, 'rgba(136,136,136,0.5)');
+                drawCircle(ctx, x, y, relativeCoords.radius, 'rgba(136,136,136,0.5)');
             }
         }
     }
     
     // Рисуем активные соты (синие)
     for (const hex of activeHexes.values()) {
-        const screenPos = getHexScreenPosition(hex.q, hex.r);
-        const { x, y, radius: currentRadius } = screenPos;
+        const relativeCoords = hexToRelativeCoords(hex.q, hex.r);
+        let x = gridCenterPx.x + relativeCoords.x;
+        let y = gridCenterPx.y + relativeCoords.y;
+        
+        // Применяем вращение всей сетки вокруг геометрического центра
+        if (rotation !== 0) {
+            const centerX = gridCenterPx.x + activeGridCenter.x;
+            const centerY = gridCenterPx.y + activeGridCenter.y;
+            const rotated = rotatePointAroundCenter(x, y, centerX, centerY, rotation);
+            x = rotated.x;
+            y = rotated.y;
+        }
         
         // Шестиугольники активных сот с учетом вращения
         if (showHex) {
-            drawHexagon(ctx, x, y, currentRadius, '#4af', 2, rotation * Math.PI / 180);
+            drawHexagon(ctx, x, y, relativeCoords.radius, '#4af', 2, rotation * Math.PI / 180);
         }
         
         // Центры активных сот
@@ -627,7 +674,7 @@ function drawGrid() {
         
         // Круги активных сот
         if (showCircles) {
-            drawCircle(ctx, x, y, currentRadius, 'rgba(244,68,68,0.5)');
+            drawCircle(ctx, x, y, relativeCoords.radius, 'rgba(244,68,68,0.5)');
         }
     }
 }
@@ -640,7 +687,7 @@ function draw() {
     
     if ((!leafletMap && bgMode !== 'image') || (activeHexes.size === 0 && !buildEnabled)) return;
     
-    // Рисуем всю сетку (без вращения контекста)
+    // Рисуем всю сетку
     drawGrid();
 }
 
@@ -679,6 +726,12 @@ document.getElementById('rotText').addEventListener('keydown', function(e) {
     }
 });
 
+document.getElementById('moveGrid').onchange = function() {
+    moveGridEnabled = this.checked;
+    canvas.style.pointerEvents = (buildEnabled || moveGridEnabled) ? 'auto' : 'none';
+    draw();
+};
+
 document.getElementById('showHex').onchange = function() {
     showHex = this.checked;
     draw();
@@ -698,8 +751,11 @@ function reset() {
     radiusMeters = 500;
     rotation = 0;
     buildEnabled = false;
+    moveGridEnabled = false;
     gridCenterLat = null;
     gridCenterLng = null;
+    gridOffsetX = 0;
+    gridOffsetY = 0;
     activeHexes.clear();
     possibleHexes.clear();
     showHex = true;
@@ -708,6 +764,7 @@ function reset() {
     
     document.getElementById('buildToggle').textContent = 'Включить построение';
     document.getElementById('buildToggle').classList.remove('active');
+    document.getElementById('moveGrid').checked = false;
     document.getElementById('showHex').checked = true;
     document.getElementById('showCenters').checked = true;
     document.getElementById('showCircles').checked = false;
@@ -716,9 +773,10 @@ function reset() {
     document.getElementById('radiusText').value = '500';
     document.getElementById('rotText').value = '0';
     document.getElementById('radiusSlider').value = 500;
+    document.getElementById('rotSlider').min = -180;
+    document.getElementById('rotSlider').max = 180;
     document.getElementById('rotSlider').value = 0;
     canvas.style.pointerEvents = 'none';
-    document.getElementById('tooltip').style.display = 'none';
     
     initBackground();
 }
@@ -733,13 +791,14 @@ window.onload = () => {
     document.getElementById('radiusSlider').value = 500;
     document.getElementById('radiusSlider').step = 10;
     
-    document.getElementById('rotSlider').min = -60;
-    document.getElementById('rotSlider').max = 60;
+    document.getElementById('rotSlider').min = -180;
+    document.getElementById('rotSlider').max = 180;
     document.getElementById('rotSlider').value = 0;
     document.getElementById('rotSlider').step = 1;
     
     document.getElementById('radiusText').value = '500';
     document.getElementById('rotText').value = '0';
+    document.getElementById('moveGrid').checked = false;
     
     initBackground();
 };
