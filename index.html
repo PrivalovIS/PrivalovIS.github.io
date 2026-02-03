@@ -128,12 +128,22 @@ const yandexSat = L.tileLayer('https://core-sat.maps.yandex.net/tiles?l=sat&v=23
 function getRadiusInPixels() {
     if (!leafletMap) return radiusMeters; // Для своего изображения возвращаем метры как пиксели
     
-    // Получаем центр сетки
-    const centerPx = leafletMap.latLngToContainerPoint([gridCenterLat, gridCenterLng]);
+    // Получаем центр сетки (или центр карты, если сетка еще не создана)
+    let centerLat, centerLng;
+    if (gridCenterLat !== null && gridCenterLng !== null) {
+        centerLat = gridCenterLat;
+        centerLng = gridCenterLng;
+    } else {
+        const mapCenter = leafletMap.getCenter();
+        centerLat = mapCenter.lat;
+        centerLng = mapCenter.lng;
+    }
+    
+    const centerPx = leafletMap.latLngToContainerPoint([centerLat, centerLng]);
     
     // Создаем точку на расстоянии radiusMeters к востоку от центра
-    const degreesPerMeter = 1 / (111111 * Math.cos(gridCenterLat * Math.PI / 180));
-    const eastPoint = L.latLng(gridCenterLat, gridCenterLng + radiusMeters * degreesPerMeter);
+    const degreesPerMeter = 1 / (111111 * Math.cos(centerLat * Math.PI / 180));
+    const eastPoint = L.latLng(centerLat, centerLng + radiusMeters * degreesPerMeter);
     
     // Конвертируем географические координаты в пиксели
     const eastPx = leafletMap.latLngToContainerPoint(eastPoint);
@@ -142,10 +152,16 @@ function getRadiusInPixels() {
     return Math.abs(eastPx.x - centerPx.x);
 }
 
-// Получение центра построенной сетки в пикселях
+// Получение центра построенной сетки в пикселях (или центра карты, если сетка еще не создана)
 function getGridCenterInPixels() {
-    if (leafletMap && gridCenterLat !== null && gridCenterLng !== null) {
-        return leafletMap.latLngToContainerPoint([gridCenterLat, gridCenterLng]);
+    if (leafletMap) {
+        if (gridCenterLat !== null && gridCenterLng !== null) {
+            return leafletMap.latLngToContainerPoint([gridCenterLat, gridCenterLng]);
+        } else {
+            // Если сетка еще не создана, используем центр карты
+            const center = leafletMap.getCenter();
+            return leafletMap.latLngToContainerPoint([center.lat, center.lng]);
+        }
     } else {
         return { 
             x: canvas.width / 2, 
@@ -509,25 +525,68 @@ canvas.addEventListener('mouseleave', function() {
     isDragging = false;
 });
 
+// Сохранение состояния карты перед сменой фона
+function saveMapState() {
+    if (!leafletMap) return null;
+    
+    return {
+        center: leafletMap.getCenter(),
+        zoom: leafletMap.getZoom(),
+        gridCenterLat: gridCenterLat,
+        gridCenterLng: gridCenterLng,
+        activeHexes: Array.from(activeHexes.entries())
+    };
+}
+
+// Восстановление состояния карты после смены фона
+function restoreMapState(state) {
+    if (!state || !leafletMap) return;
+    
+    // Устанавливаем центр и зум карты
+    leafletMap.setView(state.center, state.zoom);
+    
+    // Восстанавливаем центр сетки
+    gridCenterLat = state.gridCenterLat;
+    gridCenterLng = state.gridCenterLng;
+    
+    // Восстанавливаем активные соты
+    activeHexes.clear();
+    for (const [key, hex] of state.activeHexes) {
+        activeHexes.set(key, hex);
+    }
+    
+    // Обновляем возможные соты, если включено построение
+    if (buildEnabled && activeHexes.size > 0) {
+        updatePossibleHexes();
+    }
+}
+
 function initBackground() {
+    // Сохраняем текущее состояние перед сменой фона
+    const savedState = saveMapState();
+    
     if (leafletMap) {
         leafletMap.off();
         leafletMap.remove();
         leafletMap = null;
     }
+    
     const mapDiv = document.getElementById('map');
     mapDiv.innerHTML = '';
     mapDiv.style.background = '';
+    
     const selectedMode = document.getElementById('bgMode').value;
     bgMode = selectedMode;
     
     if (['osm', 'google-sat', 'google-hybrid', 'yandex-sat'].includes(selectedMode)) {
+        // Создаем новую карту
         leafletMap = L.map('map', {
             zoomControl: false,
             attributionControl: true,
             zoomAnimation: false,
             fadeAnimation: false
-        }).setView([54.7388, 55.9722], 12);
+        });
+        
         let baseLayer;
         if (selectedMode === 'osm') {
             baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -543,15 +602,57 @@ function initBackground() {
         }
         baseLayer.addTo(leafletMap);
         
+        // Восстанавливаем состояние или устанавливаем значения по умолчанию
+        if (savedState) {
+            restoreMapState(savedState);
+        } else {
+            leafletMap.setView([54.7388, 55.9722], 12);
+        }
+        
         // Обновляем отрисовку при изменении карты
         leafletMap.on('move zoom', function() {
             draw();
         });
+        
+        // Обновляем управление картой в зависимости от режима
+        if (moveGridEnabled) {
+            leafletMap.dragging.disable();
+            leafletMap.scrollWheelZoom.disable();
+        } else {
+            leafletMap.dragging.enable();
+            leafletMap.scrollWheelZoom.enable();
+        }
+        
     } else if (selectedMode === 'image' && customImage) {
         mapDiv.style.background = `url(${customImage}) center/contain no-repeat`;
+        // Для своего изображения сохраняем состояние сетки
+        if (savedState) {
+            gridCenterLat = savedState.gridCenterLat;
+            gridCenterLng = savedState.gridCenterLng;
+            activeHexes.clear();
+            for (const [key, hex] of savedState.activeHexes) {
+                activeHexes.set(key, hex);
+            }
+            if (buildEnabled && activeHexes.size > 0) {
+                updatePossibleHexes();
+            }
+        }
     } else {
         mapDiv.style.background = '#0a0e14';
+        // Для однотонного фона сохраняем состояние сетки
+        if (savedState) {
+            gridCenterLat = savedState.gridCenterLat;
+            gridCenterLng = savedState.gridCenterLng;
+            activeHexes.clear();
+            for (const [key, hex] of savedState.activeHexes) {
+                activeHexes.set(key, hex);
+            }
+            if (buildEnabled && activeHexes.size > 0) {
+                updatePossibleHexes();
+            }
+        }
     }
+    
     draw();
 }
 
@@ -602,6 +703,49 @@ function drawCircle(ctx, centerX, centerY, radius, color = 'rgba(244,68,68,0.5)'
     ctx.strokeStyle = color;
     ctx.lineWidth = 1;
     ctx.stroke();
+}
+
+// Рисование предварительной соты (когда построение выключено и нет активных сот)
+function drawPreviewHex() {
+    if (buildEnabled || activeHexes.size > 0) return;
+    
+    const gridCenterPx = getGridCenterInPixels();
+    const radiusPx = getRadiusInPixels();
+    const rotationCenter = getRotationCenter();
+    
+    // Центр будущей соты (0,0)
+    let centerX = gridCenterPx.x;
+    let centerY = gridCenterPx.y;
+    
+    // Применяем вращение, если оно установлено
+    if (rotation !== 0) {
+        const rotationCenterX = gridCenterPx.x + rotationCenter.x;
+        const rotationCenterY = gridCenterPx.y + rotationCenter.y;
+        const rotated = rotatePointAroundCenter(centerX, centerY, rotationCenterX, rotationCenterY, rotation);
+        centerX = rotated.x;
+        centerY = rotated.y;
+    }
+    
+    // Рисуем предварительную соту (полупрозрачную)
+    if (showHex) {
+        ctx.globalAlpha = 0.3;
+        drawHexagon(ctx, centerX, centerY, radiusPx, '#4af', 2, rotation * Math.PI / 180);
+        ctx.globalAlpha = 1.0;
+    }
+    
+    // Рисуем предварительный центр
+    if (showCenters) {
+        ctx.globalAlpha = 0.3;
+        drawCenter(ctx, centerX, centerY, 4, '#f44');
+        ctx.globalAlpha = 1.0;
+    }
+    
+    // Рисуем предварительный круг
+    if (showCircles) {
+        ctx.globalAlpha = 0.3;
+        drawCircle(ctx, centerX, centerY, radiusPx, 'rgba(244,68,68,0.3)');
+        ctx.globalAlpha = 1.0;
+    }
 }
 
 // ────────────────────────────────────────────────
@@ -661,10 +805,24 @@ function drawGrid() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    if ((!leafletMap && bgMode !== 'image') || (activeHexes.size === 0 && !buildEnabled)) return;
+    if ((!leafletMap && bgMode !== 'image') || (activeHexes.size === 0 && !buildEnabled && !moveGridEnabled)) {
+        // Если нет карты или своего изображения, ничего не рисуем
+        if (!leafletMap && bgMode !== 'image') return;
+        
+        // Рисуем предварительную соту, если построение выключено и нет активных сот
+        drawPreviewHex();
+        return;
+    }
     
-    // Рисуем всю сетку
-    drawGrid();
+    // Рисуем предварительную соту, если построение выключено и нет активных сот
+    if (!buildEnabled && activeHexes.size === 0) {
+        drawPreviewHex();
+    }
+    
+    // Рисуем всю сетку (если есть активные соты или включено построение)
+    if (activeHexes.size > 0 || buildEnabled) {
+        drawGrid();
+    }
 }
 
 // ────────────────────────────────────────────────
