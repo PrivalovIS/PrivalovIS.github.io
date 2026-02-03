@@ -70,9 +70,6 @@
         <input type="checkbox" id="showCircles"><label for="showCircles">Радиусы</label>
     </div>
     <button onclick="reset()">Сброс</button>
-    <div style="margin-top: 10px; font-size: 12px; color: #888;">
-        <strong>Инструкция:</strong> Включите построение, кликните на серую соту для её добавления.
-    </div>
 </div>
 <script>
 // Переменные
@@ -87,14 +84,12 @@ let showHex = true;
 let showCenters = true;
 let showCircles = false;
 let buildEnabled = false;
+let hexLat = null;
+let hexLng = null;
 
 // Массивы для хранения сот
 let activeHexes = []; // Активные (синие) соты
 let possibleHexes = []; // Возможные (серые) соты для добавления
-
-// Начальная точка
-let startLat = null;
-let startLng = null;
 
 // Слои карты
 const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
@@ -154,88 +149,87 @@ function toggleBuild() {
     btn.classList.toggle('active', buildEnabled);
     canvas.style.pointerEvents = buildEnabled ? 'auto' : 'none';
     
-    if (buildEnabled && leafletMap && startLat === null && startLng === null) {
+    if (buildEnabled && leafletMap && hexLat === null && hexLng === null) {
         const center = leafletMap.getCenter();
-        startLat = center.lat;
-        startLng = center.lng;
+        hexLat = center.lat;
+        hexLng = center.lng;
         
         // Добавляем первую соту
         activeHexes = [{
-            lat: startLat,
-            lng: startLng,
-            id: Date.now()
+            lat: hexLat,
+            lng: hexLng,
+            id: 'start'
         }];
         
         // Обновляем возможные соты
         updatePossibleHexes();
     } else if (!buildEnabled) {
-        // Очищаем массивы при выключении
-        activeHexes = [];
+        // Очищаем только возможные соты, активные остаются
         possibleHexes = [];
     }
     
     draw();
 }
 
-// Вычисление координат соседних шестиугольников в географических координатах
-function getHexagonNeighbors(centerLat, centerLng, radiusMeters) {
-    const neighbors = [];
-    const height = Math.sqrt(3) * radiusMeters;
+// Функция для получения координат 6 соседей в гексагональной сетке
+function getHexNeighbors(centerX, centerY, radius) {
+    const height = Math.sqrt(3) * radius;
+    const width = 2 * radius;
     
-    // 6 направлений для соседей
-    const directions = [
-        { angle: 0, dx: 0, dy: -height * 2 },        // Север
-        { angle: 60, dx: height * 1.5, dy: -height }, // Северо-восток
-        { angle: 120, dx: height * 1.5, dy: height }, // Юго-восток
-        { angle: 180, dx: 0, dy: height * 2 },        // Юг
-        { angle: 240, dx: -height * 1.5, dy: height }, // Юго-запад
-        { angle: 300, dx: -height * 1.5, dy: -height } // Северо-запад
+    return [
+        // Справа
+        { x: centerX + height, y: centerY },
+        // Справа-внизу
+        { x: centerX + height / 2, y: centerY + width * 0.75 },
+        // Слева-внизу
+        { x: centerX - height / 2, y: centerY + width * 0.75 },
+        // Слева
+        { x: centerX - height, y: centerY },
+        // Слева-вверху
+        { x: centerX - height / 2, y: centerY - width * 0.75 },
+        // Справа-вверху
+        { x: centerX + height / 2, y: centerY - width * 0.75 }
     ];
-    
-    for (const dir of directions) {
-        // Конвертируем метры в градусы (приблизительно)
-        const latOffset = dir.dy / 111320; // 1 градус широты ≈ 111.32 км
-        const lngOffset = dir.dx / (111320 * Math.cos(centerLat * Math.PI / 180));
-        
-        const neighborLat = centerLat + latOffset;
-        const neighborLng = centerLng + lngOffset;
-        
-        neighbors.push({
-            lat: neighborLat,
-            lng: neighborLng,
-            id: `${centerLat.toFixed(6)}_${centerLng.toFixed(6)}_${dir.angle}`
-        });
-    }
-    
-    return neighbors;
 }
 
 // Обновление возможных сот
 function updatePossibleHexes() {
+    if (!buildEnabled || activeHexes.length === 0) {
+        possibleHexes = [];
+        return;
+    }
+    
     possibleHexes = [];
     
-    // Для каждой активной соты добавляем её соседей
+    // Для каждой активной соты получаем её соседей
     for (const hex of activeHexes) {
-        const neighbors = getHexagonNeighbors(hex.lat, hex.lng, radius);
+        // Получаем экранные координаты центра соты
+        const pixelPos = leafletMap.latLngToContainerPoint([hex.lat, hex.lng]);
+        
+        // Получаем координаты соседей в экранных координатах
+        const neighbors = getHexNeighbors(pixelPos.x, pixelPos.y, radius);
         
         for (const neighbor of neighbors) {
+            // Конвертируем экранные координаты обратно в географические
+            const neighborLatLng = leafletMap.containerPointToLatLng(neighbor);
+            
             // Проверяем, не является ли эта сота уже активной
             const isAlreadyActive = activeHexes.some(active => 
-                Math.abs(active.lat - neighbor.lat) < 0.00001 && 
-                Math.abs(active.lng - neighbor.lng) < 0.00001
+                Math.abs(active.lat - neighborLatLng.lat) < 0.000001 && 
+                Math.abs(active.lng - neighborLatLng.lng) < 0.000001
             );
             
             // Проверяем, не добавлена ли уже эта возможная сота
             const isAlreadyPossible = possibleHexes.some(possible =>
-                Math.abs(possible.lat - neighbor.lat) < 0.00001 &&
-                Math.abs(possible.lng - neighbor.lng) < 0.00001
+                Math.abs(possible.lat - neighborLatLng.lat) < 0.000001 &&
+                Math.abs(possible.lng - neighborLatLng.lng) < 0.000001
             );
             
             if (!isAlreadyActive && !isAlreadyPossible) {
                 possibleHexes.push({
-                    lat: neighbor.lat,
-                    lng: neighbor.lng,
-                    id: neighbor.id
+                    lat: neighborLatLng.lat,
+                    lng: neighborLatLng.lng,
+                    id: `${hex.id}_${neighbors.indexOf(neighbor)}`
                 });
             }
         }
@@ -243,58 +237,103 @@ function updatePossibleHexes() {
 }
 
 // Обработка клика по канвасу
-function handleCanvasClick(e) {
-    if (!buildEnabled || !leafletMap) return;
+canvas.addEventListener('click', function(e) {
+    if (!buildEnabled || !leafletMap || possibleHexes.length === 0) return;
     
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Проверяем клик по возможным сотам
-    for (let i = possibleHexes.length - 1; i >= 0; i--) {
-        const hex = possibleHexes[i];
+    // Находим ближайшую возможную соту
+    let closestHex = null;
+    let minDistance = Infinity;
+    
+    for (const hex of possibleHexes) {
         const pixelPos = leafletMap.latLngToContainerPoint([hex.lat, hex.lng]);
+        const distance = Math.sqrt((x - pixelPos.x) ** 2 + (y - pixelPos.y) ** 2);
         
-        // Применяем те же трансформации, что и при рисовании
-        const cx = canvas.width / 2;
-        const cy = canvas.height / 2;
-        const s = Math.pow(2, leafletMap.getZoom() - 12);
-        
-        let dx = pixelPos.x - cx;
-        let dy = pixelPos.y - cy;
-        
-        // Обратная трансформация: вращение и масштаб
-        const angle = -rotation * Math.PI / 180;
-        const rotatedX = dx * Math.cos(angle) - dy * Math.sin(angle);
-        const rotatedY = dx * Math.sin(angle) + dy * Math.cos(angle);
-        
-        dx = rotatedX / s;
-        dy = rotatedY / s;
-        
-        const centerX = cx + dx;
-        const centerY = cy + dy;
-        
-        // Проверяем расстояние от клика до центра соты
-        const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-        
-        if (distance < radius * s * 0.8) { // Увеличиваем зону клика
-            // Добавляем соту в активные
-            activeHexes.push({
-                lat: hex.lat,
-                lng: hex.lng,
-                id: Date.now() + i
-            });
-            
-            // Удаляем из возможных
-            possibleHexes.splice(i, 1);
-            
-            // Обновляем возможные соты
-            updatePossibleHexes();
-            draw();
-            return;
+        if (distance < radius && distance < minDistance) {
+            minDistance = distance;
+            closestHex = hex;
         }
     }
+    
+    if (closestHex) {
+        // Добавляем соту в активные
+        activeHexes.push({
+            lat: closestHex.lat,
+            lng: closestHex.lng,
+            id: Date.now().toString()
+        });
+        
+        // Обновляем возможные соты
+        updatePossibleHexes();
+        draw();
+    }
+});
+
+function initBackground() {
+    if (leafletMap) {
+        leafletMap.off();
+        leafletMap.remove();
+        leafletMap = null;
+    }
+    const mapDiv = document.getElementById('map');
+    mapDiv.innerHTML = '';
+    mapDiv.style.background = '';
+    const selectedMode = document.getElementById('bgMode').value;
+    bgMode = selectedMode;
+    if (['osm', 'google-sat', 'google-hybrid', 'yandex-sat'].includes(selectedMode)) {
+        leafletMap = L.map('map', {
+            zoomControl: false,
+            attributionControl: true,
+            zoomAnimation: false,
+            fadeAnimation: false
+        }).setView([54.7388, 55.9722], 12);
+        let baseLayer;
+        if (selectedMode === 'osm') {
+            baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            });
+        } else if (selectedMode === 'google-sat') {
+            baseLayer = googleSat;
+        } else if (selectedMode === 'google-hybrid') {
+            baseLayer = googleHybrid;
+        } else if (selectedMode === 'yandex-sat') {
+            baseLayer = yandexSat;
+        }
+        baseLayer.addTo(leafletMap);
+        leafletMap.on('move zoom movestart zoomstart moveend zoomend viewreset', function() {
+            if (buildEnabled) {
+                updatePossibleHexes();
+                draw();
+            }
+        });
+    } else if (selectedMode === 'image' && customImage) {
+        mapDiv.style.background = `url(${customImage}) center/contain no-repeat`;
+    } else {
+        mapDiv.style.background = '#0a0e14';
+    }
+    draw();
 }
+
+function toggleBgMode() {
+    document.getElementById('imageUpload').style.display =
+        document.getElementById('bgMode').value === 'image' ? 'block' : 'none';
+    initBackground();
+}
+
+document.getElementById('bgImage').onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        customImage = ev.target.result;
+        initBackground();
+    };
+    reader.readAsDataURL(file);
+};
 
 // ────────────────────────────────────────────────
 // Функции для рисования
@@ -333,54 +372,30 @@ function drawCircle(ctx, centerX, centerY, radius, color = 'rgba(244,68,68,0.5)'
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    if (!buildEnabled) return;
+    if (!buildEnabled && activeHexes.length === 0) return;
     
-    ctx.save();
-    
-    let cx = canvas.width / 2;
-    let cy = canvas.height / 2;
-    let s = 1;
-    
-    if (leafletMap) {
-        const pixelCenter = leafletMap.latLngToContainerPoint([startLat, startLng]);
-        cx = pixelCenter.x;
-        cy = pixelCenter.y;
-        s = Math.pow(2, leafletMap.getZoom() - 12);
-    }
-    
-    ctx.translate(cx, cy);
-    ctx.scale(s, s);
-    ctx.rotate(rotation * Math.PI / 180);
-    
-    // Рисуем возможные соты (серые) ПЕРВЫМИ
-    for (const hex of possibleHexes) {
-        if (!leafletMap) continue;
-        
-        const pixelPos = leafletMap.latLngToContainerPoint([hex.lat, hex.lng]);
-        const dx = pixelPos.x - cx;
-        const dy = pixelPos.y - cy;
-        
-        // Применяем обратную трансформацию для позиционирования
-        const angle = -rotation * Math.PI / 180;
-        const rotatedX = dx * Math.cos(angle) - dy * Math.sin(angle);
-        const rotatedY = dx * Math.sin(angle) + dy * Math.cos(angle);
-        
-        const posX = rotatedX / s;
-        const posY = rotatedY / s;
-        
-        // Шестиугольники возможных сот
-        if (showHex) {
-            drawHexagon(ctx, posX, posY, radius, '#888', 1.5);
-        }
-        
-        // Центры возможных сот
-        if (showCenters) {
-            drawCenter(ctx, posX, posY, 3 / s, '#888');
-        }
-        
-        // Круги возможных сот
-        if (showCircles) {
-            drawCircle(ctx, posX, posY, radius, 'rgba(136,136,136,0.5)');
+    // Рисуем только если есть что рисовать
+    if (buildEnabled) {
+        // Рисуем возможные соты (серые) ПЕРВЫМИ
+        for (const hex of possibleHexes) {
+            if (!leafletMap) continue;
+            
+            const pixelPos = leafletMap.latLngToContainerPoint([hex.lat, hex.lng]);
+            
+            // Шестиугольники возможных сот
+            if (showHex) {
+                drawHexagon(ctx, pixelPos.x, pixelPos.y, radius, '#888', 1.5);
+            }
+            
+            // Центры возможных сот
+            if (showCenters) {
+                drawCenter(ctx, pixelPos.x, pixelPos.y, 3, '#888');
+            }
+            
+            // Круги возможных сот
+            if (showCircles) {
+                drawCircle(ctx, pixelPos.x, pixelPos.y, radius, 'rgba(136,136,136,0.5)');
+            }
         }
     }
     
@@ -389,10 +404,24 @@ function draw() {
         if (!leafletMap) continue;
         
         const pixelPos = leafletMap.latLngToContainerPoint([hex.lat, hex.lng]);
+        
+        // Сохраняем состояние контекста
+        ctx.save();
+        
+        // Применяем трансформации только для активных сот
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const s = Math.pow(2, leafletMap.getZoom() - 12);
+        
+        ctx.translate(cx, cy);
+        ctx.scale(s, s);
+        ctx.rotate(rotation * Math.PI / 180);
+        
+        // Вычисляем координаты относительно центра
         const dx = pixelPos.x - cx;
         const dy = pixelPos.y - cy;
         
-        // Применяем обратную трансформацию для позиционирования
+        // Обратная трансформация для позиционирования
         const angle = -rotation * Math.PI / 180;
         const rotatedX = dx * Math.cos(angle) - dy * Math.sin(angle);
         const rotatedY = dx * Math.sin(angle) + dy * Math.cos(angle);
@@ -414,75 +443,10 @@ function draw() {
         if (showCircles) {
             drawCircle(ctx, posX, posY, radius, 'rgba(244,68,68,0.5)');
         }
+        
+        ctx.restore();
     }
-    
-    ctx.restore();
 }
-
-// ────────────────────────────────────────────────
-// Инициализация фона
-// ────────────────────────────────────────────────
-function initBackground() {
-    if (leafletMap) {
-        leafletMap.off();
-        leafletMap.remove();
-        leafletMap = null;
-    }
-    const mapDiv = document.getElementById('map');
-    mapDiv.innerHTML = '';
-    mapDiv.style.background = '';
-    const selectedMode = document.getElementById('bgMode').value;
-    bgMode = selectedMode;
-    if (['osm', 'google-sat', 'google-hybrid', 'yandex-sat'].includes(selectedMode)) {
-        leafletMap = L.map('map', {
-            zoomControl: false,
-            attributionControl: true,
-            zoomAnimation: false,
-            fadeAnimation: false
-        }).setView([54.7388, 55.9722], 12);
-        let baseLayer;
-        if (selectedMode === 'osm') {
-            baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap'
-            });
-        } else if (selectedMode === 'google-sat') {
-            baseLayer = googleSat;
-        } else if (selectedMode === 'google-hybrid') {
-            baseLayer = googleHybrid;
-        } else if (selectedMode === 'yandex-sat') {
-            baseLayer = yandexSat;
-        }
-        baseLayer.addTo(leafletMap);
-        leafletMap.on('move zoom movestart zoomstart moveend zoomend viewreset', function() {
-            if (buildEnabled && leafletMap && startLat !== null && startLng !== null) {
-                draw();
-            }
-        });
-    } else if (selectedMode === 'image' && customImage) {
-        mapDiv.style.background = `url(${customImage}) center/contain no-repeat`;
-    } else {
-        mapDiv.style.background = '#0a0e14';
-    }
-    draw();
-}
-
-function toggleBgMode() {
-    document.getElementById('imageUpload').style.display =
-        document.getElementById('bgMode').value === 'image' ? 'block' : 'none';
-    initBackground();
-}
-
-document.getElementById('bgImage').onchange = e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-        customImage = ev.target.result;
-        initBackground();
-    };
-    reader.readAsDataURL(file);
-};
 
 // ────────────────────────────────────────────────
 // Обработчики интерфейса
@@ -543,16 +507,13 @@ document.getElementById('showCircles').onchange = function() {
     showCircles = this.checked;
     draw();
 };
-.
-// Добавляем обработчик клика на канвас
-canvas.addEventListener('click', handleCanvasClick);
 
 function reset() {
     radius = 60;
     rotation = 0;
     buildEnabled = false;
-    startLat = null;
-    startLng = null;
+    hexLat = null;
+    hexLng = null;
     activeHexes = [];
     possibleHexes = [];
     showHex = true;
@@ -569,6 +530,7 @@ function reset() {
     document.getElementById('rotText').value = '0.00000';
     document.getElementById('radiusSlider').value = 60;
     document.getElementById('rotSlider').value = 0;
+    canvas.style.pointerEvents = 'none';
     toggleBgMode();
 }
 
