@@ -13,59 +13,149 @@
         #c { position:absolute; inset:0; z-index:1; image-rendering:crisp-edges; pointer-events:none; }
         #controls {
             position:absolute; top:12px; left:12px; z-index:10;
-            background:rgba(20,25,35,0.92); padding:16px; border-radius:10px;
-            min-width:340px; box-shadow:0 4px 18px #0006;
+            background:rgba(20,25,35,0.92); padding:12px; border-radius:8px;
+            width:300px; box-shadow:0 4px 12px #0006;
+            max-height: calc(100vh - 24px);
+            overflow-y: auto;
         }
-        label { display:block; margin:10px 0 4px; font-size:0.9em; }
-        input[type=text], input[type=file], select, textarea {
-            width:100%; padding:8px 10px; border-radius:6px;
-            border:1px solid #3a4454; background:#1a2230; color:white;
-            box-sizing:border-box;
-        }
-        input[type=range] { width:100%; margin:4px 0 10px 0; }
-        .row { margin:12px 0; }
-        .buttons-row {
-            display: flex;
-            gap: 8px;
-            margin: 12px 0;
-        }
-        button {
-            flex: 1;
-            padding:8px 16px;
-            background:#2a3444; color:#ddd; border:none; border-radius:6px;
-            cursor:pointer;
-        }
-        button:hover { background:#3a4454; }
-        button.active { background:#4af; color:#000; }
-        .checkbox-row { margin:8px 0; display:flex; align-items:center; gap:8px; }
         
-        /* Диалог для маркера */
-        .marker-dialog {
-            position: fixed;
-            background: rgba(20,25,35,0.95);
-            padding: 20px;
-            border-radius: 10px;
-            z-index: 1000;
-            min-width: 320px;
-            box-shadow: 0 4px 18px #0006;
-            display: none;
+        /* Компактные стили для аккордеона */
+        .accordion-section {
+            margin-bottom: 8px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #2a3444;
         }
-        .marker-dialog.active {
-            display: block;
-        }
-        .dialog-title {
-            margin-top: 0;
-            margin-bottom: 15px;
-            color: #fff;
-            font-size: 1.2em;
-        }
-        .dialog-buttons {
+        .accordion-header {
+            padding: 10px 12px;
+            background: #1a2230;
+            color: #ddd;
+            cursor: pointer;
             display: flex;
-            gap: 10px;
-            margin-top: 15px;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            transition: background 0.2s;
+            font-size: 0.95em;
         }
-        .dialog-buttons button {
+        .accordion-header:hover {
+            background: #2a3444;
+        }
+        .accordion-header.active {
+            background: #2a3444;
+        }
+        .accordion-header button {
+            padding: 6px 12px;
+            background: #2a3444;
+            color: #ddd;
+            border: 1px solid #3a4454;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-right: 8px;
+            transition: all 0.2s;
+        }
+        .accordion-header button:hover {
+            background: #3a4454;
+        }
+        .accordion-header button.active {
+            background: #4af;
+            color: #000;
+            border-color: #4af;
+        }
+        .accordion-icon {
+            transition: transform 0.2s;
+            font-size: 0.9em;
+            color: #888;
+        }
+        .accordion-header.active .accordion-icon {
+            transform: rotate(180deg);
+            color: #ddd;
+        }
+        .accordion-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out, padding 0.2s ease-out;
+            background: rgba(15,20,30,0.8);
+        }
+        .accordion-content.active {
+            padding: 12px;
+            max-height: 1000px;
+        }
+        
+        /* Компактные стили для элементов управления */
+        .compact-row {
+            margin: 8px 0;
+        }
+        label {
+            display: block;
+            margin: 6px 0 3px;
+            font-size: 0.85em;
+            color: #bbb;
+        }
+        .range-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0 8px;
+        }
+        input[type=range] {
             flex: 1;
+            height: 4px;
+            background: #2a3444;
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            background: #4af;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .number-input {
+            width: 60px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: 1px solid #3a4454;
+            background: #1a2230;
+            color: white;
+            font-size: 0.9em;
+        }
+        
+        /* Компактные чекбоксы */
+        .compact-checkbox {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .compact-checkbox input[type="checkbox"] {
+            margin: 0 8px 0 0;
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+        
+        /* Кнопки */
+        button {
+            padding: 6px 12px;
+            background: #2a3444;
+            color: #ddd;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #3a4454;
+        }
+        button.active {
+            background: #4af;
+            color: #000;
         }
         .delete-btn {
             background: #ff4444 !important;
@@ -75,14 +165,83 @@
             background: #ff6666 !important;
         }
         
+        /* Диалог для маркера */
+        .marker-dialog {
+            position: fixed;
+            background: rgba(20,25,35,0.95);
+            padding: 16px;
+            border-radius: 8px;
+            z-index: 1000;
+            min-width: 280px;
+            box-shadow: 0 4px 12px #0006;
+            display: none;
+        }
+        .marker-dialog.active {
+            display: block;
+        }
+        .dialog-title {
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: #fff;
+            font-size: 1.1em;
+        }
+        .dialog-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .dialog-buttons button {
+            flex: 1;
+            padding: 6px 10px;
+        }
+        
+        /* Минималистичные стили для пустых разделов */
+        .empty-section {
+            padding: 16px 0;
+            text-align: center;
+            color: #888;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+        
+        /* Селект и загрузка файлов */
+        select, input[type="file"] {
+            width: 100%;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid #3a4454;
+            background: #1a2230;
+            color: white;
+            font-size: 0.9em;
+            margin: 4px 0 8px;
+        }
+        
+        /* Текстовые поля */
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid #3a4454;
+            background: #1a2230;
+            color: white;
+            font-size: 0.9em;
+            margin: 4px 0 8px;
+            box-sizing: border-box;
+        }
+        
+        textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        
         /* Маркер на карте */
         .bs-marker {
             background: #ff4444;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             border: 2px solid white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
             cursor: move;
             transition: transform 0.2s;
             position: relative;
@@ -92,14 +251,14 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             background: white;
             border-radius: 50%;
             transform: translate(-50%, -50%);
         }
         .bs-marker:hover {
-            transform: scale(1.2);
+            transform: scale(1.15);
         }
         .bs-marker.temp {
             background: #ff8888;
@@ -124,45 +283,45 @@
         .leaflet-popup-content-wrapper {
             background: rgba(20,25,35,0.95) !important;
             color: #ddd !important;
-            border-radius: 10px !important;
-            box-shadow: 0 4px 18px #0006 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 12px #0006 !important;
             border: 1px solid #3a4454 !important;
         }
         .leaflet-popup-content {
-            margin: 15px !important;
-            min-width: 200px !important;
+            margin: 12px !important;
+            min-width: 180px !important;
             font-family: system-ui, sans-serif !important;
         }
         .leaflet-popup-tip {
             background: rgba(20,25,35,0.95) !important;
-            box-shadow: 0 4px 18px #0006 !important;
+            box-shadow: 0 4px 12px #0006 !important;
         }
         .marker-popup-title {
-            font-size: 1.1em;
+            font-size: 1em;
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #fff;
         }
         .marker-popup-comment {
-            margin-top: 10px;
+            margin-top: 8px;
             color: #aaa;
-            font-size: 0.9em;
-            line-height: 1.4;
+            font-size: 0.85em;
+            line-height: 1.3;
         }
         .popup-buttons {
             display: flex;
-            gap: 8px;
-            margin-top: 15px;
+            gap: 6px;
+            margin-top: 12px;
         }
         .popup-buttons button {
             flex: 1;
-            padding: 6px 12px;
-            font-size: 0.9em;
+            padding: 5px 10px;
+            font-size: 0.85em;
         }
         .leaflet-popup-close-button {
             color: #ddd !important;
-            font-size: 20px !important;
-            padding: 5px !important;
+            font-size: 18px !important;
+            padding: 4px !important;
         }
         .leaflet-popup-close-button:hover {
             color: #fff !important;
@@ -183,64 +342,127 @@
 <div id="map"></div>
 <canvas id="c"></canvas>
 <div id="controls">
-    <label for="bgMode">Фон / карта:</label>
-    <select id="bgMode" onchange="toggleBgMode()">
-        <option value="osm">OpenStreetMap</option>
-        <option value="google-sat">Google Спутник</option>
-        <option value="google-hybrid">Google Гибрид</option>
-        <option value="yandex-sat">Яндекс Спутник</option>
-        <option value="image">Своё изображение</option>
-    </select>
-    <div id="imageUpload" style="display:none; margin-top:10px;">
-        <label for="bgImage">Выберите изображение:</label>
-        <input type="file" id="bgImage" accept="image/*">
+    <!-- Секция Фон / карта (всегда видима) -->
+    <div class="compact-row">
+        <label>Фон / карта</label>
+        <select id="bgMode" onchange="toggleBgMode()">
+            <option value="osm">OpenStreetMap</option>
+            <option value="google-sat">Google Спутник</option>
+            <option value="google-hybrid">Google Гибрид</option>
+            <option value="yandex-sat">Яндекс Спутник</option>
+            <option value="image">Своё изображение</option>
+        </select>
+        <div id="imageUpload" style="display:none; margin-top:6px;">
+            <label>Выберите изображение</label>
+            <input type="file" id="bgImage" accept="image/*">
+        </div>
     </div>
     
-    <div class="buttons-row">
-        <button id="buildToggle" onclick="toggleBuild()">Строение сети</button>
-        <button id="bsToggle" onclick="toggleBSMode()">Установка БС</button>
+    <!-- Секция Строение сети (раскрыта по умолчанию) -->
+    <div class="accordion-section">
+        <div class="accordion-header active" onclick="toggleAccordion('network-build')">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="buildToggle" onclick="toggleBuild(event)">Включить</button>
+                <span>Строение сети</span>
+            </div>
+            <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content active" id="network-build-content">
+            <div class="compact-row">
+                <label>Радиус, м (10-5000)</label>
+                <div class="range-group">
+                    <input type="range" id="radiusSlider" min="10" max="5000" value="500" step="10">
+                    <input type="text" id="radiusText" class="number-input" value="500">
+                </div>
+            </div>
+            
+            <div class="compact-row">
+                <label>Вращение, ° (-180-180)</label>
+                <div class="range-group">
+                    <input type="range" id="rotSlider" min="-180" max="180" value="0" step="1">
+                    <input type="text" id="rotText" class="number-input" value="0">
+                </div>
+            </div>
+            
+            <div class="compact-checkbox">
+                <input type="checkbox" id="moveGrid">
+                <label for="moveGrid">Перемещать сетку</label>
+            </div>
+            
+            <div class="compact-row" style="display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;">
+                <div class="compact-checkbox">
+                    <input type="checkbox" id="showHex" checked>
+                    <label for="showHex">Соты</label>
+                </div>
+                <div class="compact-checkbox">
+                    <input type="checkbox" id="showCenters" checked>
+                    <label for="showCenters">Центры</label>
+                </div>
+                <div class="compact-checkbox">
+                    <input type="checkbox" id="showCircles">
+                    <label for="showCircles">Радиусы</label>
+                </div>
+            </div>
+            
+            <button onclick="reset()" style="width: 100%; margin-top: 8px;">Сброс</button>
+        </div>
     </div>
     
-    <div class="row">
-        <label>Радиус (10…5000 метров):</label>
-        <input type="range" id="radiusSlider" min="10" max="5000" value="500">
-        <input type="text" id="radiusText" value="500">
+    <!-- Секция Установка БС (закрыта по умолчанию) -->
+    <div class="accordion-section">
+        <div class="accordion-header" onclick="toggleAccordion('bs-install')">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="bsToggle" onclick="toggleBSMode(event)">Включить</button>
+                <span>Установка БС</span>
+            </div>
+            <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content" id="bs-install-content">
+            <div class="empty-section">
+                <p>Нажмите на карту для установки БС</p>
+                <p style="font-size: 0.85em; margin-top: 6px; color: #999;">
+                    Режим позволяет добавлять базовые станции на карту
+                </p>
+            </div>
+        </div>
     </div>
-    <div class="row">
-        <label>Вращение (-180…+180°):</label>
-        <input type="range" id="rotSlider" min="-180" max="180" value="0">
-        <input type="text" id="rotText" value="0">
+    
+    <!-- Секция Импорт KML (закрыта по умолчанию) -->
+    <div class="accordion-section">
+        <div class="accordion-header" onclick="toggleAccordion('kml-import')">
+            <span>Импорт KML</span>
+            <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content" id="kml-import-content">
+            <div class="empty-section">
+                <p>Функция в разработке</p>
+                <p style="font-size: 0.85em; margin-top: 6px; color: #999;">
+                    Скоро здесь можно будет импортировать KML файлы
+                </p>
+            </div>
+        </div>
     </div>
-    <div class="checkbox-row">
-        <input type="checkbox" id="moveGrid"><label for="moveGrid">Перемещать сетку</label>
-    </div>
-    <div class="checkbox-row">
-        <input type="checkbox" id="showHex" checked><label for="showHex">Соты</label>
-    </div>
-    <div class="checkbox-row">
-        <input type="checkbox" id="showCenters" checked><label for="showCenters">Центры</label>
-    </div>
-    <div class="checkbox-row">
-        <input type="checkbox" id="showCircles"><label for="showCircles">Радиусы</label>
-    </div>
-    <button onclick="reset()">Сброс</button>
 </div>
 
 <!-- Диалог добавления/редактирования маркера -->
 <div id="markerDialog" class="marker-dialog">
-    <label for="markerName">Название БС:</label>
+    <label for="markerName">Название БС</label>
     <input type="text" id="markerName" placeholder="Введите название">
-    <label for="markerComment" style="margin-top:10px;">Комментарий:</label>
+    
+    <label for="markerComment" style="margin-top:8px;">Комментарий</label>
     <textarea id="markerComment" rows="2" placeholder="Введите комментарий"></textarea>
     
-    <div class="checkbox-row" style="margin-top:15px;">
-        <input type="checkbox" id="markerShowCircle"><label for="markerShowCircle">Показывать радиус</label>
+    <div class="compact-checkbox" style="margin-top:12px;">
+        <input type="checkbox" id="markerShowCircle">
+        <label for="markerShowCircle">Показывать радиус</label>
     </div>
     
-    <div id="markerCircleControls" style="margin-top:10px; display:none;">
-        <label>Радиус (10…5000 метров):</label>
-        <input type="range" id="markerCircleSlider" min="10" max="5000" value="500">
-        <input type="text" id="markerCircleText" value="500">
+    <div id="markerCircleControls" style="margin-top:8px; display:none;">
+        <label>Радиус, м (10-5000)</label>
+        <div class="range-group">
+            <input type="range" id="markerCircleSlider" min="10" max="5000" value="500" step="10">
+            <input type="text" id="markerCircleText" class="number-input" value="500">
+        </div>
     </div>
     
     <div class="dialog-buttons">
@@ -311,6 +533,16 @@ const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z
 const yandexSat = L.tileLayer('https://core-sat.maps.yandex.net/tiles?l=sat&v=23.10.26-0&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
     maxZoom: 19, attribution: '© Яндекс'
 });
+
+// Функция для переключения аккордеона
+function toggleAccordion(sectionId, event) {
+    if (event) event.stopPropagation();
+    const header = document.querySelector(`[onclick="toggleAccordion('${sectionId}')"]`);
+    const content = document.getElementById(`${sectionId}-content`);
+    
+    header.classList.toggle('active');
+    content.classList.toggle('active');
+}
 
 // Получение радиуса в пикселях на текущем зуме
 function getRadiusInPixels() {
@@ -465,12 +697,14 @@ function applyRotation() {
     draw();
 }
 
-function toggleBuild() {
+function toggleBuild(event) {
+    if (event) event.stopPropagation();
+    
     // Если режим БС включен, выключаем его
     if (bsModeEnabled) {
         bsModeEnabled = false;
         document.getElementById('bsToggle').classList.remove('active');
-        document.getElementById('bsToggle').textContent = 'Установка БС';
+        document.getElementById('bsToggle').textContent = 'Включить';
         document.body.classList.remove('bs-cursor');
         
         // Удаляем временный маркер и предпросмотр круга
@@ -486,7 +720,7 @@ function toggleBuild() {
     
     buildEnabled = !buildEnabled;
     const btn = document.getElementById('buildToggle');
-    btn.textContent = 'Строение сети';
+    btn.textContent = buildEnabled ? 'Выключить' : 'Включить';
     btn.classList.toggle('active', buildEnabled);
     canvas.style.pointerEvents = (buildEnabled || moveGridEnabled) ? 'auto' : 'none';
     updateCursor();
@@ -518,11 +752,14 @@ function toggleBuild() {
     draw();
 }
 
-function toggleBSMode() {
+function toggleBSMode(event) {
+    if (event) event.stopPropagation();
+    
     // Если режим построения включен, выключаем его
     if (buildEnabled) {
         buildEnabled = false;
         document.getElementById('buildToggle').classList.remove('active');
+        document.getElementById('buildToggle').textContent = 'Включить';
         possibleHexes.clear();
     }
     
@@ -538,7 +775,7 @@ function toggleBSMode() {
     
     bsModeEnabled = !bsModeEnabled;
     const btn = document.getElementById('bsToggle');
-    btn.textContent = 'Установка БС';
+    btn.textContent = bsModeEnabled ? 'Выключить' : 'Включить';
     btn.classList.toggle('active', bsModeEnabled);
     
     // Обновляем курсор и обработчики событий
@@ -687,7 +924,7 @@ function isPointInHexagon(px, py, hexX, hexY, hexRadius) {
     const segmentEnd = segmentStart + segmentAngle;
     const angleInSegment = angle - segmentStart;
     
-    // Максимальное расстояние до грани в этом сегменте
+    // Максимальное расстояние до грани в этом сегмента
     const maxDistance = hexRadius * Math.cos(segmentAngle / 2 - angleInSegment) / Math.cos(segmentAngle / 2);
     
     return distance <= maxDistance;
@@ -709,8 +946,8 @@ function createTempMarker(lat, lng) {
     tempMarker = L.marker([lat, lng], {
         icon: L.divIcon({
             html: markerHtml.outerHTML,
-            iconSize: [24, 24],
-            iconAnchor: [12, 12],
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
             className: 'bs-marker-icon'
         }),
         draggable: false
@@ -769,8 +1006,8 @@ function removePreviewCircle() {
 function positionDialogNearMarker(x, y) {
     const dialog = document.getElementById('markerDialog');
     const rect = canvas.getBoundingClientRect();
-    const dialogWidth = 350;
-    const dialogHeight = 350;
+    const dialogWidth = 300;
+    const dialogHeight = 320;
     
     // Рассчитываем позицию диалога
     let left = rect.left + x + 20;
@@ -947,8 +1184,8 @@ function createMarker(lat, lng, name = '', comment = '', id = null, showCircle =
     const marker = L.marker([lat, lng], {
         icon: L.divIcon({
             html: markerHtml.outerHTML,
-            iconSize: [24, 24],
-            iconAnchor: [12, 12],
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
             className: 'bs-marker-icon'
         }),
         draggable: true // Делаем маркер перетаскиваемым
@@ -1573,7 +1810,7 @@ function drawPreviewHex() {
     // Рисуем предварительный центр
     if (showCenters) {
         ctx.globalAlpha = 0.3;
-        drawCenter(ctx, centerX, centerY, 4, '#f44');
+        drawCenter(ctx, centerX, centerY, 3, '#f44');
         ctx.globalAlpha = 1.0;
     }
     
@@ -1845,9 +2082,9 @@ function reset() {
     clearMarkers();
     
     // Обновляем интерфейс
-    document.getElementById('buildToggle').textContent = 'Строение сети';
+    document.getElementById('buildToggle').textContent = 'Включить';
     document.getElementById('buildToggle').classList.remove('active');
-    document.getElementById('bsToggle').textContent = 'Установка БС';
+    document.getElementById('bsToggle').textContent = 'Включить';
     document.getElementById('bsToggle').classList.remove('active');
     document.getElementById('moveGrid').checked = false;
     document.getElementById('showHex').checked = true;
