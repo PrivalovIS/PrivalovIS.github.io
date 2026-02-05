@@ -55,6 +55,27 @@
             margin-right: 8px;
             transition: all 0.2s;
         }
+		#fileToggle {
+			background: #4af !important; /* Синий цвет #4af */
+			color: #000 !important; /* Черный текст для контраста */
+			border-color: #4af !important;
+		}
+
+		#fileToggle:hover {
+			background: #2a8cff !important;
+			border-color: #2a8cff !important;
+		}
+
+		#fileToggle.changed {
+			background: #ff9900 !important; /* Оранжевый для измененного состояния */
+			color: #000 !important;
+			border-color: #ff9900 !important;
+		}
+
+		#fileToggle.changed:hover {
+			background: #e68a00 !important;
+			border-color: #e68a00 !important;
+		}
         .accordion-header button:hover {
             background: #3a4454;
         }
@@ -169,6 +190,38 @@
         .delete-btn:hover {
             background: #ff6666 !important;
         }
+		/* Стили для кнопок файлового меню */
+		.file-btn-open {
+			background: #4af !important; /* Яркий синий */
+			color: white !important;
+		}
+		.file-btn-open:hover {
+			background: #2a8cff !important; /* Чуть темнее синий для hover */
+		}
+
+		.file-btn-save {
+			background: #ff9900 !important; /* Оранжевый */
+			color: white !important; /* Белый текст для лучшей читаемости */
+		}
+		.file-btn-save:hover {
+			background: #e68a00 !important; /* Темнее оранжевый для hover */
+		}
+
+		.file-btn-save-image {
+			background: #4caf50 !important; /* Зеленый */
+			color: white !important;
+		}
+		.file-btn-save-image:hover {
+			background: #3d8b40 !important; /* Темнее зеленый для hover */
+		}
+
+		.file-btn-close {
+			background: #ff4444 !important; /* Красный */
+			color: white !important;
+		}
+		.file-btn-close:hover {
+			background: #ff3333 !important; /* Ярче красный для hover */
+		}
         
         /* Диалог для маркера */
         .marker-dialog {
@@ -411,21 +464,69 @@
         .file-section-buttons button {
             width: 100%;
         }
+        
+        /* Стили для раздела Карта */
+        .map-option {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .map-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .map-option.selected {
+            background: rgba(68, 136, 255, 0.2);
+            border-left: 3px solid #4af;
+        }
+        
+        .map-option input[type="radio"] {
+            margin-right: 10px;
+        }
+        
+        .map-option label {
+            flex: 1;
+            margin: 0;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 <div id="map"></div>
 <canvas id="c"></canvas>
 <div id="controls">
-    <!-- Секция Фон / карта (всегда видима) -->
-    <div class="compact-row">
-        <label>Фон / карта</label>
-        <select id="bgMode" onchange="toggleBgMode()">
-            <option value="osm">OpenStreetMap</option>
-            <option value="google-sat">Google Спутник</option>
-            <option value="google-hybrid">Google Гибрид</option>
-            <option value="yandex-sat">Яндекс Спутник</option>
-        </select>
+    <!-- Секция Карта (закрыта по умолчанию, расположена перед Файл) -->
+    <div class="accordion-section">
+        <div class="accordion-header" onclick="toggleAccordion('map-section')">
+            <span>Карта</span>
+            <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content" id="map-section-content">
+            <div class="map-option selected" onclick="selectMapType('osm')">
+                <input type="radio" name="mapType" id="mapOsm" checked>
+                <label for="mapOsm">OpenStreetMap</label>
+            </div>
+            
+            <div class="map-option" onclick="selectMapType('google-sat')">
+                <input type="radio" name="mapType" id="mapGoogleSat">
+                <label for="mapGoogleSat">Google Спутник</label>
+            </div>
+            
+            <div class="map-option" onclick="selectMapType('google-hybrid')">
+                <input type="radio" name="mapType" id="mapGoogleHybrid">
+                <label for="mapGoogleHybrid">Google Гибрид</label>
+            </div>
+            
+            <div class="map-option" onclick="selectMapType('yandex-sat')">
+                <input type="radio" name="mapType" id="mapYandexSat">
+                <label for="mapYandexSat">Яндекс Спутник</label>
+            </div>
+        </div>
     </div>
     
     <!-- Секция Файл (закрыта по умолчанию) -->
@@ -439,28 +540,24 @@
         </div>
         <div class="accordion-content" id="file-content">
             <div class="file-section-buttons">
-                <button>Открыть</button>
-                <div class="button-description">Открыть сохраненный проект</div>
-                
-                <button>Сохранить</button>
-                <div class="button-description">Сохранить проект</div>
-                
-                <button>Сохранить изображение</button>
-                <div class="button-description">Экспорт карты в изображение</div>
-            </div>
+				<button class="file-btn-open">Открыть</button>
+				<button class="file-btn-save">Сохранить</button>
+				<button class="file-btn-save-image">Сохранить изображение</button>
+				<button class="file-btn-close">Закрыть</button>
+			</div>
         </div>
     </div>
     
-    <!-- Секция Строение сети (раскрыта по умолчанию) -->
+    <!-- Секция Строение сети (закрыта по умолчанию) -->
     <div class="accordion-section">
-        <div class="accordion-header active" onclick="toggleAccordion('network-build')">
+        <div class="accordion-header" onclick="toggleAccordion('network-build')">
             <div style="display: flex; align-items: center; gap: 8px;">
                 <button id="buildToggle" onclick="toggleBuild(event)">Включить</button>
                 <span>Строение сети</span>
             </div>
             <span class="accordion-icon">▼</span>
         </div>
-        <div class="accordion-content active" id="network-build-content">
+        <div class="accordion-content" id="network-build-content">
             <div class="compact-row">
                 <label>Радиус, м (10-5000)</label>
                 <div class="range-group">
@@ -637,15 +734,52 @@ const yandexSat = L.tileLayer('https://core-sat.maps.yandex.net/tiles?l=sat&v=23
     maxZoom: 19, attribution: '© Яндекс'
 });
 
-// Функция для переключения аккордеона
+// Функция для переключения аккордеона с одиночным открытием
 function toggleAccordion(sectionId, event) {
     if (event) event.stopPropagation();
     
     const header = document.querySelector(`[onclick="toggleAccordion('${sectionId}')"]`);
     const content = document.getElementById(`${sectionId}-content`);
     
+    // Закрываем все другие секции
+    document.querySelectorAll('.accordion-header.active').forEach(otherHeader => {
+        if (otherHeader !== header) {
+            const otherSectionId = otherHeader.getAttribute('onclick').match(/'([^']+)'/)[1];
+            const otherContent = document.getElementById(`${otherSectionId}-content`);
+            otherHeader.classList.remove('active');
+            otherContent.classList.remove('active');
+        }
+    });
+    
+    // Переключаем текущую секцию
     header.classList.toggle('active');
     content.classList.toggle('active');
+}
+
+// Функция для выбора типа карты
+function selectMapType(mapType) {
+    // Снимаем выделение со всех опций
+    document.querySelectorAll('.map-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    // Выделяем выбранную опцию
+    const selectedOption = Array.from(document.querySelectorAll('.map-option')).find(
+        option => option.getAttribute('onclick').includes(mapType)
+    );
+    if (selectedOption) {
+        selectedOption.classList.add('selected');
+    }
+    
+    // Устанавливаем соответствующий radio button
+    const radioButton = document.querySelector(`input[value="${mapType}"]`);
+    if (radioButton) {
+        radioButton.checked = true;
+    }
+    
+    // Изменяем фон карты
+    bgMode = mapType;
+    initBackground();
 }
 
 // Обновление кнопки в разделе Файл
@@ -2034,10 +2168,7 @@ function initBackground() {
     mapDiv.innerHTML = '';
     mapDiv.style.background = '';
     
-    const selectedMode = document.getElementById('bgMode').value;
-    bgMode = selectedMode;
-    
-    if (['osm', 'google-sat', 'google-hybrid', 'yandex-sat'].includes(selectedMode)) {
+    if (['osm', 'google-sat', 'google-hybrid', 'yandex-sat'].includes(bgMode)) {
         // Создаем новую карту
         leafletMap = L.map('map', {
             zoomControl: false,
@@ -2048,16 +2179,16 @@ function initBackground() {
         });
         
         let baseLayer;
-        if (selectedMode === 'osm') {
+        if (bgMode === 'osm') {
             baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '© OpenStreetMap'
             });
-        } else if (selectedMode === 'google-sat') {
+        } else if (bgMode === 'google-sat') {
             baseLayer = googleSat;
-        } else if (selectedMode === 'google-hybrid') {
+        } else if (bgMode === 'google-hybrid') {
             baseLayer = googleHybrid;
-        } else if (selectedMode === 'yandex-sat') {
+        } else if (bgMode === 'yandex-sat') {
             baseLayer = yandexSat;
         }
         baseLayer.addTo(leafletMap);
@@ -2101,9 +2232,7 @@ function initBackground() {
     draw();
 }
 
-function toggleBgMode() {
-    initBackground();
-}
+// Удалена функция toggleBgMode, так как теперь используется selectMapType
 
 // ────────────────────────────────────────────────
 // Функции для рисования
@@ -2435,7 +2564,7 @@ document.getElementById('markerCircleText').addEventListener('keydown', function
 
 function reset() {
     // Сохраняем текущее состояние фона
-    const currentBgMode = document.getElementById('bgMode').value;
+    const currentBgMode = bgMode;
     
     // Сбрасываем только параметры сетки и маркеры
     radiusMeters = 500;
@@ -2475,8 +2604,8 @@ function reset() {
     document.body.classList.remove('bs-cursor');
     updateCursor();
     
-    // Восстанавливаем фон (не изменяем выбор в селекте)
-    document.getElementById('bgMode').value = currentBgMode;
+    // Восстанавливаем фон
+    bgMode = currentBgMode;
     
     // Включаем управление картой при сбросе
     if (leafletMap) {
@@ -2518,6 +2647,20 @@ window.onload = () => {
     
     // Инициализируем кнопку в разделе Файл
     updateFileToggleButton();
+    
+    // Удаляем старый селект Фон / карта
+    const oldSelect = document.querySelector('#controls > .compact-row');
+    if (oldSelect) {
+        oldSelect.remove();
+    }
+    
+    // Инициализируем радиокнопки в разделе Карта
+    document.querySelectorAll('.map-option input[type="radio"]').forEach(radio => {
+        radio.value = radio.id.replace('map', '').toLowerCase();
+        if (radio.id === 'mapOsm') {
+            radio.checked = true;
+        }
+    });
     
     initBackground();
 };
