@@ -63,6 +63,11 @@
             color: #000;
             border-color: #4af;
         }
+        .accordion-header button.changed {
+            background: #ff9900;
+            color: #000;
+            border-color: #ff9900;
+        }
         .accordion-icon {
             transition: transform 0.2s;
             font-size: 0.9em;
@@ -76,7 +81,7 @@
             padding: 0;
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.2s ease-out, padding 0.2s ease-out;
+            transition: none;
             background: rgba(15,20,30,0.8);
         }
         .accordion-content.active {
@@ -257,9 +262,6 @@
             border-radius: 50%;
             transform: translate(-50%, -50%);
         }
-        .bs-marker:hover {
-            transform: scale(1.15);
-        }
         .bs-marker.temp {
             background: #ff8888;
             animation: pulse 1s infinite;
@@ -336,6 +338,79 @@
             stroke-width: 2;
             stroke-dasharray: 5, 5;
         }
+        
+        /* Список БС */
+        .bs-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+            border: 1px solid #2a3444;
+            border-radius: 4px;
+        }
+        
+        .bs-list-item {
+            padding: 8px 12px;
+            background: #1a2230;
+            border-bottom: 1px solid #2a3444;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        
+        .bs-list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .bs-list-item:hover {
+            background: #2a3444;
+        }
+        
+        .bs-list-item.active {
+            background: #2a3444;
+            border-left: 3px solid #4af;
+        }
+        
+        .bs-list-item-drag {
+            cursor: move;
+            color: #888;
+            margin-right: 8px;
+        }
+        
+        .bs-list-item-name {
+            flex: 1;
+            font-size: 0.9em;
+        }
+        
+        .bs-list-item-info {
+            font-size: 0.8em;
+            color: #888;
+        }
+        
+        .bs-count {
+            font-size: 0.9em;
+            color: #4af;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .button-description {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 2px;
+            margin-bottom: 8px;
+        }
+        
+        .file-section-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .file-section-buttons button {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -350,11 +425,29 @@
             <option value="google-sat">Google Спутник</option>
             <option value="google-hybrid">Google Гибрид</option>
             <option value="yandex-sat">Яндекс Спутник</option>
-            <option value="image">Своё изображение</option>
         </select>
-        <div id="imageUpload" style="display:none; margin-top:6px;">
-            <label>Выберите изображение</label>
-            <input type="file" id="bgImage" accept="image/*">
+    </div>
+    
+    <!-- Секция Файл (закрыта по умолчанию) -->
+    <div class="accordion-section">
+        <div class="accordion-header" onclick="toggleAccordion('file')">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="fileToggle">Открыть</button>
+                <span>Файл</span>
+            </div>
+            <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content" id="file-content">
+            <div class="file-section-buttons">
+                <button>Открыть</button>
+                <div class="button-description">Открыть сохраненный проект</div>
+                
+                <button>Сохранить</button>
+                <div class="button-description">Сохранить проект</div>
+                
+                <button>Сохранить изображение</button>
+                <div class="button-description">Экспорт карты в изображение</div>
+            </div>
         </div>
     </div>
     
@@ -372,16 +465,16 @@
                 <label>Радиус, м (10-5000)</label>
                 <div class="range-group">
                     <input type="range" id="radiusSlider" min="10" max="5000" value="500" step="10">
-                    <input type="text" id="radiusText" class="number-input" value="500">
                 </div>
+                <input type="text" id="radiusText" class="number-input" value="500" style="width: 100%;">
             </div>
             
             <div class="compact-row">
                 <label>Вращение, ° (-180-180)</label>
                 <div class="range-group">
                     <input type="range" id="rotSlider" min="-180" max="180" value="0" step="1">
-                    <input type="text" id="rotText" class="number-input" value="0">
                 </div>
+                <input type="text" id="rotText" class="number-input" value="0" style="width: 100%;">
             </div>
             
             <div class="compact-checkbox">
@@ -389,19 +482,19 @@
                 <label for="moveGrid">Перемещать сетку</label>
             </div>
             
-            <div class="compact-row" style="display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;">
-                <div class="compact-checkbox">
-                    <input type="checkbox" id="showHex" checked>
-                    <label for="showHex">Соты</label>
-                </div>
-                <div class="compact-checkbox">
-                    <input type="checkbox" id="showCenters" checked>
-                    <label for="showCenters">Центры</label>
-                </div>
-                <div class="compact-checkbox">
-                    <input type="checkbox" id="showCircles">
-                    <label for="showCircles">Радиусы</label>
-                </div>
+            <div class="compact-checkbox">
+                <input type="checkbox" id="showHex" checked>
+                <label for="showHex">Соты</label>
+            </div>
+            
+            <div class="compact-checkbox">
+                <input type="checkbox" id="showCenters" checked>
+                <label for="showCenters">Центры</label>
+            </div>
+            
+            <div class="compact-checkbox">
+                <input type="checkbox" id="showCircles">
+                <label for="showCircles">Радиусы</label>
             </div>
             
             <button onclick="reset()" style="width: 100%; margin-top: 8px;">Сброс</button>
@@ -418,7 +511,13 @@
             <span class="accordion-icon">▼</span>
         </div>
         <div class="accordion-content" id="bs-install-content">
-            <div class="empty-section">
+            <div id="bsCount" class="bs-count">Базовых станций: 0</div>
+            
+            <div id="bsList" class="bs-list" style="display: none;">
+                <!-- Список БС будет генерироваться динамически -->
+            </div>
+            
+            <div id="bsEmptyMessage" class="empty-section">
                 <p>Нажмите на карту для установки БС</p>
                 <p style="font-size: 0.85em; margin-top: 6px; color: #999;">
                     Режим позволяет добавлять базовые станции на карту
@@ -446,7 +545,7 @@
 
 <!-- Диалог добавления/редактирования маркера -->
 <div id="markerDialog" class="marker-dialog">
-    <label for="markerName">Название БС</label>
+    <label for="markerName">Название базовой станции</label>
     <input type="text" id="markerName" placeholder="Введите название">
     
     <label for="markerComment" style="margin-top:8px;">Комментарий</label>
@@ -461,8 +560,8 @@
         <label>Радиус, м (10-5000)</label>
         <div class="range-group">
             <input type="range" id="markerCircleSlider" min="10" max="5000" value="500" step="10">
-            <input type="text" id="markerCircleText" class="number-input" value="500">
         </div>
+        <input type="text" id="markerCircleText" class="number-input" value="500" style="width: 100%;">
     </div>
     
     <div class="dialog-buttons">
@@ -477,7 +576,6 @@
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let leafletMap = null;
-let customImage = null;
 let bgMode = 'osm';
 let radiusMeters = 500; // Радиус в метрах
 let rotation = 0; // Вращение в градусах
@@ -512,6 +610,11 @@ let bsCircles = new Map(); // Круги для БС: ключ = markerId, зн�
 let isDraggingMarker = false; // Флаг перетаскивания маркера
 let draggedMarkerId = null; // ID перетаскиваемого маркера
 let previewCircle = null; // Предпросмотр круга при добавлении БС
+let bsCounter = 0; // Счетчик для нумерации БС
+let isMapChanged = false; // Флаг изменения карты
+let selectedBsId = null; // ID выбранной БС в списке
+let dragStartIndex = -1; // Индекс начала перетаскивания в списке БС
+let isDraggingBsListItem = false; // Флаг перетаскивания элемента списка БС
 
 // Гексагональные направления (шесть соседей)
 const hexDirections = [
@@ -537,6 +640,7 @@ const yandexSat = L.tileLayer('https://core-sat.maps.yandex.net/tiles?l=sat&v=23
 // Функция для переключения аккордеона
 function toggleAccordion(sectionId, event) {
     if (event) event.stopPropagation();
+    
     const header = document.querySelector(`[onclick="toggleAccordion('${sectionId}')"]`);
     const content = document.getElementById(`${sectionId}-content`);
     
@@ -544,9 +648,208 @@ function toggleAccordion(sectionId, event) {
     content.classList.toggle('active');
 }
 
+// Обновление кнопки в разделе Файл
+function updateFileToggleButton() {
+    const fileToggle = document.getElementById('fileToggle');
+    
+    if (isMapChanged) {
+        fileToggle.textContent = 'Сохранить';
+        fileToggle.classList.add('changed');
+    } else {
+        fileToggle.textContent = 'Открыть';
+        fileToggle.classList.remove('changed');
+    }
+}
+
+// Пометить карту как измененную
+function markMapAsChanged() {
+    if (!isMapChanged) {
+        isMapChanged = true;
+        updateFileToggleButton();
+    }
+}
+
+// Сброс флага изменения карты
+function resetMapChanged() {
+    isMapChanged = false;
+    updateFileToggleButton();
+}
+
+// Обновление списка БС
+function updateBsList() {
+    const bsCountElement = document.getElementById('bsCount');
+    const bsListElement = document.getElementById('bsList');
+    const bsEmptyMessage = document.getElementById('bsEmptyMessage');
+    
+    bsCountElement.textContent = `Базовых станций: ${bsMarkers.length}`;
+    
+    if (bsMarkers.length === 0) {
+        bsListElement.style.display = 'none';
+        bsEmptyMessage.style.display = 'block';
+    } else {
+        bsListElement.style.display = 'block';
+        bsEmptyMessage.style.display = 'none';
+        
+        // Очищаем список
+        bsListElement.innerHTML = '';
+        
+        // Добавляем элементы списка
+        bsMarkers.forEach((marker, index) => {
+            const listItem = document.createElement('div');
+            listItem.className = 'bs-list-item';
+            if (selectedBsId === marker.id) {
+                listItem.classList.add('active');
+            }
+            listItem.dataset.id = marker.id;
+            listItem.dataset.index = index;
+            
+            // Иконка для перетаскивания
+            const dragIcon = document.createElement('div');
+            dragIcon.className = 'bs-list-item-drag';
+            dragIcon.textContent = '⋮⋮';
+            dragIcon.addEventListener('mousedown', startDragBsListItem);
+            
+            // Название БС
+            const nameSpan = document.createElement('div');
+            nameSpan.className = 'bs-list-item-name';
+            nameSpan.textContent = marker.name || `БС ${index + 1}`;
+            
+            // Дополнительная информация
+            const infoSpan = document.createElement('div');
+            infoSpan.className = 'bs-list-item-info';
+            infoSpan.textContent = marker.showCircle ? `${marker.circleRadius}м` : '—';
+            
+            // Собираем элемент
+            listItem.appendChild(dragIcon);
+            listItem.appendChild(nameSpan);
+            listItem.appendChild(infoSpan);
+            
+            // Обработчик клика для выбора БС
+            listItem.addEventListener('click', function(e) {
+                if (!isDraggingBsListItem) {
+                    selectBsInList(marker.id);
+                }
+            });
+            
+            bsListElement.appendChild(listItem);
+        });
+    }
+}
+
+// Выбор БС в списке
+function selectBsInList(bsId) {
+    selectedBsId = bsId;
+    
+    // Находим маркер на карте
+    const markerIndex = leafletMarkers.findIndex(m => m.id === bsId);
+    if (markerIndex !== -1 && leafletMap) {
+        const marker = leafletMarkers[markerIndex];
+        
+        // Центрируем карту на маркере
+        leafletMap.setView([marker.lat, marker.lng], leafletMap.getZoom());
+        
+        // Открываем попап маркера
+        marker.marker.openPopup();
+        
+        // Обновляем список для выделения активного элемента
+        updateBsList();
+    }
+}
+
+// Начало перетаскивания элемента списка БС
+function startDragBsListItem(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    isDraggingBsListItem = true;
+    const listItem = e.target.closest('.bs-list-item');
+    dragStartIndex = parseInt(listItem.dataset.index);
+    
+    // Добавляем обработчики событий
+    document.addEventListener('mousemove', handleBsListDrag);
+    document.addEventListener('mouseup', stopDragBsListItem);
+    
+    // Визуальное выделение перетаскиваемого элемента
+    listItem.style.opacity = '0.7';
+}
+
+// Обработка перетаскивания элемента списка БС
+function handleBsListDrag(e) {
+    if (!isDraggingBsListItem) return;
+    
+    // Здесь можно добавить визуальную обратную связь при перетаскивании
+    // Например, подсветку места, куда можно переместить элемент
+}
+
+// Завершение перетаскивания элемента списка БС
+function stopDragBsListItem(e) {
+    if (!isDraggingBsListItem) return;
+    
+    isDraggingBsListItem = false;
+    
+    // Удаляем обработчики событий
+    document.removeEventListener('mousemove', handleBsListDrag);
+    document.removeEventListener('mouseup', stopDragBsListItem);
+    
+    // Сбрасываем визуальное выделение
+    const listItems = document.querySelectorAll('.bs-list-item');
+    listItems.forEach(item => {
+        item.style.opacity = '1';
+    });
+    
+    // Определяем индекс, куда был перемещен элемент
+    const targetElement = document.elementFromPoint(e.clientX, e.clientY);
+    if (targetElement) {
+        const targetListItem = targetElement.closest('.bs-list-item');
+        if (targetListItem && targetListItem.dataset.index) {
+            const targetIndex = parseInt(targetListItem.dataset.index);
+            
+            // Если элемент перемещен на другое место
+            if (dragStartIndex !== targetIndex && dragStartIndex !== -1) {
+                // Перемещаем маркер в массиве
+                const [movedMarker] = bsMarkers.splice(dragStartIndex, 1);
+                bsMarkers.splice(targetIndex, 0, movedMarker);
+                
+                // Перемещаем Leaflet маркер в массиве
+                const leafletMarkerIndex = leafletMarkers.findIndex(m => m.id === movedMarker.id);
+                if (leafletMarkerIndex !== -1) {
+                    const [movedLeafletMarker] = leafletMarkers.splice(leafletMarkerIndex, 1);
+                    // Нужно найти новый индекс для Leaflet маркера
+                    // (он может не совпадать с индексом в bsMarkers из-за разных ID)
+                    // Для простоты пересоздаем порядок на основе bsMarkers
+                    reorderLeafletMarkers();
+                }
+                
+                // Обновляем список
+                updateBsList();
+                
+                // Помечаем карту как измененную
+                markMapAsChanged();
+            }
+        }
+    }
+    
+    dragStartIndex = -1;
+}
+
+// Переупорядочивание Leaflet маркеров в соответствии с bsMarkers
+function reorderLeafletMarkers() {
+    // Создаем новый массив leafletMarkers в том же порядке, что и bsMarkers
+    const newLeafletMarkers = [];
+    
+    bsMarkers.forEach(marker => {
+        const leafletMarkerIndex = leafletMarkers.findIndex(m => m.id === marker.id);
+        if (leafletMarkerIndex !== -1) {
+            newLeafletMarkers.push(leafletMarkers[leafletMarkerIndex]);
+        }
+    });
+    
+    leafletMarkers = newLeafletMarkers;
+}
+
 // Получение радиуса в пикселях на текущем зуме
 function getRadiusInPixels() {
-    if (!leafletMap) return radiusMeters; // Для своего изображения возвращаем метры как пиксели
+    if (!leafletMap) return radiusMeters;
     
     // Получаем центр сетки (или центр карты, если сетка еще не создана)
     let centerLat, centerLng;
@@ -672,6 +975,9 @@ function applyRadius() {
         updatePossibleHexes();
     }
     draw();
+    
+    // Помечаем карту как измененную
+    markMapAsChanged();
 }
 
 function applyRotation() {
@@ -695,6 +1001,9 @@ function applyRotation() {
     text.value = Math.round(displayRotation * 100) / 100;
     
     draw();
+    
+    // Помечаем карту как измененную
+    markMapAsChanged();
 }
 
 function toggleBuild(event) {
@@ -731,7 +1040,6 @@ function toggleBuild(event) {
             gridCenterLat = center.lat;
             gridCenterLng = center.lng;
         } else {
-            // Для своего изображения используем центр канваса
             gridCenterLat = 0;
             gridCenterLng = 0;
         }
@@ -741,6 +1049,9 @@ function toggleBuild(event) {
         
         // Обновляем возможные соты
         updatePossibleHexes();
+        
+        // Помечаем карту как измененную
+        markMapAsChanged();
     } else if (!buildEnabled) {
         // Очищаем только возможные соты
         possibleHexes.clear();
@@ -800,6 +1111,9 @@ function toggleBSMode(event) {
         removeTempMarker();
         removePreviewCircle();
     }
+    
+    // Обновляем список БС
+    updateBsList();
     
     draw();
 }
@@ -974,8 +1288,8 @@ function createPreviewCircle(lat, lng, radius) {
     // Создаем круг для предпросмотра
     previewCircle = L.circle([lat, lng], {
         radius: radius,
-        color: '#4af',
-        fillColor: '#4af',
+        color: '#ff4444',
+        fillColor: '#ff4444',
         fillOpacity: 0.1,
         weight: 2,
         dashArray: '5, 5'
@@ -1051,6 +1365,12 @@ canvas.addEventListener('click', function(e) {
             temp: true
         };
         
+        // Устанавливаем имя по умолчанию
+        bsCounter++;
+        const defaultName = `Базовая станция ${bsCounter}`;
+        document.getElementById('markerName').value = defaultName;
+        document.getElementById('markerName').placeholder = defaultName;
+        
         // Создаем предпросмотр круга, если включено отображение радиуса
         const showCircle = document.getElementById('markerShowCircle').checked;
         const circleRadius = parseInt(document.getElementById('markerCircleText').value) || 500;
@@ -1086,6 +1406,9 @@ canvas.addEventListener('click', function(e) {
                 activeHexes.delete(key);
                 updatePossibleHexes();
                 draw();
+                
+                // Помечаем карту как измененную
+                markMapAsChanged();
             }
             return;
         }
@@ -1109,6 +1432,9 @@ canvas.addEventListener('click', function(e) {
             activeHexes.set(key, clickedPossibleHex);
             updatePossibleHexes();
             draw();
+            
+            // Помечаем карту как измененную
+            markMapAsChanged();
         }
     }
 });
@@ -1204,6 +1530,10 @@ function createMarker(lat, lng, name = '', comment = '', id = null, showCircle =
         
         // Закрываем попап при начале перетаскивания
         marker.closePopup();
+        
+        // Снимаем выделение в списке
+        selectedBsId = null;
+        updateBsList();
     });
     
     // Обработчик перетаскивания маркера
@@ -1241,6 +1571,9 @@ function createMarker(lat, lng, name = '', comment = '', id = null, showCircle =
             if (bsMarkerIndex !== -1) {
                 bsMarkers[bsMarkerIndex].lat = newLatLng.lat;
                 bsMarkers[bsMarkerIndex].lng = newLatLng.lng;
+                
+                // Помечаем карту как измененную
+                markMapAsChanged();
             }
         }
     });
@@ -1267,7 +1600,7 @@ function createMarker(lat, lng, name = '', comment = '', id = null, showCircle =
         const circleInfo = document.createElement('div');
         circleInfo.className = 'marker-popup-comment';
         circleInfo.textContent = `Радиус: ${circleRadius} м`;
-        circleInfo.style.color = '#4af';
+        circleInfo.style.color = '#ff4444';
         popupContent.appendChild(circleInfo);
     }
     
@@ -1300,8 +1633,8 @@ function createMarker(lat, lng, name = '', comment = '', id = null, showCircle =
     if (showCircle && circleRadius > 0) {
         circle = L.circle([lat, lng], {
             radius: circleRadius,
-            color: '#4af',
-            fillColor: '#4af',
+            color: '#ff4444',
+            fillColor: '#ff4444',
             fillOpacity: 0.1,
             weight: 2,
             dashArray: '5, 5'
@@ -1333,8 +1666,8 @@ function updateMarkerCircle(markerData) {
     if (markerData.showCircle && markerData.circleRadius > 0) {
         markerData.circle = L.circle([markerData.lat, markerData.lng], {
             radius: markerData.circleRadius,
-            color: '#4af',
-            fillColor: '#4af',
+            color: '#ff4444',
+            fillColor: '#ff4444',
             fillOpacity: 0.1,
             weight: 2,
             dashArray: '5, 5'
@@ -1364,7 +1697,7 @@ function updateMarkerCircle(markerData) {
             const circleInfo = document.createElement('div');
             circleInfo.className = 'marker-popup-comment';
             circleInfo.textContent = `Радиус: ${markerData.circleRadius} м`;
-            circleInfo.style.color = '#4af';
+            circleInfo.style.color = '#ff4444';
             popupContent.appendChild(circleInfo);
         }
         
@@ -1439,10 +1772,21 @@ function deleteMarkerById(markerId) {
     // Удаляем из хранилища
     bsMarkers.splice(markerIndex, 1);
     
+    // Сбрасываем выделение, если удалили выбранную БС
+    if (selectedBsId === markerId) {
+        selectedBsId = null;
+    }
+    
     // Закрываем диалог, если он открыт для этого маркера
     if (editingMarkerId === markerId) {
         hideMarkerDialog();
     }
+    
+    // Обновляем список БС
+    updateBsList();
+    
+    // Помечаем карту как измененную
+    markMapAsChanged();
 }
 
 // Удаление маркера (из диалога)
@@ -1461,7 +1805,12 @@ function showMarkerDialog(isEditing = false) {
     if (isEditing) {
         document.getElementById('deleteMarkerBtn').style.display = 'block';
     } else {
-        document.getElementById('markerName').value = '';
+        if (!document.getElementById('markerName').value) {
+            bsCounter++;
+            const defaultName = `Базовая станция ${bsCounter}`;
+            document.getElementById('markerName').value = defaultName;
+            document.getElementById('markerName').placeholder = defaultName;
+        }
         document.getElementById('markerComment').value = '';
         document.getElementById('markerShowCircle').checked = false;
         document.getElementById('markerCircleSlider').value = 500;
@@ -1486,16 +1835,24 @@ function hideMarkerDialog() {
 
 // Сохранить маркер
 function saveMarker() {
-    const name = document.getElementById('markerName').value.trim();
+    const nameInput = document.getElementById('markerName');
+    let name = nameInput.value.trim();
     const comment = document.getElementById('markerComment').value.trim();
     const showCircle = document.getElementById('markerShowCircle').checked;
     const circleRadius = parseInt(document.getElementById('markerCircleText').value) || 500;
+    
+    // Если имя пустое, устанавливаем значение по умолчанию
+    if (!name) {
+        bsCounter++;
+        name = `Базовая станция ${bsCounter}`;
+        nameInput.value = name;
+    }
     
     if (editingMarkerId) {
         // Редактирование существующего маркера
         const markerIndex = bsMarkers.findIndex(m => m.id === editingMarkerId);
         if (markerIndex !== -1) {
-            bsMarkers[markerIndex].name = name || 'БС';
+            bsMarkers[markerIndex].name = name;
             bsMarkers[markerIndex].comment = comment;
             bsMarkers[markerIndex].showCircle = showCircle;
             bsMarkers[markerIndex].circleRadius = circleRadius;
@@ -1508,6 +1865,9 @@ function saveMarker() {
                 leafletMarkers[leafletMarkerIndex].circleRadius = circleRadius;
                 updateMarkerCircle(leafletMarkers[leafletMarkerIndex]);
             }
+            
+            // Помечаем карту как измененную
+            markMapAsChanged();
         }
     } else if (currentMarkerData) {
         // Добавление нового маркера
@@ -1516,7 +1876,7 @@ function saveMarker() {
             id: markerId,
             lat: currentMarkerData.lat,
             lng: currentMarkerData.lng,
-            name: name || 'БС',
+            name: name,
             comment: comment,
             showCircle: showCircle,
             circleRadius: circleRadius
@@ -1537,6 +1897,12 @@ function saveMarker() {
         if (leafletMarker) {
             leafletMarkers.push(leafletMarker);
         }
+        
+        // Обновляем список БС
+        updateBsList();
+        
+        // Помечаем карту как измененную
+        markMapAsChanged();
     }
     
     hideMarkerDialog();
@@ -1573,6 +1939,14 @@ function clearMarkers() {
     // Очищаем массивы
     bsMarkers = [];
     leafletMarkers = [];
+    bsCounter = 0; // Сбрасываем счетчик
+    selectedBsId = null; // Сбрасываем выбранную БС
+    
+    // Обновляем список БС
+    updateBsList();
+    
+    // Помечаем карту как измененную
+    markMapAsChanged();
 }
 
 // Сохранение состояния карты перед сменой фона
@@ -1610,6 +1984,9 @@ function restoreMapState(state) {
     clearMarkers();
     bsMarkers = state.bsMarkers || [];
     
+    // Обновляем счетчик на основе существующих БС
+    bsCounter = bsMarkers.length;
+    
     // Создаем маркеры на карте
     bsMarkers.forEach(marker => {
         const leafletMarker = createMarker(
@@ -1630,6 +2007,12 @@ function restoreMapState(state) {
     if (buildEnabled && activeHexes.size > 0) {
         updatePossibleHexes();
     }
+    
+    // Обновляем список БС
+    updateBsList();
+    
+    // Сбрасываем флаг изменения карты
+    resetMapChanged();
 }
 
 function initBackground() {
@@ -1695,21 +2078,6 @@ function initBackground() {
         leafletMap.dragging.enable();
         leafletMap.scrollWheelZoom.enable();
         
-    } else if (selectedMode === 'image' && customImage) {
-        mapDiv.style.background = `url(${customImage}) center/contain no-repeat`;
-        // Для своего изображения сохраняем состояние сетки
-        if (savedState) {
-            gridCenterLat = savedState.gridCenterLat;
-            gridCenterLng = savedState.gridCenterLng;
-            activeHexes.clear();
-            for (const [key, hex] of savedState.activeHexes) {
-                activeHexes.set(key, hex);
-            }
-            bsMarkers = savedState.bsMarkers || [];
-            if (buildEnabled && activeHexes.size > 0) {
-                updatePossibleHexes();
-            }
-        }
     } else {
         mapDiv.style.background = '#0a0e14';
         // Для однотонного фона сохраняем состояние сетки
@@ -1727,25 +2095,15 @@ function initBackground() {
         }
     }
     
+    // Обновляем список БС
+    updateBsList();
+    
     draw();
 }
 
 function toggleBgMode() {
-    document.getElementById('imageUpload').style.display =
-        document.getElementById('bgMode').value === 'image' ? 'block' : 'none';
     initBackground();
 }
-
-document.getElementById('bgImage').onchange = e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-        customImage = ev.target.result;
-        initBackground();
-    };
-    reader.readAsDataURL(file);
-};
 
 // ────────────────────────────────────────────────
 // Функции для рисования
@@ -1762,6 +2120,10 @@ function drawHexagon(ctx, centerX, centerY, radius, color = '#4af', lineWidth = 
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
     ctx.stroke();
+    
+    // Заливка соты синим цветом с прозрачностью
+    ctx.fillStyle = 'rgba(68, 136, 255, 0.1)'; // Синий с прозрачностью 0.1
+    ctx.fill();
 }
 
 function drawCenter(ctx, centerX, centerY, radius, color = '#f44') {
@@ -1951,21 +2313,33 @@ document.getElementById('moveGrid').onchange = function() {
     }
     
     draw();
+    
+    // Помечаем карту как измененную
+    markMapAsChanged();
 };
 
 document.getElementById('showHex').onchange = function() {
     showHex = this.checked;
     draw();
+    
+    // Помечаем карту как измененную
+    markMapAsChanged();
 };
 
 document.getElementById('showCenters').onchange = function() {
     showCenters = this.checked;
     draw();
+    
+    // Помечаем карту как измененную
+    markMapAsChanged();
 };
 
 document.getElementById('showCircles').onchange = function() {
     showCircles = this.checked;
     draw();
+    
+    // Помечаем карту как измененную
+    markMapAsChanged();
 };
 
 // Обработчики для контроля радиуса БС при добавлении
@@ -2062,7 +2436,6 @@ document.getElementById('markerCircleText').addEventListener('keydown', function
 function reset() {
     // Сохраняем текущее состояние фона
     const currentBgMode = document.getElementById('bgMode').value;
-    const currentCustomImage = customImage;
     
     // Сбрасываем только параметры сетки и маркеры
     radiusMeters = 500;
@@ -2103,16 +2476,16 @@ function reset() {
     updateCursor();
     
     // Восстанавливаем фон (не изменяем выбор в селекте)
-    if (currentBgMode === 'image' && currentCustomImage) {
-        customImage = currentCustomImage;
-        document.getElementById('bgMode').value = currentBgMode;
-    }
+    document.getElementById('bgMode').value = currentBgMode;
     
     // Включаем управление картой при сбросе
     if (leafletMap) {
         leafletMap.dragging.enable();
         leafletMap.scrollWheelZoom.enable();
     }
+    
+    // Сбрасываем флаг изменения карты
+    resetMapChanged();
     
     draw();
 }
@@ -2142,6 +2515,9 @@ window.onload = () => {
     document.getElementById('markerCircleSlider').value = 500;
     document.getElementById('markerCircleSlider').step = 10;
     document.getElementById('markerCircleText').value = '500';
+    
+    // Инициализируем кнопку в разделе Файл
+    updateFileToggleButton();
     
     initBackground();
 };
