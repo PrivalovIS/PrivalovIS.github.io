@@ -15,8 +15,28 @@
             position:absolute; top:12px; left:12px; z-index:10;
             background:rgba(20,25,35,0.92); padding:12px; border-radius:8px;
             width:300px; box-shadow:0 4px 12px #0006;
-            max-height: calc(100vh - 24px);
+            max-height: 95vh;
             overflow-y: auto;
+            transition: max-height 0.3s ease;
+        }
+        
+        /* Стили для скроллбара */
+        #controls::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #controls::-webkit-scrollbar-track {
+            background: rgba(30,35,45,0.5);
+            border-radius: 4px;
+        }
+        
+        #controls::-webkit-scrollbar-thumb {
+            background: #2a3444;
+            border-radius: 4px;
+        }
+        
+        #controls::-webkit-scrollbar-thumb:hover {
+            background: #3a4454;
         }
         
         /* Компактные стили для аккордеона */
@@ -223,7 +243,7 @@
 			background: #ff3333 !important; /* Ярче красный для hover */
 		}
         
-        /* Диалог для маркера */
+        /* Диалог добавления/редактирования маркера */
         .marker-dialog {
             position: fixed;
             background: rgba(20,25,35,0.95);
@@ -392,24 +412,46 @@
             stroke-dasharray: 5, 5;
         }
         
-        /* Список БС */
+        /* Список БС - компактный стиль */
         .bs-list {
-            max-height: 200px;
+            max-height: 120px;
             overflow-y: auto;
-            margin: 10px 0;
+            margin: 8px 0;
             border: 1px solid #2a3444;
             border-radius: 4px;
+            background: rgba(15,20,30,0.8);
         }
         
+        /* Стили для скроллбара списка БС */
+        .bs-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .bs-list::-webkit-scrollbar-track {
+            background: rgba(30,35,45,0.3);
+            border-radius: 3px;
+        }
+        
+        .bs-list::-webkit-scrollbar-thumb {
+            background: #3a4454;
+            border-radius: 3px;
+        }
+        
+        .bs-list::-webkit-scrollbar-thumb:hover {
+            background: #4a5464;
+        }
+        
+        /* Компактные записи БС */
         .bs-list-item {
-            padding: 8px 12px;
-            background: #1a2230;
+            padding: 4px 8px;
+            background: rgba(26,34,48,0.5);
             border-bottom: 1px solid #2a3444;
             cursor: pointer;
             display: flex;
-            justify-content: space-between;
             align-items: center;
             transition: background 0.2s;
+            font-size: 1em;
+            min-height: 24px;
         }
         
         .bs-list-item:last-child {
@@ -417,34 +459,33 @@
         }
         
         .bs-list-item:hover {
-            background: #2a3444;
+            background: rgba(42,52,68,0.8);
         }
         
         .bs-list-item.active {
-            background: #2a3444;
+            background: rgba(42,52,68,0.8);
             border-left: 3px solid #4af;
-        }
-        
-        .bs-list-item-drag {
-            cursor: move;
-            color: #888;
-            margin-right: 8px;
         }
         
         .bs-list-item-name {
             flex: 1;
-            font-size: 0.9em;
+            font-size: 0.8em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .bs-list-item-info {
-            font-size: 0.8em;
+            font-size: 0.7em;
             color: #888;
+            margin-left: 8px;
+            white-space: nowrap;
         }
         
         .bs-count {
-            font-size: 0.9em;
+            font-size: 0.85em;
             color: #4af;
-            margin: 10px 0;
+            margin: 6px 0;
             text-align: center;
         }
         
@@ -543,7 +584,7 @@
 				<button class="file-btn-open">Открыть</button>
 				<button class="file-btn-save">Сохранить</button>
 				<button class="file-btn-save-image">Сохранить изображение</button>
-				<button class="file-btn-close">Закрыть</button>
+				<button class="file-btn-close" onclick="reset()">Закрыть</button>
 			</div>
         </div>
     </div>
@@ -593,8 +634,6 @@
                 <input type="checkbox" id="showCircles">
                 <label for="showCircles">Радиусы</label>
             </div>
-            
-            <button onclick="reset()" style="width: 100%; margin-top: 8px;">Сброс</button>
         </div>
     </div>
     
@@ -602,7 +641,7 @@
     <div class="accordion-section">
         <div class="accordion-header" onclick="toggleAccordion('bs-install')">
             <div style="display: flex; align-items: center; gap: 8px;">
-                <button id="bsToggle" onclick="toggleBSMode(event)">Включить</button>
+                <button id="bsToggle" onclick="toggleBSModeWithDialogCheck(event)">Включить</button>
                 <span>Установка БС</span>
             </div>
             <span class="accordion-icon">▼</span>
@@ -614,12 +653,8 @@
                 <!-- Список БС будет генерироваться динамически -->
             </div>
             
-            <div id="bsEmptyMessage" class="empty-section">
-                <p>Нажмите на карту для установки БС</p>
-                <p style="font-size: 0.85em; margin-top: 6px; color: #999;">
-                    Режим позволяет добавлять базовые станции на карту
-                </p>
-            </div>
+            <div id="bsEmptyMessage" class="empty-section" style="display: none;">
+			</div>
         </div>
     </div>
     
@@ -642,7 +677,7 @@
 
 <!-- Диалог добавления/редактирования маркера -->
 <div id="markerDialog" class="marker-dialog">
-    <label for="markerName">Название базовой станции</label>
+    <label for="markerName">Наименование</label>
     <input type="text" id="markerName" placeholder="Введите название">
     
     <label for="markerComment" style="margin-top:8px;">Комментарий</label>
@@ -710,8 +745,6 @@ let previewCircle = null; // Предпросмотр круга при доба
 let bsCounter = 0; // Счетчик для нумерации БС
 let isMapChanged = false; // Флаг изменения карты
 let selectedBsId = null; // ID выбранной БС в списке
-let dragStartIndex = -1; // Индекс начала перетаскивания в списке БС
-let isDraggingBsListItem = false; // Флаг перетаскивания элемента списка БС
 
 // Гексагональные направления (шесть соседей)
 const hexDirections = [
@@ -754,6 +787,9 @@ function toggleAccordion(sectionId, event) {
     // Переключаем текущую секцию
     header.classList.toggle('active');
     content.classList.toggle('active');
+    
+    // Обновляем высоту окна после раскрытия/закрытия секции
+    updateControlWindowHeight();
 }
 
 // Функция для выбора типа карты
@@ -797,9 +833,23 @@ function updateFileToggleButton() {
 
 // Пометить карту как измененную
 function markMapAsChanged() {
-    if (!isMapChanged) {
+    // Проверяем, есть ли на карте данные для сохранения (БС или соты)
+    const hasDataToSave = bsMarkers.length > 0 || activeHexes.size > 0;
+    
+    if (hasDataToSave && !isMapChanged) {
         isMapChanged = true;
         updateFileToggleButton();
+    }
+}
+
+// Пометить настройки как измененные (только для настроек, без данных)
+function markSettingsAsChanged() {
+    // Только если есть БС или соты, меняем состояние кнопки
+    if (bsMarkers.length > 0 || activeHexes.size > 0) {
+        if (!isMapChanged) {
+            isMapChanged = true;
+            updateFileToggleButton();
+        }
     }
 }
 
@@ -815,12 +865,16 @@ function updateBsList() {
     const bsListElement = document.getElementById('bsList');
     const bsEmptyMessage = document.getElementById('bsEmptyMessage');
     
+    // Всегда показываем счетчик
     bsCountElement.textContent = `Базовых станций: ${bsMarkers.length}`;
     
     if (bsMarkers.length === 0) {
+        // При отсутствии БС: скрываем список и пустое сообщение
         bsListElement.style.display = 'none';
-        bsEmptyMessage.style.display = 'block';
+        bsEmptyMessage.style.display = 'none';
+        // Только счетчик остается видимым
     } else {
+        // При наличии БС: показываем список
         bsListElement.style.display = 'block';
         bsEmptyMessage.style.display = 'none';
         
@@ -835,34 +889,24 @@ function updateBsList() {
                 listItem.classList.add('active');
             }
             listItem.dataset.id = marker.id;
-            listItem.dataset.index = index;
-            
-            // Иконка для перетаскивания
-            const dragIcon = document.createElement('div');
-            dragIcon.className = 'bs-list-item-drag';
-            dragIcon.textContent = '⋮⋮';
-            dragIcon.addEventListener('mousedown', startDragBsListItem);
             
             // Название БС
             const nameSpan = document.createElement('div');
             nameSpan.className = 'bs-list-item-name';
-            nameSpan.textContent = marker.name || `БС ${index + 1}`;
+            nameSpan.textContent = marker.name || `Базовая станция ${index + 1}`;
             
             // Дополнительная информация
             const infoSpan = document.createElement('div');
             infoSpan.className = 'bs-list-item-info';
-            infoSpan.textContent = marker.showCircle ? `${marker.circleRadius}м` : '—';
+            infoSpan.textContent = marker.showCircle ? `${marker.circleRadius}м` : '';
             
             // Собираем элемент
-            listItem.appendChild(dragIcon);
             listItem.appendChild(nameSpan);
             listItem.appendChild(infoSpan);
             
             // Обработчик клика для выбора БС
             listItem.addEventListener('click', function(e) {
-                if (!isDraggingBsListItem) {
-                    selectBsInList(marker.id);
-                }
+                selectBsInList(marker.id);
             });
             
             bsListElement.appendChild(listItem);
@@ -888,97 +932,6 @@ function selectBsInList(bsId) {
         // Обновляем список для выделения активного элемента
         updateBsList();
     }
-}
-
-// Начало перетаскивания элемента списка БС
-function startDragBsListItem(e) {
-    e.stopPropagation();
-    e.preventDefault();
-    
-    isDraggingBsListItem = true;
-    const listItem = e.target.closest('.bs-list-item');
-    dragStartIndex = parseInt(listItem.dataset.index);
-    
-    // Добавляем обработчики событий
-    document.addEventListener('mousemove', handleBsListDrag);
-    document.addEventListener('mouseup', stopDragBsListItem);
-    
-    // Визуальное выделение перетаскиваемого элемента
-    listItem.style.opacity = '0.7';
-}
-
-// Обработка перетаскивания элемента списка БС
-function handleBsListDrag(e) {
-    if (!isDraggingBsListItem) return;
-    
-    // Здесь можно добавить визуальную обратную связь при перетаскивании
-    // Например, подсветку места, куда можно переместить элемент
-}
-
-// Завершение перетаскивания элемента списка БС
-function stopDragBsListItem(e) {
-    if (!isDraggingBsListItem) return;
-    
-    isDraggingBsListItem = false;
-    
-    // Удаляем обработчики событий
-    document.removeEventListener('mousemove', handleBsListDrag);
-    document.removeEventListener('mouseup', stopDragBsListItem);
-    
-    // Сбрасываем визуальное выделение
-    const listItems = document.querySelectorAll('.bs-list-item');
-    listItems.forEach(item => {
-        item.style.opacity = '1';
-    });
-    
-    // Определяем индекс, куда был перемещен элемент
-    const targetElement = document.elementFromPoint(e.clientX, e.clientY);
-    if (targetElement) {
-        const targetListItem = targetElement.closest('.bs-list-item');
-        if (targetListItem && targetListItem.dataset.index) {
-            const targetIndex = parseInt(targetListItem.dataset.index);
-            
-            // Если элемент перемещен на другое место
-            if (dragStartIndex !== targetIndex && dragStartIndex !== -1) {
-                // Перемещаем маркер в массиве
-                const [movedMarker] = bsMarkers.splice(dragStartIndex, 1);
-                bsMarkers.splice(targetIndex, 0, movedMarker);
-                
-                // Перемещаем Leaflet маркер в массиве
-                const leafletMarkerIndex = leafletMarkers.findIndex(m => m.id === movedMarker.id);
-                if (leafletMarkerIndex !== -1) {
-                    const [movedLeafletMarker] = leafletMarkers.splice(leafletMarkerIndex, 1);
-                    // Нужно найти новый индекс для Leaflet маркера
-                    // (он может не совпадать с индексом в bsMarkers из-за разных ID)
-                    // Для простоты пересоздаем порядок на основе bsMarkers
-                    reorderLeafletMarkers();
-                }
-                
-                // Обновляем список
-                updateBsList();
-                
-                // Помечаем карту как измененную
-                markMapAsChanged();
-            }
-        }
-    }
-    
-    dragStartIndex = -1;
-}
-
-// Переупорядочивание Leaflet маркеров в соответствии с bsMarkers
-function reorderLeafletMarkers() {
-    // Создаем новый массив leafletMarkers в том же порядке, что и bsMarkers
-    const newLeafletMarkers = [];
-    
-    bsMarkers.forEach(marker => {
-        const leafletMarkerIndex = leafletMarkers.findIndex(m => m.id === marker.id);
-        if (leafletMarkerIndex !== -1) {
-            newLeafletMarkers.push(leafletMarkers[leafletMarkerIndex]);
-        }
-    });
-    
-    leafletMarkers = newLeafletMarkers;
 }
 
 // Получение радиуса в пикселях на текущем зуме
@@ -1111,7 +1064,7 @@ function applyRadius() {
     draw();
     
     // Помечаем карту как измененную
-    markMapAsChanged();
+    markSettingsAsChanged();
 }
 
 function applyRotation() {
@@ -1137,7 +1090,7 @@ function applyRotation() {
     draw();
     
     // Помечаем карту как измененную
-    markMapAsChanged();
+    markSettingsAsChanged();
 }
 
 function toggleBuild(event) {
@@ -1145,6 +1098,12 @@ function toggleBuild(event) {
     
     // Если режим БС включен, выключаем его
     if (bsModeEnabled) {
+        // Проверяем, открыт ли диалог добавления БС
+        if (document.getElementById('markerDialog').classList.contains('active')) {
+            // Закрываем диалог без сохранения
+            hideMarkerDialog();
+        }
+        
         bsModeEnabled = false;
         document.getElementById('bsToggle').classList.remove('active');
         document.getElementById('bsToggle').textContent = 'Включить';
@@ -1197,6 +1156,26 @@ function toggleBuild(event) {
     draw();
 }
 
+// Новая функция для переключения режима БС с проверкой диалога
+function toggleBSModeWithDialogCheck(event) {
+    if (event) event.stopPropagation();
+    
+    // Проверяем, открыт ли диалог добавления БС
+    const dialog = document.getElementById('markerDialog');
+    if (dialog.classList.contains('active')) {
+        // Если диалог открыт, вызываем cancelMarker() который:
+        // 1. Закрывает диалог
+        // 2. Удаляет временный маркер и предпросмотр круга
+        // 3. Автоматически выключает режим БС (если редактировалась новая БС, а не существующая)
+        cancelMarker();
+        return; // Не продолжаем стандартную логику, так как cancelMarker обработает всё
+    }
+    
+    // Если диалог не открыт, выполняем стандартное переключение режима
+    toggleBSMode(event);
+}
+
+// Стандартная функция переключения режима БС
 function toggleBSMode(event) {
     if (event) event.stopPropagation();
     
@@ -1486,37 +1465,36 @@ canvas.addEventListener('click', function(e) {
     
     // Если включен режим установки БС
     if (bsModeEnabled && leafletMap) {
-        // Конвертируем координаты клика в географические координаты
-        const latLng = leafletMap.containerPointToLatLng([clickX, clickY]);
-        
-        // Создаем временный маркер
-        createTempMarker(latLng.lat, latLng.lng);
-        
-        // Сохраняем данные для нового маркера
-        currentMarkerData = {
-            lat: latLng.lat,
-            lng: latLng.lng,
-            temp: true
-        };
-        
-        // Устанавливаем имя по умолчанию
-        bsCounter++;
-        const defaultName = `Базовая станция ${bsCounter}`;
-        document.getElementById('markerName').value = defaultName;
-        document.getElementById('markerName').placeholder = defaultName;
-        
-        // Создаем предпросмотр круга, если включено отображение радиуса
-        const showCircle = document.getElementById('markerShowCircle').checked;
-        const circleRadius = parseInt(document.getElementById('markerCircleText').value) || 500;
-        if (showCircle) {
-            createPreviewCircle(latLng.lat, latLng.lng, circleRadius);
-        }
-        
-        // Позиционируем и показываем диалог
-        positionDialogNearMarker(clickX, clickY);
-        showMarkerDialog(false);
-        return;
+    // Конвертируем координаты клика в географические координаты
+    const latLng = leafletMap.containerPointToLatLng([clickX, clickY]);
+    
+    // Создаем временный маркер
+    createTempMarker(latLng.lat, latLng.lng);
+    
+    // Сохраняем данные для нового маркера
+    currentMarkerData = {
+        lat: latLng.lat,
+        lng: latLng.lng,
+        temp: true
+    };
+    
+    // Устанавливаем имя по умолчанию: "Базовая станция X", где X = количество БС + 1
+    const defaultName = `Базовая станция ${bsMarkers.length + 1}`;
+    document.getElementById('markerName').value = defaultName;
+    document.getElementById('markerName').placeholder = defaultName;
+    
+    // Создаем предпросмотр круга, если включено отображение радиуса
+    const showCircle = document.getElementById('markerShowCircle').checked;
+    const circleRadius = parseInt(document.getElementById('markerCircleText').value) || 500;
+    if (showCircle) {
+        createPreviewCircle(latLng.lat, latLng.lng, circleRadius);
     }
+    
+    // Позиционируем и показываем диалог
+    positionDialogNearMarker(clickX, clickY);
+    showMarkerDialog(false);
+    return;
+}
     
     // Если включен режим построения - обрабатываем клики по сотам
     if (buildEnabled) {
@@ -1848,6 +1826,46 @@ function updateMarkerCircle(markerData) {
     }
 }
 
+// Функция для обновления содержимого попапа маркера
+function updateMarkerPopup(markerData, name, comment, showCircle, circleRadius) {
+    if (!markerData.marker) return;
+    
+    const popupContent = document.createElement('div');
+    
+    // Добавляем название
+    const title = document.createElement('div');
+    title.className = 'marker-popup-title';
+    title.textContent = name || 'Базовая станция';
+    popupContent.appendChild(title);
+    
+    // Добавляем комментарий, если есть
+    if (comment) {
+        const commentDiv = document.createElement('div');
+        commentDiv.className = 'marker-popup-comment';
+        commentDiv.textContent = comment;
+        popupContent.appendChild(commentDiv);
+    }
+    
+    // Добавляем информацию о радиусе, если включен
+    if (showCircle) {
+        const circleInfo = document.createElement('div');
+        circleInfo.className = 'marker-popup-comment';
+        circleInfo.textContent = `Радиус: ${circleRadius} м`;
+        circleInfo.style.color = '#ff4444';
+        popupContent.appendChild(circleInfo);
+    }
+    
+    // Добавляем кнопки редактирования и удаления
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.className = 'popup-buttons';
+    buttonsDiv.innerHTML = `
+        <button onclick="editMarker(${markerData.id})">Редактировать</button>
+        <button onclick="deleteMarkerById(${markerData.id})" style="background:#ff4444;color:white;">Удалить</button>
+    `;
+    popupContent.appendChild(buttonsDiv);
+    
+    markerData.marker.bindPopup(popupContent);
+}
 // Редактирование маркера
 function editMarker(markerId) {
     // Закрываем попап
@@ -1921,6 +1939,9 @@ function deleteMarkerById(markerId) {
     
     // Помечаем карту как измененную
     markMapAsChanged();
+    
+    // Обновляем высоту окна настроек
+    updateControlWindowHeight();
 }
 
 // Удаление маркера (из диалога)
@@ -1939,12 +1960,10 @@ function showMarkerDialog(isEditing = false) {
     if (isEditing) {
         document.getElementById('deleteMarkerBtn').style.display = 'block';
     } else {
-        if (!document.getElementById('markerName').value) {
-            bsCounter++;
-            const defaultName = `Базовая станция ${bsCounter}`;
-            document.getElementById('markerName').value = defaultName;
-            document.getElementById('markerName').placeholder = defaultName;
-        }
+        // Для новой БС: генерируем имя по умолчанию "Базовая станция X"
+        const defaultName = `Базовая станция ${bsMarkers.length + 1}`;
+        document.getElementById('markerName').value = defaultName;
+        document.getElementById('markerName').placeholder = defaultName;
         document.getElementById('markerComment').value = '';
         document.getElementById('markerShowCircle').checked = false;
         document.getElementById('markerCircleSlider').value = 500;
@@ -1977,8 +1996,8 @@ function saveMarker() {
     
     // Если имя пустое, устанавливаем значение по умолчанию
     if (!name) {
-        bsCounter++;
-        name = `Базовая станция ${bsCounter}`;
+        // Генерируем имя: "Базовая станция X", где X = количество установленных БС + 1
+        name = `Базовая станция ${bsMarkers.length + 1}`;
         nameInput.value = name;
     }
     
@@ -1986,6 +2005,7 @@ function saveMarker() {
         // Редактирование существующего маркера
         const markerIndex = bsMarkers.findIndex(m => m.id === editingMarkerId);
         if (markerIndex !== -1) {
+            // Обновляем данные в основном хранилище
             bsMarkers[markerIndex].name = name;
             bsMarkers[markerIndex].comment = comment;
             bsMarkers[markerIndex].showCircle = showCircle;
@@ -1994,11 +2014,37 @@ function saveMarker() {
             // Обновляем Leaflet маркер
             const leafletMarkerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
             if (leafletMarkerIndex !== -1) {
-                // Обновляем круг
+                // Обновляем свойства маркера
+                leafletMarkers[leafletMarkerIndex].name = name;
+                leafletMarkers[leafletMarkerIndex].comment = comment;
                 leafletMarkers[leafletMarkerIndex].showCircle = showCircle;
                 leafletMarkers[leafletMarkerIndex].circleRadius = circleRadius;
-                updateMarkerCircle(leafletMarkers[leafletMarkerIndex]);
+                
+                // Обновляем круг
+                if (leafletMarkers[leafletMarkerIndex].circle && leafletMap) {
+                    leafletMap.removeLayer(leafletMarkers[leafletMarkerIndex].circle);
+                }
+                
+                // Создаем новый круг, если включено отображение
+                if (showCircle && circleRadius > 0) {
+                    leafletMarkers[leafletMarkerIndex].circle = L.circle([leafletMarkers[leafletMarkerIndex].lat, leafletMarkers[leafletMarkerIndex].lng], {
+                        radius: circleRadius,
+                        color: '#ff4444',
+                        fillColor: '#ff4444',
+                        fillOpacity: 0.1,
+                        weight: 2,
+                        dashArray: '5, 5'
+                    }).addTo(leafletMap);
+                } else {
+                    leafletMarkers[leafletMarkerIndex].circle = null;
+                }
+                
+                // Обновляем содержимое попапа
+                updateMarkerPopup(leafletMarkers[leafletMarkerIndex], name, comment, showCircle, circleRadius);
             }
+            
+            // Обновляем список БС
+            updateBsList();
             
             // Помечаем карту как измененную
             markMapAsChanged();
@@ -2016,6 +2062,7 @@ function saveMarker() {
             circleRadius: circleRadius
         };
         
+        // Добавляем в хранилище
         bsMarkers.push(marker);
         
         // Создаем маркер на карте
@@ -2028,6 +2075,7 @@ function saveMarker() {
             marker.showCircle,
             marker.circleRadius
         );
+        
         if (leafletMarker) {
             leafletMarkers.push(leafletMarker);
         }
@@ -2039,21 +2087,28 @@ function saveMarker() {
         markMapAsChanged();
     }
     
+    // Скрываем диалог
     hideMarkerDialog();
     
     // Автоматически выключаем режим установки БС после сохранения (только для новых маркеров)
     if (!editingMarkerId && bsModeEnabled) {
         toggleBSMode();
     }
+    
+    // Обновляем высоту окна настроек
+    updateControlWindowHeight();
 }
 
 // Отменить добавление маркера
 function cancelMarker() {
+    // Скрываем диалог
     hideMarkerDialog();
     
     // Автоматически выключаем режим установки БС после отмены (только для новых маркеров)
     if (!editingMarkerId && bsModeEnabled) {
-        toggleBSMode();
+        // Вызываем toggleBSMode() для корректного выключения режима
+        // передаем null, так как у нас нет события
+        toggleBSMode(null);
     }
 }
 
@@ -2081,6 +2136,9 @@ function clearMarkers() {
     
     // Помечаем карту как измененную
     markMapAsChanged();
+    
+    // Обновляем высоту окна настроек
+    updateControlWindowHeight();
 }
 
 // Сохранение состояния карты перед сменой фона
@@ -2232,7 +2290,22 @@ function initBackground() {
     draw();
 }
 
-// Удалена функция toggleBgMode, так как теперь используется selectMapType
+// Функция для обновления высоты окна настроек
+function updateControlWindowHeight() {
+    const controls = document.getElementById('controls');
+    
+    // Сбрасываем max-height чтобы получить реальную высоту содержимого
+    controls.style.maxHeight = 'none';
+    const contentHeight = controls.scrollHeight;
+    controls.style.maxHeight = '';
+    
+    // Вычисляем максимальную доступную высоту (95% от высоты окна)
+    const maxAvailableHeight = window.innerHeight * 0.95;
+    
+    // Устанавливаем высоту, но не больше максимальной доступной
+    const newHeight = Math.min(contentHeight, maxAvailableHeight);
+    controls.style.maxHeight = newHeight + 'px';
+}
 
 // ────────────────────────────────────────────────
 // Функции для рисования
@@ -2444,7 +2517,7 @@ document.getElementById('moveGrid').onchange = function() {
     draw();
     
     // Помечаем карту как измененную
-    markMapAsChanged();
+    markSettingsAsChanged();
 };
 
 document.getElementById('showHex').onchange = function() {
@@ -2452,7 +2525,7 @@ document.getElementById('showHex').onchange = function() {
     draw();
     
     // Помечаем карту как измененную
-    markMapAsChanged();
+    markSettingsAsChanged();
 };
 
 document.getElementById('showCenters').onchange = function() {
@@ -2460,7 +2533,7 @@ document.getElementById('showCenters').onchange = function() {
     draw();
     
     // Помечаем карту как измененную
-    markMapAsChanged();
+    markSettingsAsChanged();
 };
 
 document.getElementById('showCircles').onchange = function() {
@@ -2468,7 +2541,7 @@ document.getElementById('showCircles').onchange = function() {
     draw();
     
     // Помечаем карту как измененную
-    markMapAsChanged();
+    markSettingsAsChanged();
 };
 
 // Обработчики для контроля радиуса БС при добавлении
@@ -2616,10 +2689,24 @@ function reset() {
     // Сбрасываем флаг изменения карты
     resetMapChanged();
     
+    // Обновляем высоту окна настроек
+    updateControlWindowHeight();
+    
     draw();
 }
 
-window.onresize = resize;
+// Обработчик для кнопки Закрыть в разделе Файл
+document.querySelector('.file-btn-close').addEventListener('click', function() {
+    // Вызываем ту же функцию, что и у кнопки Сброс
+    reset();
+});
+
+window.onresize = function() {
+    resize();
+    // Обновляем высоту окна настроек при изменении размера окна
+    updateControlWindowHeight();
+};
+
 window.onload = () => {
     resize();
     
@@ -2655,14 +2742,37 @@ window.onload = () => {
     }
     
     // Инициализируем радиокнопки в разделе Карта
-    document.querySelectorAll('.map-option input[type="radio"]').forEach(radio => {
-        radio.value = radio.id.replace('map', '').toLowerCase();
-        if (radio.id === 'mapOsm') {
-            radio.checked = true;
+    const mapOptions = document.querySelectorAll('.map-option');
+    mapOptions.forEach(option => {
+        // Определяем значение из текста
+        const label = option.querySelector('label');
+        if (label) {
+            let value = '';
+            if (label.textContent.includes('OpenStreetMap')) value = 'osm';
+            else if (label.textContent.includes('Google Спутник')) value = 'google-sat';
+            else if (label.textContent.includes('Google Гибрид')) value = 'google-hybrid';
+            else if (label.textContent.includes('Яндекс Спутник')) value = 'yandex-sat';
+            
+            if (value) {
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.value = value;
+                }
+            }
         }
     });
     
+    // Устанавливаем первую опцию как выбранную
+    const firstRadio = document.querySelector('.map-option input[type="radio"]');
+    if (firstRadio) {
+        firstRadio.checked = true;
+        bgMode = firstRadio.value;
+    }
+    
     initBackground();
+    
+    // Инициализируем высоту окна настроек
+    updateControlWindowHeight();
 };
 </script>
 </body>
