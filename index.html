@@ -1572,7 +1572,55 @@ canvas.addEventListener('click', function(e) {
     
     // Если включен режим построения - обрабатываем клики по сотам
     if (buildEnabled) {
-        // ... существующий код ...
+        // Сначала проверяем клик по активной соте (для удаления)
+        let clickedActiveHex = null;
+        for (const hex of activeHexes.values()) {
+            const screenPos = getHexScreenPosition(hex.q, hex.r);
+            
+            // Проверяем, находится ли точка внутри шестиугольника
+            if (isPointInHexagon(clickX, clickY, screenPos.x, screenPos.y, screenPos.radius)) {
+                clickedActiveHex = hex;
+                break;
+            }
+        }
+        
+        // Если кликнули по активной соте - удаляем её
+        if (clickedActiveHex) {
+            // Нельзя удалить последнюю соту
+            if (activeHexes.size > 1) {
+                const key = `${clickedActiveHex.q},${clickedActiveHex.r}`;
+                activeHexes.delete(key);
+                updatePossibleHexes();
+                draw();
+                
+                // Помечаем карту как измененную
+                markMapAsChanged();
+            }
+            return;
+        }
+        
+        // Если кликнули не по активной соте, проверяем возможные соты (для добавления)
+        // ВАЖНО: УБИРАЕМ ПРОВЕРКУ possibleHexes.size === 0
+        let clickedPossibleHex = null;
+        for (const hex of possibleHexes.values()) {
+            const screenPos = getHexScreenPosition(hex.q, hex.r);
+            
+            // Проверяем, находится ли точка внутри шестиугольника
+            if (isPointInHexagon(clickX, clickY, screenPos.x, screenPos.y, screenPos.radius)) {
+                clickedPossibleHex = hex;
+                break;
+            }
+        }
+        
+        if (clickedPossibleHex) {
+            const key = `${clickedPossibleHex.q},${clickedPossibleHex.r}`;
+            activeHexes.set(key, clickedPossibleHex);
+            updatePossibleHexes();
+            draw();
+            
+            // Помечаем карту как измененную
+            markMapAsChanged();
+        }
     }
 });
 
