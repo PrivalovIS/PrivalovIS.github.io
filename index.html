@@ -64,38 +64,38 @@
         .accordion-header.active {
             background: #2a3444;
         }
-		.accordion-header button {
-			padding: 6px 12px;
-			background: #2a3444;
-			color: #ddd;
-			border: 1px solid #3a4454;
-			border-radius: 4px;
-			cursor: pointer;
-			font-size: 0.9em;
-			margin-right: 8px;
-			transition: all 0.2s;
-		}
-		#fileToggle {
-			background: #4af !important; /* Синий цвет #4af */
-			color: #000 !important; /* Черный текст для контраста */
-			border-color: #4af !important;
-		}
+        .accordion-header button {
+            padding: 6px 12px;
+            background: #2a3444;
+            color: #ddd;
+            border: 1px solid #3a4454;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-right: 8px;
+            transition: all 0.2s;
+        }
+        #fileToggle {
+            background: #4af !important;
+            color: #000 !important;
+            border-color: #4af !important;
+        }
 
-		#fileToggle:hover {
-			background: #2a8cff !important;
-			border-color: #2a8cff !important;
-		}
+        #fileToggle:hover {
+            background: #2a8cff !important;
+            border-color: #2a8cff !important;
+        }
 
-		#fileToggle.changed {
-			background: #ff9900 !important; /* Оранжевый для измененного состояния */
-			color: #000 !important;
-			border-color: #ff9900 !important;
-		}
+        #fileToggle.changed {
+            background: #ff9900 !important;
+            color: #000 !important;
+            border-color: #ff9900 !important;
+        }
 
-		#fileToggle.changed:hover {
-			background: #e68a00 !important;
-			border-color: #e68a00 !important;
-		}
+        #fileToggle.changed:hover {
+            background: #e68a00 !important;
+            border-color: #e68a00 !important;
+        }
         .accordion-header button:hover {
             background: #3a4454;
         }
@@ -210,38 +210,38 @@
         .delete-btn:hover {
             background: #ff6666 !important;
         }
-		/* Стили для кнопок файлового меню */
-		.file-btn-open {
-			background: #4af !important; /* Яркий синий */
-			color: white !important;
-		}
-		.file-btn-open:hover {
-			background: #2a8cff !important; /* Чуть темнее синий для hover */
-		}
+        /* Стили для кнопок файлового меню */
+        .file-btn-open {
+            background: #4af !important;
+            color: white !important;
+        }
+        .file-btn-open:hover {
+            background: #2a8cff !important;
+        }
 
-		.file-btn-save {
-			background: #ff9900 !important; /* Оранжевый */
-			color: white !important; /* Белый текст для лучшей читаемости */
-		}
-		.file-btn-save:hover {
-			background: #e68a00 !important; /* Темнее оранжевый для hover */
-		}
+        .file-btn-save {
+            background: #ff9900 !important;
+            color: white !important;
+        }
+        .file-btn-save:hover {
+            background: #e68a00 !important;
+        }
 
-		.file-btn-save-image {
-			background: #4caf50 !important; /* Зеленый */
-			color: white !important;
-		}
-		.file-btn-save-image:hover {
-			background: #3d8b40 !important; /* Темнее зеленый для hover */
-		}
+        .file-btn-save-image {
+            background: #4caf50 !important;
+            color: white !important;
+        }
+        .file-btn-save-image:hover {
+            background: #3d8b40 !important;
+        }
 
-		.file-btn-close {
-			background: #ff4444 !important; /* Красный */
-			color: white !important;
-		}
-		.file-btn-close:hover {
-			background: #ff3333 !important; /* Ярче красный для hover */
-		}
+        .file-btn-close {
+            background: #ff4444 !important;
+            color: white !important;
+        }
+        .file-btn-close:hover {
+            background: #ff3333 !important;
+        }
         
         /* Диалог добавления/редактирования маркера */
         .marker-dialog {
@@ -442,51 +442,51 @@
         }
         
         /* Компактные записи БС */
-		.bs-list-item {
-			padding: 4px 8px;
-			background: rgba(26,34,48,0.5);
-			border-bottom: 1px solid #2a3444;
-			cursor: pointer;
-			display: flex;
-			align-items: center;
-			transition: background 0.2s;
-			font-size: 1em;
-			min-height: 24px;
-			overflow: hidden; /* Скрываем переполнение */
-		}
+        .bs-list-item {
+            padding: 4px 8px;
+            background: rgba(26,34,48,0.5);
+            border-bottom: 1px solid #2a3444;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: background 0.2s;
+            font-size: 1em;
+            min-height: 24px;
+            overflow: hidden;
+        }
 
-		.bs-list-item:last-child {
-			border-bottom: none;
-		}
+        .bs-list-item:last-child {
+            border-bottom: none;
+        }
 
-		.bs-list-item:hover {
-			background: rgba(42,52,68,0.8);
-		}
+        .bs-list-item:hover {
+            background: rgba(42,52,68,0.8);
+        }
 
-		.bs-list-item.active {
-			background: rgba(42,52,68,0.8);
-			border-left: 3px solid #4af;
-		}
+        .bs-list-item.active {
+            background: rgba(42,52,68,0.8);
+            border-left: 3px solid #4af;
+        }
 
-		.bs-list-item-name {
-			flex: 1;
-			font-size: 0.8em;
-			white-space: nowrap;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			min-width: 0; /* Важно для правильной работы text-overflow */
-		}
+        .bs-list-item-name {
+            flex: 1;
+            font-size: 0.8em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
 
-		.bs-list-item-info {
-			font-size: 0.7em;
-			color: #aaa;
-			margin-left: 8px;
-			white-space: nowrap;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			max-width: 100px; /* Ограничиваем ширину комментария */
-			flex-shrink: 0; /* Не сжимать */
-		}
+        .bs-list-item-info {
+            font-size: 0.7em;
+            color: #aaa;
+            margin-left: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100px;
+            flex-shrink: 0;
+        }
         
         .bs-count {
             font-size: 0.85em;
@@ -558,54 +558,54 @@
         </div>
         <div class="accordion-content" id="file-content">
             <div class="file-section-buttons">
-				<button class="file-btn-open">Открыть</button>
-				<button class="file-btn-save">Сохранить</button>
-				<button class="file-btn-save-image">Сохранить изображение</button>
-				<button class="file-btn-close" onclick="reset()">Закрыть</button>
-			</div>
+                <button class="file-btn-open">Открыть</button>
+                <button class="file-btn-save">Сохранить</button>
+                <button class="file-btn-save-image">Сохранить изображение</button>
+                <button class="file-btn-close" onclick="reset()">Закрыть</button>
+            </div>
         </div>
     </div>
     <!-- Секция Карта (закрыта по умолчанию) -->
-	<div class="accordion-section">
-		<div class="accordion-header" onclick="toggleAccordion('map-section')">
-			<div style="display: flex; align-items: center; gap: 8px;">
-				<button id="changeMapBtn" onclick="changeMap(event)">Сменить</button>
-				<span>Карта</span>
-			</div>
-			<span class="accordion-icon">▼</span>
-		</div>
-		<div class="accordion-content" id="map-section-content">
-			<div class="map-option selected" onclick="selectMapType('osm')">
-				<input type="radio" name="mapType" id="mapOsm" checked>
-				<label for="mapOsm">OpenStreetMap</label>
-			</div>
-			
-			<div class="map-option" onclick="selectMapType('google-hybrid')">
-				<input type="radio" name="mapType" id="mapGoogleHybrid">
-				<label for="mapGoogleHybrid">Google Гибрид</label>
-			</div>
-			
-			<div class="map-option" onclick="selectMapType('google-sat')">
-				<input type="radio" name="mapType" id="mapGoogleSat">
-				<label for="mapGoogleSat">Google Спутник</label>
-			</div>
-			
-			<div class="map-option" onclick="selectMapType('yandex')">
-				<input type="radio" name="mapType" id="mapYandex">
-				<label for="mapYandex">Яндекс</label>
-			</div>
-			
-			<div class="map-option" onclick="selectMapType('yandex-hybrid')">
-				<input type="radio" name="mapType" id="mapYandexHybrid">
-				<label for="mapYandexHybrid">Яндекс Гибрид</label>
-			</div>
-			
-			<div class="map-option" onclick="selectMapType('yandex-sat')">
-				<input type="radio" name="mapType" id="mapYandexSat">
-				<label for="mapYandexSat">Яндекс Спутник</label>
-			</div>
-		</div>
-	</div>
+    <div class="accordion-section">
+        <div class="accordion-header" onclick="toggleAccordion('map-section')">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="changeMapBtn" onclick="changeMap(event)">Сменить</button>
+                <span>Карта</span>
+            </div>
+            <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content" id="map-section-content">
+            <div class="map-option selected" onclick="selectMapType('osm')">
+                <input type="radio" name="mapType" id="mapOsm" checked>
+                <label for="mapOsm">OpenStreetMap</label>
+            </div>
+            
+            <div class="map-option" onclick="selectMapType('google-hybrid')">
+                <input type="radio" name="mapType" id="mapGoogleHybrid">
+                <label for="mapGoogleHybrid">Google Гибрид</label>
+            </div>
+            
+            <div class="map-option" onclick="selectMapType('google-sat')">
+                <input type="radio" name="mapType" id="mapGoogleSat">
+                <label for="mapGoogleSat">Google Спутник</label>
+            </div>
+            
+            <div class="map-option" onclick="selectMapType('yandex')">
+                <input type="radio" name="mapType" id="mapYandex">
+                <label for="mapYandex">Яндекс</label>
+            </div>
+            
+            <div class="map-option" onclick="selectMapType('yandex-hybrid')">
+                <input type="radio" name="mapType" id="mapYandexHybrid">
+                <label for="mapYandexHybrid">Яндекс Гибрид</label>
+            </div>
+            
+            <div class="map-option" onclick="selectMapType('yandex-sat')">
+                <input type="radio" name="mapType" id="mapYandexSat">
+                <label for="mapYandexSat">Яндекс Спутник</label>
+            </div>
+        </div>
+    </div>
     
     <!-- Секция Строение сети (закрыта по умолчанию) -->
     <div class="accordion-section">
@@ -618,12 +618,12 @@
         </div>
         <div class="accordion-content" id="network-build-content">
             <div class="compact-row">
-				<label>Радиус, м (10-5000)</label>
-				<div class="range-group">
-					<input type="range" id="radiusSlider" min="10" max="5000" value="750" step="10"> <!-- Изменено -->
-				</div>
-				<input type="text" id="radiusText" class="number-input" value="750" style="width: 100%;"> <!-- Изменено -->
-			</div>
+                <label>Радиус, м (10-5000)</label>
+                <div class="range-group">
+                    <input type="range" id="radiusSlider" min="10" max="5000" value="750" step="10">
+                </div>
+                <input type="text" id="radiusText" class="number-input" value="750" style="width: 100%;">
+            </div>
             
             <div class="compact-row">
                 <label>Вращение, ° (-180-180)</label>
@@ -659,7 +659,7 @@
     <div class="accordion-section">
         <div class="accordion-header" onclick="toggleAccordion('bs-install')">
             <div style="display: flex; align-items: center; gap: 8px;">
-                <button id="bsToggle" onclick="toggleBSModeWithDialogCheck(event)">Включить</button>
+                <button id="bsToggle" onclick="toggleBSMode(event)">Включить</button>
                 <span>Установка БС</span>
             </div>
             <span class="accordion-icon">▼</span>
@@ -672,7 +672,7 @@
             </div>
             
             <div id="bsEmptyMessage" class="empty-section" style="display: none;">
-			</div>
+            </div>
         </div>
     </div>
     
@@ -707,12 +707,12 @@
     </div>
     
     <div id="markerCircleControls" style="margin-top:8px; display:none;">
-		<label>Радиус, м (10-15000)</label>
-		<div class="range-group">
-			<input type="range" id="markerCircleSlider" min="10" max="15000" value="500" step="10">
-		</div>
-		<input type="text" id="markerCircleText" class="number-input" value="500" style="width: 100%;">
-	</div>
+        <label>Радиус, м (10-15000)</label>
+        <div class="range-group">
+            <input type="range" id="markerCircleSlider" min="10" max="15000" value="500" step="10">
+        </div>
+        <input type="text" id="markerCircleText" class="number-input" value="500" style="width: 100%;">
+    </div>
     
     <div class="dialog-buttons">
         <button onclick="saveMarker()">Сохранить</button>
@@ -722,19 +722,29 @@
 </div>
 
 <script>
+// Конфигурация
+const CONFIG = {
+    MIN_RADIUS: 10,
+    MAX_RADIUS: 5000,
+    DEFAULT_RADIUS: 750,
+    MIN_BS_RADIUS: 10,
+    MAX_BS_RADIUS: 15000,
+    DEFAULT_BS_RADIUS: 500
+};
+
 // Переменные
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let leafletMap = null;
 let bgMode = 'osm';
-let radiusMeters = 750; // Радиус в метрах
-let rotation = 0; // Вращение в градусах
+let radiusMeters = CONFIG.DEFAULT_RADIUS;
+let rotation = 0;
 let showHex = true;
 let showCenters = true;
 let showCircles = false;
 let buildEnabled = false;
-let bsModeEnabled = false; // Режим установки БС
-let moveGridEnabled = false; // Режим перемещения сетки
+let bsModeEnabled = false;
+let moveGridEnabled = false;
 let isDragging = false;
 let dragStartPixelX = 0;
 let dragStartPixelY = 0;
@@ -746,32 +756,31 @@ let gridCenterLat = null;
 let gridCenterLng = null;
 
 // Храним сетку в относительных координатах (q, r) гексагональной сетки
-let activeHexes = new Map(); // Активные соты: ключ = "q,r", значение = {q, r}
-let possibleHexes = new Map(); // Возможные соты: ключ = "q,r", значение = {q, r}
+let activeHexes = new Map();
+let possibleHexes = new Map();
 
 // Хранилище маркеров базовых станций
 let bsMarkers = [];
-let leafletMarkers = []; // Leaflet маркеры для управления
-let currentMarkerData = null; // Данные для текущего добавляемого маркера
-let currentClickPosition = { x: 0, y: 0 }; // Позиция клика для диалога
-let tempMarker = null; // Временный маркер при установке
-let editingMarkerId = null; // ID маркера, который редактируется
-let bsCircles = new Map(); // Круги для БС: ключ = markerId, значение = L.circle
-let isDraggingMarker = false; // Флаг перетаскивания маркера
-let draggedMarkerId = null; // ID перетаскиваемого маркера
-let previewCircle = null; // Предпросмотр круга при добавлении БС
-let bsCounter = 0; // Счетчик для нумерации БС
-let isMapChanged = false; // Флаг изменения карты
-let selectedBsId = null; // ID выбранной БС в списке
+let leafletMarkers = [];
+let currentMarkerData = null;
+let currentClickPosition = { x: 0, y: 0 };
+let tempMarker = null;
+let editingMarkerId = null;
+let isDraggingMarker = false;
+let draggedMarkerId = null;
+let previewCircle = null;
+let bsCounter = 0;
+let isMapChanged = false;
+let selectedBsId = null;
 
 // Гексагональные направления (шесть соседей)
 const hexDirections = [
-    { q: 1, r: 0 },   // Вправо
-    { q: 1, r: -1 },  // Вправо-вверх
-    { q: 0, r: -1 },  // Влево-вверх
-    { q: -1, r: 0 },  // Влево
-    { q: -1, r: 1 },  // Влево-вниз
-    { q: 0, r: 1 }    // Вправо-вниз
+    { q: 1, r: 0 },
+    { q: 1, r: -1 },
+    { q: 0, r: -1 },
+    { q: -1, r: 0 },
+    { q: -1, r: 1 },
+    { q: 0, r: 1 }
 ];
 
 // Слои карты
@@ -781,7 +790,6 @@ const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z
 const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
     maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], attribution: '© Google'
 });
-// Яндекс карты (нужен API ключ)
 const yandexMap = L.tileLayer('https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=23.10.26-0&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
     maxZoom: 19, attribution: '© Яндекс'
 });
@@ -801,7 +809,6 @@ function changeMap(event) {
     const nextIndex = (currentIndex + 1) % mapTypes.length;
     const nextMapType = mapTypes[nextIndex];
     
-    // Выбираем соответствующую карту
     selectMapType(nextMapType);
 }
 
@@ -832,6 +839,11 @@ function toggleAccordion(sectionId, event) {
 
 // Функция для выбора типа карты
 function selectMapType(mapType) {
+    if (!mapType) return;
+    
+    // Обновляем bgMode
+    bgMode = mapType;
+    
     // Снимаем выделение со всех опций
     document.querySelectorAll('.map-option').forEach(option => {
         option.classList.remove('selected');
@@ -843,34 +855,26 @@ function selectMapType(mapType) {
     );
     if (selectedOption) {
         selectedOption.classList.add('selected');
-        // Устанавливаем соответствующий radio button
         const radioButton = selectedOption.querySelector('input[type="radio"]');
         if (radioButton) {
             radioButton.checked = true;
         }
     }
     
-    // Изменяем фон карты - НЕ помечаем как измененное
-    bgMode = mapType;
+    // Переинициализируем карту с новым типом
     initBackground();
-    
-    // Важно: при смене карты НЕ меняем состояние isMapChanged
-    // Кнопка в разделе Файл остается в том же состоянии
 }
 
 // Обновление кнопки в разделе Файл
 function updateFileToggleButton() {
     const fileToggle = document.getElementById('fileToggle');
     
-    // Проверяем, есть ли данные для сохранения
     const hasDataToSave = bsMarkers.length > 0 || activeHexes.size > 0;
     
     if (hasDataToSave) {
-        // Если есть данные, всегда показываем "Сохранить"
         fileToggle.textContent = 'Сохранить';
         fileToggle.classList.add('changed');
     } else {
-        // Если нет данных, показываем "Открыть"
         fileToggle.textContent = 'Открыть';
         fileToggle.classList.remove('changed');
     }
@@ -878,7 +882,6 @@ function updateFileToggleButton() {
 
 // Пометить карту как измененную
 function markMapAsChanged() {
-    // Проверяем, есть ли на карте данные для сохранения (БС или соты)
     const hasDataToSave = bsMarkers.length > 0 || activeHexes.size > 0;
     
     if (hasDataToSave && !isMapChanged) {
@@ -887,25 +890,11 @@ function markMapAsChanged() {
     }
 }
 
-// Пометить настройки как измененные (только для настроек, без данных)
-function markSettingsAsChanged() {
-    // Только если есть БС или соты, меняем состояние кнопки
-    if (bsMarkers.length > 0 || activeHexes.size > 0) {
-        if (!isMapChanged) {
-            isMapChanged = true;
-            updateFileToggleButton();
-        }
-    }
-}
-
 // Сброс флага изменения карты
 function resetMapChanged() {
-    // Не сбрасываем флаг, если есть данные для сохранения
     if (bsMarkers.length > 0 || activeHexes.size > 0) {
-        // Оставляем isMapChanged = true, если есть данные
         isMapChanged = true;
     } else {
-        // Сбрасываем только если нет данных
         isMapChanged = false;
     }
     updateFileToggleButton();
@@ -917,23 +906,17 @@ function updateBsList() {
     const bsListElement = document.getElementById('bsList');
     const bsEmptyMessage = document.getElementById('bsEmptyMessage');
     
-    // Всегда показываем счетчик
     bsCountElement.textContent = `Базовых станций: ${bsMarkers.length}`;
     
     if (bsMarkers.length === 0) {
-        // При отсутствии БС: скрываем список и пустое сообщение
         bsListElement.style.display = 'none';
         bsEmptyMessage.style.display = 'none';
-        // Только счетчик остается видимым
     } else {
-        // При наличии БС: показываем список
         bsListElement.style.display = 'block';
         bsEmptyMessage.style.display = 'none';
         
-        // Очищаем список
         bsListElement.innerHTML = '';
         
-        // Добавляем элементы списка
         bsMarkers.forEach((marker, index) => {
             const listItem = document.createElement('div');
             listItem.className = 'bs-list-item';
@@ -942,35 +925,29 @@ function updateBsList() {
             }
             listItem.dataset.id = marker.id;
             
-            // Название БС
             const nameSpan = document.createElement('div');
             nameSpan.className = 'bs-list-item-name';
             nameSpan.textContent = marker.name || `БС ${index + 1}`;
             
-            // Комментарий (если есть) - обрезаем если слишком длинный
             const infoSpan = document.createElement('div');
             infoSpan.className = 'bs-list-item-info';
             
             if (marker.comment && marker.comment.trim()) {
                 const comment = marker.comment.trim();
-                // Обрезаем комментарий до 20 символов, добавляем многоточие если длиннее
                 if (comment.length > 20) {
                     infoSpan.textContent = comment.substring(0, 20) + '...';
-                    infoSpan.title = comment; // Полный текст в tooltip
+                    infoSpan.title = comment;
                 } else {
                     infoSpan.textContent = comment;
                 }
-                infoSpan.style.color = '#aaa'; // Серый цвет для комментария
+                infoSpan.style.color = '#aaa';
             } else {
-                // Если комментария нет - оставляем пустым
                 infoSpan.textContent = '';
             }
             
-            // Собираем элемент
             listItem.appendChild(nameSpan);
             listItem.appendChild(infoSpan);
             
-            // Обработчик клика для выбора БС
             listItem.addEventListener('click', function(e) {
                 selectBsInList(marker.id);
             });
@@ -984,18 +961,14 @@ function updateBsList() {
 function selectBsInList(bsId) {
     selectedBsId = bsId;
     
-    // Находим маркер на карте
     const markerIndex = leafletMarkers.findIndex(m => m.id === bsId);
     if (markerIndex !== -1 && leafletMap) {
         const marker = leafletMarkers[markerIndex];
         
-        // Центрируем карту на маркере
         leafletMap.setView([marker.lat, marker.lng], leafletMap.getZoom());
         
-        // Открываем попап маркера
         marker.marker.openPopup();
         
-        // Обновляем список для выделения активного элемента
         updateBsList();
     }
 }
@@ -1004,7 +977,6 @@ function selectBsInList(bsId) {
 function getRadiusInPixels() {
     if (!leafletMap) return radiusMeters;
     
-    // Получаем центр сетки (или центр карты, если сетка еще не создана)
     let centerLat, centerLng;
     if (gridCenterLat !== null && gridCenterLng !== null) {
         centerLat = gridCenterLat;
@@ -1017,24 +989,20 @@ function getRadiusInPixels() {
     
     const centerPx = leafletMap.latLngToContainerPoint([centerLat, centerLng]);
     
-    // Создаем точку на расстоянии radiusMeters к востоку от центра
     const degreesPerMeter = 1 / (111111 * Math.cos(centerLat * Math.PI / 180));
     const eastPoint = L.latLng(centerLat, centerLng + radiusMeters * degreesPerMeter);
     
-    // Конвертируем географические координаты в пиксели
     const eastPx = leafletMap.latLngToContainerPoint(eastPoint);
     
-    // Вычисляем расстояние в пикселях
     return Math.abs(eastPx.x - centerPx.x);
 }
 
-// Получение центра построенной сетки в пикселях (или центра карты, если сетка еще не создана)
+// Получение центра построенной сетки в пикселях
 function getGridCenterInPixels() {
     if (leafletMap) {
         if (gridCenterLat !== null && gridCenterLng !== null) {
             return leafletMap.latLngToContainerPoint([gridCenterLat, gridCenterLng]);
         } else {
-            // Если сетка еще не создана, используем центр карты
             const center = leafletMap.getCenter();
             return leafletMap.latLngToContainerPoint([center.lat, center.lng]);
         }
@@ -1046,9 +1014,8 @@ function getGridCenterInPixels() {
     }
 }
 
-// Фиксированный центр вращения (точка (0,0) в координатах сетки)
+// Фиксированный центр вращения
 function getRotationCenter() {
-    // Центр вращения всегда в точке (0,0) относительных координат сетки
     return { x: 0, y: 0 };
 }
 
@@ -1067,15 +1034,12 @@ function rotatePointAroundCenter(pointX, pointY, centerX, centerY, angle) {
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
     
-    // Смещаем точку в начало координат
     const x = pointX - centerX;
     const y = pointY - centerY;
     
-    // Вращаем
     const xRotated = x * cos - y * sin;
     const yRotated = x * sin + y * cos;
     
-    // Возвращаем на место
     return {
         x: xRotated + centerX,
         y: yRotated + centerY
@@ -1086,7 +1050,6 @@ function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
-    // В режиме БС даем полный доступ к событиям для перемещения карты
     if (bsModeEnabled) {
         canvas.style.pointerEvents = 'auto';
         document.body.classList.add('bs-cursor');
@@ -1106,24 +1069,33 @@ function parseNum(str, fallback = 0) {
     return isNaN(num) ? fallback : num;
 }
 
+// Валидация ввода радиуса
+function validateRadiusInput(value) {
+    const num = parseInt(value);
+    if (isNaN(num)) return false;
+    return num >= CONFIG.MIN_RADIUS && num <= CONFIG.MAX_RADIUS;
+}
+
 function applyRadius() {
     const slider = document.getElementById('radiusSlider');
     const text = document.getElementById('radiusText');
     
-    // Получаем значение из текстового поля, если оно изменено
     if (text.value !== slider.value) {
+        if (!validateRadiusInput(text.value)) {
+            alert(`Радиус должен быть от ${CONFIG.MIN_RADIUS} до ${CONFIG.MAX_RADIUS} метров`);
+            text.value = radiusMeters;
+            return;
+        }
         radiusMeters = parseNum(text.value, radiusMeters);
     } else {
         radiusMeters = parseFloat(slider.value) || radiusMeters;
     }
     
-    radiusMeters = Math.max(10, Math.min(5000, radiusMeters));
+    radiusMeters = Math.max(CONFIG.MIN_RADIUS, Math.min(CONFIG.MAX_RADIUS, radiusMeters));
     
-    // Обновляем значения в элементах
     slider.value = radiusMeters;
     text.value = Math.round(radiusMeters * 100) / 100;
     
-    // Перерисовываем с новым радиусом
     if (buildEnabled && activeHexes.size > 0) {
         updatePossibleHexes();
     }
@@ -1134,18 +1106,15 @@ function applyRotation() {
     const slider = document.getElementById('rotSlider');
     const text = document.getElementById('rotText');
     
-    // Получаем значение из текстового поля, если оно изменено
     if (text.value !== slider.value) {
         rotation = parseNum(text.value, rotation);
     } else {
         rotation = parseFloat(slider.value) || rotation;
     }
     
-    // Нормализуем угол в диапазон -180..180
     while (rotation < -180) rotation += 360;
     while (rotation > 180) rotation -= 360;
     
-    // Обновляем значения в элементах
     const displayRotation = rotation;
     slider.value = displayRotation;
     text.value = Math.round(displayRotation * 100) / 100;
@@ -1160,21 +1129,17 @@ function toggleBuild(event) {
     if (bsModeEnabled) {
         // Проверяем, открыт ли диалог добавления БС
         if (document.getElementById('markerDialog').classList.contains('active')) {
-            // Закрываем диалог без сохранения
-            hideMarkerDialog();
+            cancelMarker();
         }
         
         bsModeEnabled = false;
         document.getElementById('bsToggle').classList.remove('active');
         document.getElementById('bsToggle').textContent = 'Включить';
-        // Обновляем курсор при выключении режима БС
         updateCursor();
         
-        // Удаляем временный маркер и предпросмотр круга
         removeTempMarker();
         removePreviewCircle();
         
-        // Включаем управление картой
         if (leafletMap) {
             leafletMap.dragging.enable();
             leafletMap.scrollWheelZoom.enable();
@@ -1186,7 +1151,6 @@ function toggleBuild(event) {
     btn.textContent = buildEnabled ? 'Выключить' : 'Включить';
     btn.classList.toggle('active', buildEnabled);
     
-    // Обновляем курсор после изменения режима построения
     updateCursor();
     
     canvas.style.pointerEvents = (buildEnabled || moveGridEnabled) ? 'auto' : 'none';
@@ -1201,47 +1165,31 @@ function toggleBuild(event) {
             gridCenterLng = 0;
         }
         
-        // Добавляем центральную соту (0,0)
         activeHexes.set("0,0", { q: 0, r: 0 });
         
-        // Обновляем возможные соты (используем текущий радиус 750м)
         updatePossibleHexes();
         
-        // Помечаем карту как измененную
         markMapAsChanged();
     } else if (!buildEnabled) {
-        // Очищаем только возможные соты
         possibleHexes.clear();
     } else if (buildEnabled && activeHexes.size > 0) {
-        // При повторном включении обновляем возможные соты
         updatePossibleHexes();
     }
     
     draw();
 }
 
-// Новая функция для переключения режима БС с проверкой диалога
-function toggleBSModeWithDialogCheck(event) {
+// Основная функция переключения режима БС
+function toggleBSMode(event) {
     if (event) event.stopPropagation();
     
     // Проверяем, открыт ли диалог добавления БС
     const dialog = document.getElementById('markerDialog');
     if (dialog.classList.contains('active')) {
-        // Если диалог открыт, вызываем cancelMarker() который:
-        // 1. Закрывает диалог
-        // 2. Удаляет временный маркер и предпросмотр круга
-        // 3. Автоматически выключает режим БС (если редактировалась новая БС, а не существующая)
+        // Если диалог открыт, отменяем добавление/редактирование
         cancelMarker();
-        return; // Не продолжаем стандартную логику, так как cancelMarker обработает всё
+        return;
     }
-    
-    // Если диалог не открыт, выполняем стандартное переключение режима
-    toggleBSMode(event);
-}
-
-// Стандартная функция переключения режима БС
-function toggleBSMode(event) {
-    if (event) event.stopPropagation();
     
     // Если режим построения включен, выключаем его
     if (buildEnabled) {
@@ -1266,16 +1214,13 @@ function toggleBSMode(event) {
     btn.textContent = bsModeEnabled ? 'Выключить' : 'Включить';
     btn.classList.toggle('active', bsModeEnabled);
     
-    // Обновляем курсор и обработчики событий
     updateCursor();
     
-    // В режиме БС даем возможность перемещать карту
     if (leafletMap) {
         if (bsModeEnabled) {
             leafletMap.dragging.enable();
             leafletMap.scrollWheelZoom.enable();
         } else {
-            // Если не в режиме перемещения сетки, оставляем управление
             if (!moveGridEnabled) {
                 leafletMap.dragging.enable();
                 leafletMap.scrollWheelZoom.enable();
@@ -1283,13 +1228,11 @@ function toggleBSMode(event) {
         }
     }
     
-    // Удаляем временный маркер и предпросмотр круга при выключении режима
     if (!bsModeEnabled) {
         removeTempMarker();
         removePreviewCircle();
     }
     
-    // Обновляем список БС
     updateBsList();
     
     draw();
@@ -1298,22 +1241,18 @@ function toggleBSMode(event) {
 // Обновление курсора в зависимости от режима
 function updateCursor() {
     if (bsModeEnabled) {
-        // Режим установки БС
         canvas.style.cursor = 'crosshair';
         canvas.style.pointerEvents = 'auto';
         document.body.classList.add('bs-cursor');
     } else if (moveGridEnabled && activeHexes.size > 0) {
-        // Режим перемещения сетки (только если есть активные соты)
         canvas.style.cursor = 'move';
         canvas.style.pointerEvents = 'auto';
         document.body.classList.remove('bs-cursor');
     } else if (buildEnabled) {
-        // Режим построения
         canvas.style.cursor = 'pointer';
         canvas.style.pointerEvents = 'auto';
         document.body.classList.remove('bs-cursor');
     } else {
-        // Обычный режим
         canvas.style.cursor = 'default';
         canvas.style.pointerEvents = 'none';
         document.body.classList.remove('bs-cursor');
@@ -1337,14 +1276,12 @@ function updatePossibleHexes() {
     
     possibleHexes.clear();
     
-    // Для каждой активной соты получаем её соседей
     for (const hex of activeHexes.values()) {
         const neighbors = getHexNeighbors(hex.q, hex.r);
         
         for (const neighbor of neighbors) {
             const key = `${neighbor.q},${neighbor.r}`;
             
-            // Проверяем, не является ли эта сота уже активной
             if (!activeHexes.has(key) && !possibleHexes.has(key)) {
                 possibleHexes.set(key, neighbor);
             }
@@ -1358,11 +1295,9 @@ function getHexScreenPosition(q, r) {
     const relativeCoords = hexToRelativeCoords(q, r);
     const rotationCenter = getRotationCenter();
     
-    // Вычисляем координаты относительно центра сетки
     let x = gridCenterPx.x + relativeCoords.x;
     let y = gridCenterPx.y + relativeCoords.y;
     
-    // Применяем вращение всей сетки вокруг центра вращения
     if (rotation !== 0) {
         const centerX = gridCenterPx.x + rotationCenter.x;
         const centerY = gridCenterPx.y + rotationCenter.y;
@@ -1380,7 +1315,6 @@ function getHexScreenPosition(q, r) {
 
 // Проверка, находится ли точка внутри шестиугольника
 function isPointInHexagon(px, py, hexX, hexY, hexRadius) {
-    // Вращаем точку клика обратно, чтобы проверить в невращенной системе координат
     const gridCenterPx = getGridCenterInPixels();
     const rotationCenter = getRotationCenter();
     
@@ -1388,42 +1322,32 @@ function isPointInHexagon(px, py, hexX, hexY, hexRadius) {
         const centerX = gridCenterPx.x + rotationCenter.x;
         const centerY = gridCenterPx.y + rotationCenter.y;
         
-        // Вращаем точку клика обратно (отрицательный угол)
         const unrotatedPoint = rotatePointAroundCenter(px, py, centerX, centerY, -rotation);
         px = unrotatedPoint.x;
         py = unrotatedPoint.y;
         
-        // Получаем координаты центра соты без вращения
         const unrotatedCenter = rotatePointAroundCenter(hexX, hexY, centerX, centerY, -rotation);
         hexX = unrotatedCenter.x;
         hexY = unrotatedCenter.y;
     }
     
-    // Преобразуем координаты точки относительно центра шестиугольника
     const dx = px - hexX;
     const dy = py - hexY;
     
-    // Проверяем расстояние до центра
     const distance = Math.sqrt(dx * dx + dy * dy);
     if (distance > hexRadius) return false;
     
-    // Проверяем угол и расстояние до граней
-    // Угол точки относительно центра
     let angle = Math.atan2(dy, dx);
     
-    // Нормализуем угол от 0 до 2π
     if (angle < 0) angle += 2 * Math.PI;
     
-    // Находим, к какой грани шестиугольника ближе точка
-    const segmentAngle = Math.PI / 3; // 60 градусов
+    const segmentAngle = Math.PI / 3;
     const segment = Math.floor(angle / segmentAngle);
     
-    // Угол внутри сегмента
     const segmentStart = segment * segmentAngle;
     const segmentEnd = segmentStart + segmentAngle;
     const angleInSegment = angle - segmentStart;
     
-    // Максимальное расстояние до грани в этом сегмента
     const maxDistance = hexRadius * Math.cos(segmentAngle / 2 - angleInSegment) / Math.cos(segmentAngle / 2);
     
     return distance <= maxDistance;
@@ -1433,15 +1357,12 @@ function isPointInHexagon(px, py, hexX, hexY, hexRadius) {
 function createTempMarker(lat, lng) {
     if (!leafletMap) return null;
     
-    // Удаляем предыдущий временный маркер
     removeTempMarker();
     
-    // Создаем кастомный HTML для временного маркера
     const markerHtml = document.createElement('div');
     markerHtml.className = 'bs-marker temp';
     markerHtml.title = 'Новая базовая станция';
     
-    // Создаем Leaflet маркер
     tempMarker = L.marker([lat, lng], {
         icon: L.divIcon({
             html: markerHtml.outerHTML,
@@ -1467,10 +1388,8 @@ function removeTempMarker() {
 function createPreviewCircle(lat, lng, radius) {
     if (!leafletMap) return null;
     
-    // Удаляем предыдущий предпросмотр круга
     removePreviewCircle();
     
-    // Создаем круг для предпросмотра
     previewCircle = L.circle([lat, lng], {
         radius: radius,
         color: '#ff4444',
@@ -1508,11 +1427,9 @@ function positionDialogNearMarker(x, y) {
     const dialogWidth = 300;
     const dialogHeight = 320;
     
-    // Рассчитываем позицию диалога
     let left = rect.left + x + 20;
     let top = rect.top + y;
     
-    // Проверяем, чтобы диалог не выходил за пределы окна
     if (left + dialogWidth > window.innerWidth) {
         left = rect.left + x - dialogWidth - 20;
     }
@@ -1532,39 +1449,31 @@ canvas.addEventListener('click', function(e) {
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
     
-    // Сохраняем позицию клика для позиционирования диалога
     currentClickPosition = { x: clickX, y: clickY };
     
     // Если включен режим установки БС
     if (bsModeEnabled && leafletMap) {
-        // Конвертируем координаты клика в географические координаты
         const latLng = leafletMap.containerPointToLatLng([clickX, clickY]);
         
-        // Создаем временный маркер
         createTempMarker(latLng.lat, latLng.lng);
         
-        // Сохраняем данные для нового маркера
         currentMarkerData = {
             lat: latLng.lat,
             lng: latLng.lng,
             temp: true
         };
         
-        // Устанавливаем имя по умолчанию: "Базовая станция X", где X = количество БС + 1
         const defaultName = `Базовая станция ${bsMarkers.length + 1}`;
         document.getElementById('markerName').value = defaultName;
         document.getElementById('markerName').placeholder = defaultName;
         
-        // Сбрасываем значения радиуса для новой БС
         document.getElementById('markerShowCircle').checked = false;
-        document.getElementById('markerCircleSlider').value = 500;
-        document.getElementById('markerCircleText').value = 500;
+        document.getElementById('markerCircleSlider').value = CONFIG.DEFAULT_BS_RADIUS;
+        document.getElementById('markerCircleText').value = CONFIG.DEFAULT_BS_RADIUS;
         document.getElementById('markerCircleControls').style.display = 'none';
         
-        // Удаляем любой предыдущий предпросмотр круга
         removePreviewCircle();
         
-        // Позиционируем и показываем диалог
         positionDialogNearMarker(clickX, clickY);
         showMarkerDialog(false);
         return;
@@ -1572,40 +1481,32 @@ canvas.addEventListener('click', function(e) {
     
     // Если включен режим построения - обрабатываем клики по сотам
     if (buildEnabled) {
-        // Сначала проверяем клик по активной соте (для удаления)
         let clickedActiveHex = null;
         for (const hex of activeHexes.values()) {
             const screenPos = getHexScreenPosition(hex.q, hex.r);
             
-            // Проверяем, находится ли точка внутри шестиугольника
             if (isPointInHexagon(clickX, clickY, screenPos.x, screenPos.y, screenPos.radius)) {
                 clickedActiveHex = hex;
                 break;
             }
         }
         
-        // Если кликнули по активной соте - удаляем её
         if (clickedActiveHex) {
-            // Нельзя удалить последнюю соту
             if (activeHexes.size > 1) {
                 const key = `${clickedActiveHex.q},${clickedActiveHex.r}`;
                 activeHexes.delete(key);
                 updatePossibleHexes();
                 draw();
                 
-                // Помечаем карту как измененную
                 markMapAsChanged();
             }
             return;
         }
         
-        // Если кликнули не по активной соте, проверяем возможные соты (для добавления)
-        // ВАЖНО: УБИРАЕМ ПРОВЕРКУ possibleHexes.size === 0
         let clickedPossibleHex = null;
         for (const hex of possibleHexes.values()) {
             const screenPos = getHexScreenPosition(hex.q, hex.r);
             
-            // Проверяем, находится ли точка внутри шестиугольника
             if (isPointInHexagon(clickX, clickY, screenPos.x, screenPos.y, screenPos.radius)) {
                 clickedPossibleHex = hex;
                 break;
@@ -1618,7 +1519,6 @@ canvas.addEventListener('click', function(e) {
             updatePossibleHexes();
             draw();
             
-            // Помечаем карту как измененную
             markMapAsChanged();
         }
     }
@@ -1632,7 +1532,6 @@ canvas.addEventListener('mousedown', function(e) {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     
-    // Запоминаем начальную точку перетаскивания
     dragStartPixelX = mouseX;
     dragStartPixelY = mouseY;
     dragStartLat = gridCenterLat;
@@ -1640,7 +1539,6 @@ canvas.addEventListener('mousedown', function(e) {
     
     isDragging = true;
     
-    // Блокируем выделение текста при перетаскивании
     e.preventDefault();
 });
 
@@ -1651,23 +1549,18 @@ canvas.addEventListener('mousemove', function(e) {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     
-    // Вычисляем смещение в пикселях
     const deltaPixelX = mouseX - dragStartPixelX;
     const deltaPixelY = mouseY - dragStartPixelY;
     
-    // Конвертируем начальную точку в пиксели
     const startPx = leafletMap.latLngToContainerPoint([dragStartLat, dragStartLng]);
     
-    // Вычисляем новую позицию в пикселях
     const newPx = {
         x: startPx.x + deltaPixelX,
         y: startPx.y + deltaPixelY
     };
     
-    // Конвертируем обратно в географические координаты
     const newLatLng = leafletMap.containerPointToLatLng([newPx.x, newPx.y]);
     
-    // Обновляем центр сетки
     gridCenterLat = newLatLng.lat;
     gridCenterLng = newLatLng.lng;
     
@@ -1683,15 +1576,13 @@ canvas.addEventListener('mouseleave', function() {
 });
 
 // Создание маркера на карте
-function createMarker(lat, lng, name = '', comment = '', id = null, showCircle = false, circleRadius = 500) {
+function createMarker(lat, lng, name = '', comment = '', id = null, showCircle = false, circleRadius = CONFIG.DEFAULT_BS_RADIUS) {
     if (!leafletMap) return null;
     
-    // Создаем кастомный HTML для маркера с логотипом БС
     const markerHtml = document.createElement('div');
     markerHtml.className = 'bs-marker';
     markerHtml.title = name || 'Базовая станция';
     
-    // Создаем Leaflet маркер
     const marker = L.marker([lat, lng], {
         icon: L.divIcon({
             html: markerHtml.outerHTML,
@@ -1699,31 +1590,25 @@ function createMarker(lat, lng, name = '', comment = '', id = null, showCircle =
             iconAnchor: [11, 11],
             className: 'bs-marker-icon'
         }),
-        draggable: true // Делаем маркер перетаскиваемым
+        draggable: true
     }).addTo(leafletMap);
     
-    // Обработчик начала перетаскивания маркера
     marker.on('dragstart', function(e) {
         isDraggingMarker = true;
         draggedMarkerId = id;
         
-        // Добавляем класс для визуальной обратной связи
         const iconElement = marker.getElement();
         if (iconElement) {
             iconElement.classList.add('dragging');
         }
         
-        // Закрываем попап при начале перетаскивания
         marker.closePopup();
         
-        // Снимаем выделение в списке
         selectedBsId = null;
         updateBsList();
     });
     
-    // Обработчик перетаскивания маркера
     marker.on('drag', function(e) {
-        // Обновляем положение круга в реальном времени
         const markerIndex = leafletMarkers.findIndex(m => m.id === id);
         if (markerIndex !== -1) {
             const markerData = leafletMarkers[markerIndex];
@@ -1733,46 +1618,38 @@ function createMarker(lat, lng, name = '', comment = '', id = null, showCircle =
         }
     });
     
-    // Обработчик окончания перетаскивания маркера
     marker.on('dragend', function(e) {
         isDraggingMarker = false;
         draggedMarkerId = null;
         
-        // Убираем класс визуальной обратной связи
         const iconElement = marker.getElement();
         if (iconElement) {
             iconElement.classList.remove('dragging');
         }
         
-        // Обновляем координаты в хранилище
         const markerIndex = leafletMarkers.findIndex(m => m.id === id);
         if (markerIndex !== -1) {
             const newLatLng = e.target.getLatLng();
             leafletMarkers[markerIndex].lat = newLatLng.lat;
             leafletMarkers[markerIndex].lng = newLatLng.lng;
             
-            // Обновляем координаты в основном хранилище
             const bsMarkerIndex = bsMarkers.findIndex(m => m.id === id);
             if (bsMarkerIndex !== -1) {
                 bsMarkers[bsMarkerIndex].lat = newLatLng.lat;
                 bsMarkers[bsMarkerIndex].lng = newLatLng.lng;
                 
-                // Помечаем карту как измененную
                 markMapAsChanged();
             }
         }
     });
     
-    // Создаем содержимое для попапа
     const popupContent = document.createElement('div');
     
-    // Добавляем название
     const title = document.createElement('div');
     title.className = 'marker-popup-title';
     title.textContent = name || 'Базовая станция';
     popupContent.appendChild(title);
     
-    // Добавляем комментарий, если есть
     if (comment) {
         const commentDiv = document.createElement('div');
         commentDiv.className = 'marker-popup-comment';
@@ -1780,7 +1657,6 @@ function createMarker(lat, lng, name = '', comment = '', id = null, showCircle =
         popupContent.appendChild(commentDiv);
     }
     
-    // Добавляем информацию о радиусе, если включен
     if (showCircle) {
         const circleInfo = document.createElement('div');
         circleInfo.className = 'marker-popup-comment';
@@ -1789,7 +1665,6 @@ function createMarker(lat, lng, name = '', comment = '', id = null, showCircle =
         popupContent.appendChild(circleInfo);
     }
     
-    // Добавляем кнопки редактирования и удаления
     const buttonsDiv = document.createElement('div');
     buttonsDiv.className = 'popup-buttons';
     buttonsDiv.innerHTML = `
@@ -1800,20 +1675,12 @@ function createMarker(lat, lng, name = '', comment = '', id = null, showCircle =
     
     marker.bindPopup(popupContent);
     
-    // Обработчик открытия попапа - даем возможность перемещать карту
     marker.on('popupopen', function(e) {
-        // Включаем управление картой при открытом попапе
         if (leafletMap) {
             leafletMap.dragging.enable();
         }
     });
     
-    // Обработчик закрытия попапа
-    marker.on('popupclose', function(e) {
-        // Ничего не делаем, управление картой остается включенным
-    });
-    
-    // Создаем круг, если включено отображение
     let circle = null;
     if (showCircle && circleRadius > 0) {
         circle = L.circle([lat, lng], {
@@ -1834,20 +1701,18 @@ function createMarker(lat, lng, name = '', comment = '', id = null, showCircle =
         name, 
         comment,
         showCircle: showCircle || false,
-        circleRadius: circleRadius || 500,
+        circleRadius: circleRadius || CONFIG.DEFAULT_BS_RADIUS,
         circle: circle
     };
 }
 
 // Обновление круга для маркера
 function updateMarkerCircle(markerData) {
-    // Удаляем старый круг
     if (markerData.circle && leafletMap) {
         leafletMap.removeLayer(markerData.circle);
         markerData.circle = null;
     }
     
-    // Создаем новый круг, если включено отображение
     if (markerData.showCircle && markerData.circleRadius > 0) {
         markerData.circle = L.circle([markerData.lat, markerData.lng], {
             radius: markerData.circleRadius,
@@ -1859,76 +1724,35 @@ function updateMarkerCircle(markerData) {
         }).addTo(leafletMap);
     }
     
-    // Обновляем содержимое попапа
-    if (markerData.marker) {
-        const popupContent = document.createElement('div');
-        
-        // Добавляем название
-        const title = document.createElement('div');
-        title.className = 'marker-popup-title';
-        title.textContent = markerData.name || 'Базовая станция';
-        popupContent.appendChild(title);
-        
-        // Добавляем комментарий, если есть
-        if (markerData.comment) {
-            const commentDiv = document.createElement('div');
-            commentDiv.className = 'marker-popup-comment';
-            commentDiv.textContent = markerData.comment;
-            popupContent.appendChild(commentDiv);
-        }
-        
-        // Добавляем информацию о радиусе, если включен
-        if (markerData.showCircle) {
-            const circleInfo = document.createElement('div');
-            circleInfo.className = 'marker-popup-comment';
-            circleInfo.textContent = `Радиус: ${markerData.circleRadius} м`;
-            circleInfo.style.color = '#ff4444';
-            popupContent.appendChild(circleInfo);
-        }
-        
-        // Добавляем кнопки редактирования и удаления
-        const buttonsDiv = document.createElement('div');
-        buttonsDiv.className = 'popup-buttons';
-        buttonsDiv.innerHTML = `
-            <button onclick="editMarker(${markerData.id})">Редактировать</button>
-            <button onclick="deleteMarkerById(${markerData.id})" style="background:#ff4444;color:white;">Удалить</button>
-        `;
-        popupContent.appendChild(buttonsDiv);
-        
-        markerData.marker.bindPopup(popupContent);
-    }
+    updateMarkerPopup(markerData);
 }
 
 // Функция для обновления содержимого попапа маркера
-function updateMarkerPopup(markerData, name, comment, showCircle, circleRadius) {
+function updateMarkerPopup(markerData) {
     if (!markerData.marker) return;
     
     const popupContent = document.createElement('div');
     
-    // Добавляем название
     const title = document.createElement('div');
     title.className = 'marker-popup-title';
-    title.textContent = name || 'Базовая станция';
+    title.textContent = markerData.name || 'Базовая станция';
     popupContent.appendChild(title);
     
-    // Добавляем комментарий, если есть
-    if (comment) {
+    if (markerData.comment) {
         const commentDiv = document.createElement('div');
         commentDiv.className = 'marker-popup-comment';
-        commentDiv.textContent = comment;
+        commentDiv.textContent = markerData.comment;
         popupContent.appendChild(commentDiv);
     }
     
-    // Добавляем информацию о радиусе, если включен
-    if (showCircle) {
+    if (markerData.showCircle) {
         const circleInfo = document.createElement('div');
         circleInfo.className = 'marker-popup-comment';
-        circleInfo.textContent = `Радиус: ${circleRadius} м`;
+        circleInfo.textContent = `Радиус: ${markerData.circleRadius} м`;
         circleInfo.style.color = '#ff4444';
         popupContent.appendChild(circleInfo);
     }
     
-    // Добавляем кнопки редактирования и удаления
     const buttonsDiv = document.createElement('div');
     buttonsDiv.className = 'popup-buttons';
     buttonsDiv.innerHTML = `
@@ -1939,9 +1763,9 @@ function updateMarkerPopup(markerData, name, comment, showCircle, circleRadius) 
     
     markerData.marker.bindPopup(popupContent);
 }
+
 // Редактирование маркера
 function editMarker(markerId) {
-    // Закрываем попап
     const markerIndex = leafletMarkers.findIndex(m => m.id === markerId);
     if (markerIndex !== -1) {
         leafletMarkers[markerIndex].marker.closePopup();
@@ -1953,25 +1777,20 @@ function editMarker(markerId) {
     const marker = bsMarkers[markerIndex2];
     editingMarkerId = markerId;
     
-    // Заполняем диалог данными маркера
     document.getElementById('markerName').value = marker.name || '';
     document.getElementById('markerComment').value = marker.comment || '';
     document.getElementById('markerShowCircle').checked = marker.showCircle || false;
-    document.getElementById('markerCircleSlider').value = marker.circleRadius || 500;
-    document.getElementById('markerCircleText').value = marker.circleRadius || 500;
+    document.getElementById('markerCircleSlider').value = marker.circleRadius || CONFIG.DEFAULT_BS_RADIUS;
+    document.getElementById('markerCircleText').value = marker.circleRadius || CONFIG.DEFAULT_BS_RADIUS;
     
-    // Показываем/скрываем контролы круга
     const circleControls = document.getElementById('markerCircleControls');
     circleControls.style.display = marker.showCircle ? 'block' : 'none';
     
-    // Показываем кнопку удаления
     document.getElementById('deleteMarkerBtn').style.display = 'block';
     
-    // Позиционируем диалог рядом с маркером
     const markerPx = leafletMap.latLngToContainerPoint([marker.lat, marker.lng]);
     positionDialogNearMarker(markerPx.x, markerPx.y);
     
-    // Показываем диалог
     showMarkerDialog(true);
 }
 
@@ -1980,40 +1799,32 @@ function deleteMarkerById(markerId) {
     const markerIndex = bsMarkers.findIndex(m => m.id === markerId);
     if (markerIndex === -1) return;
     
-    // Удаляем Leaflet маркер
     const leafletMarkerIndex = leafletMarkers.findIndex(m => m.id === markerId);
     if (leafletMarkerIndex !== -1) {
         const leafletMarker = leafletMarkers[leafletMarkerIndex];
         if (leafletMarker.marker && leafletMap) {
             leafletMap.removeLayer(leafletMarker.marker);
         }
-        // Удаляем круг
         if (leafletMarker.circle && leafletMap) {
             leafletMap.removeLayer(leafletMarker.circle);
         }
         leafletMarkers.splice(leafletMarkerIndex, 1);
     }
     
-    // Удаляем из хранилища
     bsMarkers.splice(markerIndex, 1);
     
-    // Сбрасываем выделение, если удалили выбранную БС
     if (selectedBsId === markerId) {
         selectedBsId = null;
     }
     
-    // Закрываем диалог, если он открыт для этого маркера
     if (editingMarkerId === markerId) {
         hideMarkerDialog();
     }
     
-    // Обновляем список БС
     updateBsList();
     
-    // Помечаем карту как измененную
     markMapAsChanged();
     
-    // Обновляем высоту окна настроек
     updateControlWindowHeight();
 }
 
@@ -2031,22 +1842,18 @@ function showMarkerDialog(isEditing = false) {
     dialog.classList.add('active');
     
     if (isEditing) {
-        // Для редактирования существующей БС - показываем кнопку удаления
         document.getElementById('deleteMarkerBtn').style.display = 'block';
     } else {
-        // Для новой БС:
-        // 1. Сбрасываем значения по умолчанию
         const defaultName = `Базовая станция ${bsMarkers.length + 1}`;
         document.getElementById('markerName').value = defaultName;
         document.getElementById('markerName').placeholder = defaultName;
         document.getElementById('markerComment').value = '';
         document.getElementById('markerShowCircle').checked = false;
-        document.getElementById('markerCircleSlider').value = 500;
-        document.getElementById('markerCircleText').value = 500;
+        document.getElementById('markerCircleSlider').value = CONFIG.DEFAULT_BS_RADIUS;
+        document.getElementById('markerCircleText').value = CONFIG.DEFAULT_BS_RADIUS;
         document.getElementById('markerCircleControls').style.display = 'none';
         document.getElementById('deleteMarkerBtn').style.display = 'none';
         
-        // 2. Сразу удаляем предпросмотр круга (он будет создан при включении чекбокса)
         removePreviewCircle();
     }
     
@@ -2059,14 +1866,12 @@ function hideMarkerDialog() {
     currentMarkerData = null;
     editingMarkerId = null;
     
-    // Удаляем временный маркер и предпросмотр круга
     removeTempMarker();
     removePreviewCircle();
     
-    // Сбрасываем значения радиуса в диалоге
     document.getElementById('markerShowCircle').checked = false;
-    document.getElementById('markerCircleSlider').value = 500;
-    document.getElementById('markerCircleText').value = 500;
+    document.getElementById('markerCircleSlider').value = CONFIG.DEFAULT_BS_RADIUS;
+    document.getElementById('markerCircleText').value = CONFIG.DEFAULT_BS_RADIUS;
     document.getElementById('markerCircleControls').style.display = 'none';
 }
 
@@ -2076,40 +1881,32 @@ function saveMarker() {
     let name = nameInput.value.trim();
     const comment = document.getElementById('markerComment').value.trim();
     const showCircle = document.getElementById('markerShowCircle').checked;
-    const circleRadius = parseInt(document.getElementById('markerCircleText').value) || 500;
+    const circleRadius = parseInt(document.getElementById('markerCircleText').value) || CONFIG.DEFAULT_BS_RADIUS;
     
-    // Если имя пустое, устанавливаем значение по умолчанию
     if (!name) {
-        // Генерируем имя: "Базовая станция X", где X = количество установленных БС + 1
         name = `Базовая станция ${bsMarkers.length + 1}`;
         nameInput.value = name;
     }
     
     if (editingMarkerId) {
-        // Редактирование существующего маркера
         const markerIndex = bsMarkers.findIndex(m => m.id === editingMarkerId);
         if (markerIndex !== -1) {
-            // Обновляем данные в основном хранилище
             bsMarkers[markerIndex].name = name;
             bsMarkers[markerIndex].comment = comment;
             bsMarkers[markerIndex].showCircle = showCircle;
             bsMarkers[markerIndex].circleRadius = circleRadius;
             
-            // Обновляем Leaflet маркер
             const leafletMarkerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
             if (leafletMarkerIndex !== -1) {
-                // Обновляем свойства маркера
                 leafletMarkers[leafletMarkerIndex].name = name;
                 leafletMarkers[leafletMarkerIndex].comment = comment;
                 leafletMarkers[leafletMarkerIndex].showCircle = showCircle;
                 leafletMarkers[leafletMarkerIndex].circleRadius = circleRadius;
                 
-                // Обновляем круг
                 if (leafletMarkers[leafletMarkerIndex].circle && leafletMap) {
                     leafletMap.removeLayer(leafletMarkers[leafletMarkerIndex].circle);
                 }
                 
-                // Создаем новый круг, если включено отображение
                 if (showCircle && circleRadius > 0) {
                     leafletMarkers[leafletMarkerIndex].circle = L.circle([leafletMarkers[leafletMarkerIndex].lat, leafletMarkers[leafletMarkerIndex].lng], {
                         radius: circleRadius,
@@ -2123,18 +1920,14 @@ function saveMarker() {
                     leafletMarkers[leafletMarkerIndex].circle = null;
                 }
                 
-                // Обновляем содержимое попапа
-                updateMarkerPopup(leafletMarkers[leafletMarkerIndex], name, comment, showCircle, circleRadius);
+                updateMarkerPopup(leafletMarkers[leafletMarkerIndex]);
             }
             
-            // Обновляем список БС
             updateBsList();
             
-            // Помечаем карту как измененную
             markMapAsChanged();
         }
     } else if (currentMarkerData) {
-        // Добавление нового маркера
         const markerId = Date.now();
         const marker = {
             id: markerId,
@@ -2146,10 +1939,8 @@ function saveMarker() {
             circleRadius: circleRadius
         };
         
-        // Добавляем в хранилище
         bsMarkers.push(marker);
         
-        // Создаем маркер на карте
         const leafletMarker = createMarker(
             marker.lat, 
             marker.lng, 
@@ -2164,64 +1955,49 @@ function saveMarker() {
             leafletMarkers.push(leafletMarker);
         }
         
-        // Обновляем список БС
         updateBsList();
         
-        // Помечаем карту как измененную
         markMapAsChanged();
     }
     
-    // Скрываем диалог
     hideMarkerDialog();
     
-    // Автоматически выключаем режим установки БС после сохранения (только для новых маркеров)
     if (!editingMarkerId && bsModeEnabled) {
         toggleBSMode();
     }
     
-    // Обновляем высоту окна настроек
     updateControlWindowHeight();
 }
 
 // Отменить добавление маркера
 function cancelMarker() {
-    // Скрываем диалог
     hideMarkerDialog();
     
-    // Автоматически выключаем режим установки БС после отмены (только для новых маркеров)
     if (!editingMarkerId && bsModeEnabled) {
-        // Вызываем toggleBSMode() для корректного выключения режима
-        // передаем null, так как у нас нет события
-        toggleBSMode(null);
+        toggleBSMode();
     }
 }
 
 // Удалить все маркеры
 function clearMarkers() {
-    // Удаляем все Leaflet маркеры с карты
     leafletMarkers.forEach(markerData => {
         if (markerData.marker && leafletMap) {
             leafletMap.removeLayer(markerData.marker);
         }
-        // Удаляем круги
         if (markerData.circle && leafletMap) {
             leafletMap.removeLayer(markerData.circle);
         }
     });
     
-    // Очищаем массивы
     bsMarkers = [];
     leafletMarkers = [];
-    bsCounter = 0; // Сбрасываем счетчик
-    selectedBsId = null; // Сбрасываем выбранную БС
+    bsCounter = 0;
+    selectedBsId = null;
     
-    // Обновляем список БС
     updateBsList();
     
-    // Помечаем карту как измененную
     markMapAsChanged();
     
-    // Обновляем высоту окна настроек
     updateControlWindowHeight();
 }
 
@@ -2243,27 +2019,21 @@ function saveMapState() {
 function restoreMapState(state) {
     if (!state || !leafletMap) return;
     
-    // Устанавливаем центр и зум карты
     leafletMap.setView(state.center, state.zoom);
     
-    // Восстанавливаем центр сетки
     gridCenterLat = state.gridCenterLat;
     gridCenterLng = state.gridCenterLng;
     
-    // Восстанавливаем активные соты
     activeHexes.clear();
     for (const [key, hex] of state.activeHexes) {
         activeHexes.set(key, hex);
     }
     
-    // Восстанавливаем маркеры БС
     clearMarkers();
     bsMarkers = state.bsMarkers || [];
     
-    // Обновляем счетчик на основе существующих БС
     bsCounter = bsMarkers.length;
     
-    // Создаем маркеры на карте
     bsMarkers.forEach(marker => {
         const leafletMarker = createMarker(
             marker.lat, 
@@ -2279,20 +2049,16 @@ function restoreMapState(state) {
         }
     });
     
-    // Обновляем возможные соты, если включено построение
     if (buildEnabled && activeHexes.size > 0) {
         updatePossibleHexes();
     }
     
-    // Обновляем список БС
     updateBsList();
     
-    // Сбрасываем флаг изменения карты
     resetMapChanged();
 }
 
 function initBackground() {
-    // Сохраняем текущее состояние перед сменой фона
     const savedState = saveMapState();
     
     if (leafletMap) {
@@ -2301,7 +2067,6 @@ function initBackground() {
         leafletMap = null;
     }
     
-    // Очищаем массивы маркеров при смене фона
     leafletMarkers = [];
     tempMarker = null;
     previewCircle = null;
@@ -2310,67 +2075,59 @@ function initBackground() {
     mapDiv.innerHTML = '';
     mapDiv.style.background = '';
     
-    if (['osm', 'google-sat', 'google-hybrid', 'yandex', 'yandex-hybrid', 'yandex-sat'].includes(bgMode)) {
-        // Создаем новую карту
-        leafletMap = L.map('map', {
-            zoomControl: false,
-            attributionControl: true,
-            zoomAnimation: false,
-            fadeAnimation: false,
-            dragging: true // Всегда включаем возможность перетаскивания карты
+    // Создаем карту независимо от типа - это основное исправление
+    leafletMap = L.map('map', {
+        zoomControl: false,
+        attributionControl: true,
+        zoomAnimation: false,
+        fadeAnimation: false,
+        dragging: true
+    });
+    
+    // Всегда устанавливаем базовый слой
+    let baseLayer;
+    if (bgMode === 'osm') {
+        baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
         });
-        
-        let baseLayer;
-        if (bgMode === 'osm') {
-            baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap'
-            });
-        } else if (bgMode === 'google-sat') {
-            baseLayer = googleSat;
-        } else if (bgMode === 'google-hybrid') {
-            baseLayer = googleHybrid;
-        } else if (bgMode === 'yandex') {
-            baseLayer = yandexMap;
-        } else if (bgMode === 'yandex-hybrid') {
-            baseLayer = yandexHybrid;
-        } else if (bgMode === 'yandex-sat') {
-            baseLayer = yandexSat;
-        }
-        baseLayer.addTo(leafletMap);
-        
-        // Восстанавливаем состояние или устанавливаем значения по умолчанию
-        if (savedState) {
-            restoreMapState(savedState);
-        } else {
-            leafletMap.setView([54.7388, 55.9722], 12);
-        }
-        
-        // Обновляем отрисовку при изменении карты
-        leafletMap.on('move zoom', function() {
-            draw();
-        });
-        
-        // Всегда включаем управление картой
-        leafletMap.dragging.enable();
-        leafletMap.scrollWheelZoom.enable();
-        
+    } else if (bgMode === 'google-sat') {
+        baseLayer = googleSat;
+    } else if (bgMode === 'google-hybrid') {
+        baseLayer = googleHybrid;
+    } else if (bgMode === 'yandex') {
+        baseLayer = yandexMap;
+    } else if (bgMode === 'yandex-hybrid') {
+        baseLayer = yandexHybrid;
+    } else if (bgMode === 'yandex-sat') {
+        baseLayer = yandexSat;
     } else {
-        mapDiv.style.background = '#0a0e14';
-        // Для однотонного фона сохраняем состояние сетки
-        if (savedState) {
-            gridCenterLat = savedState.gridCenterLat;
-            gridCenterLng = savedState.gridCenterLng;
-            activeHexes.clear();
-            for (const [key, hex] of savedState.activeHexes) {
-                activeHexes.set(key, hex);
-            }
-            bsMarkers = savedState.bsMarkers || [];
-            if (buildEnabled && activeHexes.size > 0) {
-                updatePossibleHexes();
-            }
-        }
+        // По умолчанию используем OSM
+        baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        });
     }
+    
+    // Добавляем слой на карту
+    baseLayer.addTo(leafletMap);
+    
+    // Устанавливаем начальный вид
+    if (savedState) {
+        restoreMapState(savedState);
+    } else {
+        // Устанавливаем вид по умолчанию
+        leafletMap.setView([54.7388, 55.9722], 12);
+    }
+    
+    // Обновляем отрисовку при изменении карты
+    leafletMap.on('move zoom', function() {
+        draw();
+    });
+    
+    // Всегда включаем управление картой
+    leafletMap.dragging.enable();
+    leafletMap.scrollWheelZoom.enable();
     
     // Обновляем список БС
     updateBsList();
@@ -2382,15 +2139,12 @@ function initBackground() {
 function updateControlWindowHeight() {
     const controls = document.getElementById('controls');
     
-    // Сбрасываем max-height чтобы получить реальную высоту содержимого
     controls.style.maxHeight = 'none';
     const contentHeight = controls.scrollHeight;
     controls.style.maxHeight = '';
     
-    // Вычисляем максимальную доступную высоту (95% от высоты окна)
     const maxAvailableHeight = window.innerHeight * 0.95;
     
-    // Устанавливаем высоту, но не больше максимальной доступной
     const newHeight = Math.min(contentHeight, maxAvailableHeight);
     controls.style.maxHeight = newHeight + 'px';
 }
@@ -2411,8 +2165,7 @@ function drawHexagon(ctx, centerX, centerY, radius, color = '#4af', lineWidth = 
     ctx.lineWidth = lineWidth;
     ctx.stroke();
     
-    // Заливка соты синим цветом с прозрачностью
-    ctx.fillStyle = 'rgba(68, 136, 255, 0.1)'; // Синий с прозрачностью 0.1
+    ctx.fillStyle = 'rgba(68, 136, 255, 0.1)';
     ctx.fill();
 }
 
@@ -2431,7 +2184,7 @@ function drawCircle(ctx, centerX, centerY, radius, color = 'rgba(244,68,68,0.5)'
     ctx.stroke();
 }
 
-// Рисование предварительной соты (когда построение выключено и нет активных сот)
+// Рисование предварительной соты
 function drawPreviewHex() {
     if (buildEnabled || activeHexes.size > 0) return;
     
@@ -2439,11 +2192,9 @@ function drawPreviewHex() {
     const radiusPx = getRadiusInPixels();
     const rotationCenter = getRotationCenter();
     
-    // Центр будущей соты (0,0)
     let centerX = gridCenterPx.x;
     let centerY = gridCenterPx.y;
     
-    // Применяем вращение, если оно установлено
     if (rotation !== 0) {
         const rotationCenterX = gridCenterPx.x + rotationCenter.x;
         const rotationCenterY = gridCenterPx.y + rotationCenter.y;
@@ -2452,21 +2203,18 @@ function drawPreviewHex() {
         centerY = rotated.y;
     }
     
-    // Рисуем предварительную соту (полупрозрачную)
     if (showHex) {
         ctx.globalAlpha = 0.3;
         drawHexagon(ctx, centerX, centerY, radiusPx, '#4af', 2, rotation * Math.PI / 180);
         ctx.globalAlpha = 1.0;
     }
     
-    // Рисуем предварительный центр
     if (showCenters) {
         ctx.globalAlpha = 0.3;
         drawCenter(ctx, centerX, centerY, 3, '#f44');
         ctx.globalAlpha = 1.0;
     }
     
-    // Рисуем предварительный круг
     if (showCircles) {
         ctx.globalAlpha = 0.3;
         drawCircle(ctx, centerX, centerY, radiusPx, 'rgba(244,68,68,0.3)');
@@ -2474,85 +2222,69 @@ function drawPreviewHex() {
     }
 }
 
-// ────────────────────────────────────────────────
-// Отрисовка всей сетки как единого слоя
-// ────────────────────────────────────────────────
+// Отрисовка всей сетки
 function drawGrid() {
     const gridCenterPx = getGridCenterInPixels();
     
-    // Рисуем возможные соты (серые) - только при включенном построении
     if (buildEnabled) {
         for (const hex of possibleHexes.values()) {
             const screenPos = getHexScreenPosition(hex.q, hex.r);
             const { x, y, radius: currentRadius } = screenPos;
             
-            // Шестиугольники возможных сот с учетом вращения
             if (showHex) {
                 drawHexagon(ctx, x, y, currentRadius, '#888', 1.5, rotation * Math.PI / 180);
             }
             
-            // Центры возможных сот
             if (showCenters) {
                 drawCenter(ctx, x, y, 3, '#888');
             }
             
-            // Круги возможных сот
             if (showCircles) {
                 drawCircle(ctx, x, y, currentRadius, 'rgba(136,136,136,0.5)');
             }
         }
     }
     
-    // Рисуем активные соты (синие)
     for (const hex of activeHexes.values()) {
         const screenPos = getHexScreenPosition(hex.q, hex.r);
         const { x, y, radius: currentRadius } = screenPos;
         
-        // Шестиугольники активных сот с учетом вращения
         if (showHex) {
             drawHexagon(ctx, x, y, currentRadius, '#4af', 2, rotation * Math.PI / 180);
         }
         
-        // Центры активных сот
         if (showCenters) {
             drawCenter(ctx, x, y, 4, '#f44');
         }
         
-        // Круги активных сот
         if (showCircles) {
             drawCircle(ctx, x, y, currentRadius, 'rgba(244,68,68,0.5)');
         }
     }
 }
 
-// ────────────────────────────────────────────────
 // Главная функция отрисовки
-// ────────────────────────────────────────────────
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     if ((!leafletMap && bgMode !== 'image') || (activeHexes.size === 0 && !buildEnabled && !moveGridEnabled && !bsModeEnabled)) {
-        // Если нет карты или своего изображения, ничего не рисуем
         if (!leafletMap && bgMode !== 'image') return;
         
-        // Рисуем предварительную соту, если построение выключено и нет активных сот
         drawPreviewHex();
         return;
     }
     
-    // Рисуем предварительную соту, если построение выключено и нет активных сот
     if (!buildEnabled && activeHexes.size === 0) {
         drawPreviewHex();
     }
     
-    // Рисуем всю сетку (если есть активные соты или включено построение)
     if (activeHexes.size > 0 || buildEnabled) {
         drawGrid();
     }
 }
 
 // ────────────────────────────────────────────────
-// Обработчики интерфейса
+// Инициализация обработчиков интерфейса
 // ────────────────────────────────────────────────
 document.getElementById('radiusSlider').oninput = function() {
     document.getElementById('radiusText').value = this.value;
@@ -2589,12 +2321,10 @@ document.getElementById('rotText').addEventListener('keydown', function(e) {
 document.getElementById('moveGrid').onchange = function() {
     moveGridEnabled = this.checked;
     
-    // Обновляем курсор сразу после изменения состояния
     updateCursor();
     
     canvas.style.pointerEvents = (buildEnabled || moveGridEnabled) ? 'auto' : 'none';
     
-    // Если карта существует, отключаем/включаем её управление
     if (leafletMap) {
         if (moveGridEnabled) {
             leafletMap.dragging.disable();
@@ -2628,21 +2358,17 @@ document.getElementById('markerShowCircle').onchange = function() {
     const circleControls = document.getElementById('markerCircleControls');
     circleControls.style.display = this.checked ? 'block' : 'none';
     
-    // Если добавляется новая БС и есть временный маркер - обновляем предпросмотр
     if (currentMarkerData && tempMarker) {
         const showCircle = this.checked;
-        const circleRadius = parseInt(document.getElementById('markerCircleText').value) || 500;
+        const circleRadius = parseInt(document.getElementById('markerCircleText').value) || CONFIG.DEFAULT_BS_RADIUS;
         
         if (showCircle) {
-            // Создаем предпросмотр круга с текущим радиусом
             createPreviewCircle(currentMarkerData.lat, currentMarkerData.lng, circleRadius);
         } else {
-            // Удаляем предпросмотр круга
             removePreviewCircle();
         }
     }
     
-    // Если редактируется существующий маркер - сразу обновляем отображение
     if (editingMarkerId) {
         const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
         if (markerIndex !== -1) {
@@ -2656,12 +2382,10 @@ document.getElementById('markerCircleSlider').oninput = function() {
     const value = this.value;
     document.getElementById('markerCircleText').value = value;
     
-    // Если добавляется новая БС и есть временный маркер И включен показ радиуса - обновляем предпросмотр
     if (currentMarkerData && tempMarker && document.getElementById('markerShowCircle').checked) {
         updatePreviewCircle(currentMarkerData.lat, currentMarkerData.lng, parseInt(value));
     }
     
-    // Если редактируется существующий маркер - сразу обновляем отображение
     if (editingMarkerId) {
         const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
         if (markerIndex !== -1) {
@@ -2672,17 +2396,15 @@ document.getElementById('markerCircleSlider').oninput = function() {
 };
 
 document.getElementById('markerCircleText').addEventListener('blur', function() {
-    const value = parseInt(this.value) || 500;
-    const clampedValue = Math.max(10, Math.min(15000, value)); // Изменено на 15000
+    const value = parseInt(this.value) || CONFIG.DEFAULT_BS_RADIUS;
+    const clampedValue = Math.max(CONFIG.MIN_BS_RADIUS, Math.min(CONFIG.MAX_BS_RADIUS, value));
     this.value = clampedValue;
     document.getElementById('markerCircleSlider').value = clampedValue;
     
-    // Если добавляется новая БС и есть временный маркер И включен показ радиуса - обновляем предпросмотр
     if (currentMarkerData && tempMarker && document.getElementById('markerShowCircle').checked) {
         updatePreviewCircle(currentMarkerData.lat, currentMarkerData.lng, clampedValue);
     }
     
-    // Если редактируется существующий маркер - сразу обновляем отображение
     if (editingMarkerId) {
         const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
         if (markerIndex !== -1) {
@@ -2695,17 +2417,15 @@ document.getElementById('markerCircleText').addEventListener('blur', function() 
 document.getElementById('markerCircleText').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
-        const value = parseInt(this.value) || 500;
-        const clampedValue = Math.max(10, Math.min(15000, value)); // Изменено на 15000
+        const value = parseInt(this.value) || CONFIG.DEFAULT_BS_RADIUS;
+        const clampedValue = Math.max(CONFIG.MIN_BS_RADIUS, Math.min(CONFIG.MAX_BS_RADIUS, value));
         this.value = clampedValue;
         document.getElementById('markerCircleSlider').value = clampedValue;
         
-        // Если добавляется новая БС и есть временный маркер И включен показ радиуса - обновляем предпросмотр
         if (currentMarkerData && tempMarker && document.getElementById('markerShowCircle').checked) {
             updatePreviewCircle(currentMarkerData.lat, currentMarkerData.lng, clampedValue);
         }
         
-        // Если редактируется существующий маркер - сразу обновляем отображение
         if (editingMarkerId) {
             const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
             if (markerIndex !== -1) {
@@ -2716,121 +2436,11 @@ document.getElementById('markerCircleText').addEventListener('keydown', function
     }
 });
 
-document.getElementById('markerCircleSlider').oninput = function() {
-    const value = this.value;
-    document.getElementById('markerCircleText').value = value;
-    
-    // Если добавляется новая БС и есть временный маркер И включен показ радиуса - обновляем предпросмотр
-    if (currentMarkerData && tempMarker && document.getElementById('markerShowCircle').checked) {
-        updatePreviewCircle(currentMarkerData.lat, currentMarkerData.lng, parseInt(value));
-    }
-    
-    // Если редактируется существующий маркер - сразу обновляем отображение
-    if (editingMarkerId) {
-        const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
-        if (markerIndex !== -1) {
-            leafletMarkers[markerIndex].circleRadius = parseInt(value);
-            updateMarkerCircle(leafletMarkers[markerIndex]);
-        }
-    }
-};
-
-document.getElementById('markerCircleText').addEventListener('blur', function() {
-    const value = parseInt(this.value) || 500;
-    const clampedValue = Math.max(10, Math.min(5000, value));
-    this.value = clampedValue;
-    document.getElementById('markerCircleSlider').value = clampedValue;
-    
-    // Если добавляется новая БС и есть временный маркер И включен показ радиуса - обновляем предпросмотр
-    if (currentMarkerData && tempMarker && document.getElementById('markerShowCircle').checked) {
-        updatePreviewCircle(currentMarkerData.lat, currentMarkerData.lng, clampedValue);
-    }
-    
-    // Если редактируется существующий маркер - сразу обновляем отображение
-    if (editingMarkerId) {
-        const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
-        if (markerIndex !== -1) {
-            leafletMarkers[markerIndex].circleRadius = clampedValue;
-            updateMarkerCircle(leafletMarkers[markerIndex]);
-        }
-    }
-});
-
-document.getElementById('markerCircleText').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const value = parseInt(this.value) || 500;
-        const clampedValue = Math.max(10, Math.min(5000, value));
-        this.value = clampedValue;
-        document.getElementById('markerCircleSlider').value = clampedValue;
-        
-        // Если добавляется новая БС и есть временный маркер И включен показ радиуса - обновляем предпросмотр
-        if (currentMarkerData && tempMarker && document.getElementById('markerShowCircle').checked) {
-            updatePreviewCircle(currentMarkerData.lat, currentMarkerData.lng, clampedValue);
-        }
-        
-        // Если редактируется существующий маркер - сразу обновляем отображение
-        if (editingMarkerId) {
-            const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
-            if (markerIndex !== -1) {
-                leafletMarkers[markerIndex].circleRadius = clampedValue;
-                updateMarkerCircle(leafletMarkers[markerIndex]);
-            }
-        }
-    }
-});
-
-document.getElementById('markerCircleText').addEventListener('blur', function() {
-    const value = parseInt(this.value) || 500;
-    const clampedValue = Math.max(10, Math.min(5000, value));
-    this.value = clampedValue;
-    document.getElementById('markerCircleSlider').value = clampedValue;
-    
-    // Если добавляется новая БС и есть временный маркер - сразу обновляем предпросмотр
-    if (currentMarkerData && tempMarker && document.getElementById('markerShowCircle').checked) {
-        updatePreviewCircle(currentMarkerData.lat, currentMarkerData.lng, clampedValue);
-    }
-    
-    // Если редактируется существующий маркер - сразу обновляем отображение
-    if (editingMarkerId) {
-        const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
-        if (markerIndex !== -1) {
-            leafletMarkers[markerIndex].circleRadius = clampedValue;
-            updateMarkerCircle(leafletMarkers[markerIndex]);
-        }
-    }
-});
-
-document.getElementById('markerCircleText').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const value = parseInt(this.value) || 500;
-        const clampedValue = Math.max(10, Math.min(5000, value));
-        this.value = clampedValue;
-        document.getElementById('markerCircleSlider').value = clampedValue;
-        
-        // Если добавляется новая БС и есть временный маркер - сразу обновляем предпросмотр
-        if (currentMarkerData && tempMarker && document.getElementById('markerShowCircle').checked) {
-            updatePreviewCircle(currentMarkerData.lat, currentMarkerData.lng, clampedValue);
-        }
-        
-        // Если редактируется существующий маркер - сразу обновляем отображение
-        if (editingMarkerId) {
-            const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
-            if (markerIndex !== -1) {
-                leafletMarkers[markerIndex].circleRadius = clampedValue;
-                updateMarkerCircle(leafletMarkers[markerIndex]);
-            }
-        }
-    }
-});
-
+// Функция сброса
 function reset() {
-    // Сохраняем текущее состояние фона
     const currentBgMode = bgMode;
     
-    // Сбрасываем только параметры сетки и маркеры
-    radiusMeters = 750; // Изменено с 500 на 750
+    radiusMeters = CONFIG.DEFAULT_RADIUS;
     rotation = 0;
     buildEnabled = false;
     bsModeEnabled = false;
@@ -2843,10 +2453,8 @@ function reset() {
     showCenters = true;
     showCircles = false;
     
-    // Удаляем все маркеры
     clearMarkers();
     
-    // Обновляем интерфейс
     document.getElementById('buildToggle').textContent = 'Включить';
     document.getElementById('buildToggle').classList.remove('active');
     document.getElementById('bsToggle').textContent = 'Включить';
@@ -2855,46 +2463,38 @@ function reset() {
     document.getElementById('showHex').checked = true;
     document.getElementById('showCenters').checked = true;
     document.getElementById('showCircles').checked = false;
-    document.getElementById('radiusText').value = '750'; // Изменено
+    document.getElementById('radiusText').value = CONFIG.DEFAULT_RADIUS.toString();
     document.getElementById('rotText').value = '0';
-    document.getElementById('radiusSlider').value = 750; // Изменено
-    document.getElementById('rotSlider').min = -180;
-    document.getElementById('rotSlider').max = 180;
+    document.getElementById('radiusSlider').value = CONFIG.DEFAULT_RADIUS;
     document.getElementById('rotSlider').value = 0;
     
-    // Сбрасываем курсор
     canvas.style.pointerEvents = 'none';
     document.body.classList.remove('bs-cursor');
-    updateCursor(); // Вызываем обновление курсора
+    updateCursor();
     
-    // Восстанавливаем фон
     bgMode = currentBgMode;
     
-    // Включаем управление картой при сбросе
     if (leafletMap) {
         leafletMap.dragging.enable();
         leafletMap.scrollWheelZoom.enable();
     }
     
-    // Сбрасываем флаг изменения карты
     isMapChanged = false;
     updateFileToggleButton();
     
-    // Обновляем высоту окна настроек
     updateControlWindowHeight();
     
     draw();
 }
 
-// Обработчик для кнопки Закрыть в разделе Файл
+// Инициализация кнопок файлового меню
 document.querySelector('.file-btn-close').addEventListener('click', function() {
-    // Вызываем ту же функцию, что и у кнопки Сброс
     reset();
 });
 
+// Настройки окон
 window.onresize = function() {
     resize();
-    // Обновляем высоту окна настроек при изменении размера окна
     updateControlWindowHeight();
 };
 
@@ -2902,9 +2502,9 @@ window.onload = () => {
     resize();
     
     // Инициализируем элементы управления
-    document.getElementById('radiusSlider').min = 10;
-    document.getElementById('radiusSlider').max = 5000;
-    document.getElementById('radiusSlider').value = 750; // Изменено
+    document.getElementById('radiusSlider').min = CONFIG.MIN_RADIUS;
+    document.getElementById('radiusSlider').max = CONFIG.MAX_RADIUS;
+    document.getElementById('radiusSlider').value = CONFIG.DEFAULT_RADIUS;
     document.getElementById('radiusSlider').step = 10;
     
     document.getElementById('rotSlider').min = -180;
@@ -2912,60 +2512,81 @@ window.onload = () => {
     document.getElementById('rotSlider').value = 0;
     document.getElementById('rotSlider').step = 1;
     
-    document.getElementById('radiusText').value = '750'; // Изменено
+    document.getElementById('radiusText').value = CONFIG.DEFAULT_RADIUS.toString();
     document.getElementById('rotText').value = '0';
     document.getElementById('moveGrid').checked = false;
     
-    // Инициализируем элементы управления радиуса БС с новым максимумом 15000
-    document.getElementById('markerCircleSlider').min = 10;
-    document.getElementById('markerCircleSlider').max = 15000;
-    document.getElementById('markerCircleSlider').value = 500;
+    // Инициализация элементов управления радиуса БС
+    document.getElementById('markerCircleSlider').min = CONFIG.MIN_BS_RADIUS;
+    document.getElementById('markerCircleSlider').max = CONFIG.MAX_BS_RADIUS;
+    document.getElementById('markerCircleSlider').value = CONFIG.DEFAULT_BS_RADIUS;
     document.getElementById('markerCircleSlider').step = 10;
-    document.getElementById('markerCircleText').value = '500';
+    document.getElementById('markerCircleText').value = CONFIG.DEFAULT_BS_RADIUS.toString();
     
-    // Инициализируем кнопку в разделе Файл
+    // Инициализация кнопки в разделе Файл
     updateFileToggleButton();
     
-    // Удаляем старый селект Фон / карта
-    const oldSelect = document.querySelector('#controls > .compact-row');
-    if (oldSelect) {
-        oldSelect.remove();
-    }
-    
-    // Инициализируем радиокнопки в разделе Карта
+    // Инициализация радиокнопок в разделе Карта
     const mapOptions = document.querySelectorAll('.map-option');
     mapOptions.forEach(option => {
-        // Определяем значение из текста
-        const label = option.querySelector('label');
-        if (label) {
-            let value = '';
-            if (label.textContent.includes('OpenStreetMap')) value = 'osm';
-            else if (label.textContent.includes('Google Спутник')) value = 'google-sat';
-            else if (label.textContent.includes('Google Гибрид')) value = 'google-hybrid';
-            else if (label.textContent.includes('Яндекс') && label.textContent.includes('Гибрид')) value = 'yandex-hybrid';
-            else if (label.textContent.includes('Яндекс') && label.textContent.includes('Спутник')) value = 'yandex-sat';
-            else if (label.textContent.includes('Яндекс')) value = 'yandex';
-            
-            if (value) {
+        // Определяем значение из onclick атрибута
+        const onclickAttr = option.getAttribute('onclick');
+        if (onclickAttr) {
+            const match = onclickAttr.match(/selectMapType\('([^']+)'\)/);
+            if (match) {
+                const value = match[1];
                 const radio = option.querySelector('input[type="radio"]');
                 if (radio) {
                     radio.value = value;
+                    
+                    // Если это OSM, отмечаем как выбранный
+                    if (value === 'osm') {
+                        radio.checked = true;
+                        option.classList.add('selected');
+                        bgMode = value; // Устанавливаем bgMode в OSM
+                    }
                 }
             }
         }
     });
     
-    // Устанавливаем первую опцию как выбранную
-    const firstRadio = document.querySelector('.map-option input[type="radio"]');
-    if (firstRadio) {
-        firstRadio.checked = true;
-        bgMode = firstRadio.value;
+    // Убеждаемся, что bgMode установлен
+    if (!bgMode || bgMode === '') {
+        bgMode = 'osm';
     }
     
+    // Убеждаемся, что первая опция отмечена
+    const firstOption = document.querySelector('.map-option.selected');
+    if (!firstOption) {
+        const osmOption = document.querySelector('.map-option[onclick*="osm"]');
+        if (osmOption) {
+            osmOption.classList.add('selected');
+            const radio = osmOption.querySelector('input[type="radio"]');
+            if (radio) {
+                radio.checked = true;
+            }
+            bgMode = 'osm';
+        }
+    }
+    
+    // Инициализируем карту
     initBackground();
     
     // Инициализируем высоту окна настроек
     updateControlWindowHeight();
+    
+    // Добавляем обработчики для кнопок файлового меню (для полноты функциональности)
+    document.querySelector('.file-btn-open').addEventListener('click', function() {
+        alert('Функция "Открыть" в разработке');
+    });
+    
+    document.querySelector('.file-btn-save').addEventListener('click', function() {
+        alert('Функция "Сохранить" в разработке');
+    });
+    
+    document.querySelector('.file-btn-save-image').addEventListener('click', function() {
+        alert('Функция "Сохранить изображение" в разработке');
+    });
 };
 </script>
 </body>
