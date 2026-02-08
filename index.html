@@ -414,7 +414,7 @@
         
         /* Список БС - компактный стиль */
         .bs-list {
-            max-height: 120px;
+            max-height: 500px;
             overflow-y: auto;
             margin: 8px 0;
             border: 1px solid #2a3444;
@@ -607,12 +607,12 @@
         </div>
     </div>
     
-    <!-- Секция Строение сети (закрыта по умолчанию) -->
+    <!-- Секция Планирование сетки (закрыта по умолчанию) -->
     <div class="accordion-section">
         <div class="accordion-header" onclick="toggleAccordion('network-build')">
             <div style="display: flex; align-items: center; gap: 8px;">
                 <button id="buildToggle" onclick="toggleBuild(event)">Включить</button>
-                <span>Строение сети</span>
+                <span>Планирование сетки</span>
             </div>
             <span class="accordion-icon">▼</span>
         </div>
@@ -635,22 +635,26 @@
             
             <div class="compact-checkbox">
                 <input type="checkbox" id="moveGrid">
-                <label for="moveGrid">Перемещать сетку</label>
+                <label for="moveGrid">Перемещать разметку</label>
             </div>
             
             <div class="compact-checkbox">
                 <input type="checkbox" id="showHex" checked>
-                <label for="showHex">Соты</label>
+                <label for="showHex">Ячейки</label>
             </div>
             
             <div class="compact-checkbox">
                 <input type="checkbox" id="showCenters" checked>
-                <label for="showCenters">Центры</label>
+                <label for="showCenters">Узлы</label>
             </div>
             
             <div class="compact-checkbox">
                 <input type="checkbox" id="showCircles">
                 <label for="showCircles">Радиусы</label>
+            </div>
+			
+			<div id="cellCount" class="bs-count" style="margin-top: 12px; text-align: center;">
+                Количество ячеек: 0
             </div>
         </div>
     </div>
@@ -810,6 +814,14 @@ function changeMap(event) {
     const nextMapType = mapTypes[nextIndex];
     
     selectMapType(nextMapType);
+}
+
+// Функция для обновления счетчика ячеек
+function updateCellCount() {
+    const cellCountElement = document.getElementById('cellCount');
+    if (cellCountElement) {
+        cellCountElement.textContent = `Количество ячеек: ${activeHexes.size}`;
+    }
 }
 
 // Функция для переключения аккордеона с одиночным открытием
@@ -1175,7 +1187,9 @@ function toggleBuild(event) {
     } else if (buildEnabled && activeHexes.size > 0) {
         updatePossibleHexes();
     }
-    
+	
+    updateCellCount();
+	
     draw();
 }
 
@@ -1267,7 +1281,7 @@ function getHexNeighbors(q, r) {
     }));
 }
 
-// Обновление возможных сот
+// Обновление возможных ячеек
 function updatePossibleHexes() {
     if (!buildEnabled || activeHexes.size === 0) {
         possibleHexes.clear();
@@ -1289,7 +1303,7 @@ function updatePossibleHexes() {
     }
 }
 
-// Получение экранных координат центра соты
+// Получение экранных координат центра ячейки
 function getHexScreenPosition(q, r) {
     const gridCenterPx = getGridCenterInPixels();
     const relativeCoords = hexToRelativeCoords(q, r);
@@ -1479,7 +1493,7 @@ canvas.addEventListener('click', function(e) {
         return;
     }
     
-    // Если включен режим построения - обрабатываем клики по сотам
+    // Если включен режим построения - обрабатываем клики по ячейкам
     if (buildEnabled) {
         let clickedActiveHex = null;
         for (const hex of activeHexes.values()) {
@@ -1497,7 +1511,7 @@ canvas.addEventListener('click', function(e) {
                 activeHexes.delete(key);
                 updatePossibleHexes();
                 draw();
-                
+                updateCellCount();
                 markMapAsChanged();
             }
             return;
@@ -1518,7 +1532,7 @@ canvas.addEventListener('click', function(e) {
             activeHexes.set(key, clickedPossibleHex);
             updatePossibleHexes();
             draw();
-            
+            updateCellCount();
             markMapAsChanged();
         }
     }
@@ -2028,7 +2042,7 @@ function restoreMapState(state) {
     for (const [key, hex] of state.activeHexes) {
         activeHexes.set(key, hex);
     }
-    
+    updateCellCount();
     clearMarkers();
     bsMarkers = state.bsMarkers || [];
     
@@ -2184,7 +2198,7 @@ function drawCircle(ctx, centerX, centerY, radius, color = 'rgba(244,68,68,0.5)'
     ctx.stroke();
 }
 
-// Рисование предварительной соты
+// Рисование предварительной ячейки
 function drawPreviewHex() {
     if (buildEnabled || activeHexes.size > 0) return;
     
@@ -2266,7 +2280,7 @@ function drawGrid() {
 // Главная функция отрисовки
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+    updateCellCount();
     if ((!leafletMap && bgMode !== 'image') || (activeHexes.size === 0 && !buildEnabled && !moveGridEnabled && !bsModeEnabled)) {
         if (!leafletMap && bgMode !== 'image') return;
         
@@ -2449,6 +2463,7 @@ function reset() {
     gridCenterLng = null;
     activeHexes.clear();
     possibleHexes.clear();
+	updateCellCount();
     showHex = true;
     showCenters = true;
     showCircles = false;
@@ -2516,6 +2531,8 @@ window.onload = () => {
     document.getElementById('rotText').value = '0';
     document.getElementById('moveGrid').checked = false;
     
+	updateCellCount();
+	
     // Инициализация элементов управления радиуса БС
     document.getElementById('markerCircleSlider').min = CONFIG.MIN_BS_RADIUS;
     document.getElementById('markerCircleSlider').max = CONFIG.MAX_BS_RADIUS;
