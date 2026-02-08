@@ -653,9 +653,23 @@
                 <label for="showCircles">Радиусы</label>
             </div>
 			
+			<div class="compact-checkbox">
+				<input type="checkbox" id="showNames">
+				<label for="showNames">Наименования</label>
+			</div>
+			
 			<div id="cellCount" class="bs-count" style="margin-top: 12px; text-align: center;">
                 Количество ячеек: 0
             </div>
+			
+			<div id="cellList" class="bs-list" style="display: none; max-height: 200px;">
+				<!-- Список ячеек будет генерироваться динамически -->
+			</div>
+
+			<div id="cellEmptyMessage" class="empty-section" style="display: none;">
+				Ячейки отсутствуют
+			</div>
+			
         </div>
     </div>
     
@@ -746,6 +760,7 @@ let rotation = 0;
 let showHex = true;
 let showCenters = true;
 let showCircles = false;
+let showNames = false;
 let buildEnabled = false;
 let bsModeEnabled = false;
 let moveGridEnabled = false;
@@ -762,6 +777,7 @@ let gridCenterLng = null;
 // Храним сетку в относительных координатах (q, r) гексагональной сетки
 let activeHexes = new Map();
 let possibleHexes = new Map();
+let selectedCellKey = null;
 
 // Хранилище маркеров базовых станций
 let bsMarkers = [];
@@ -816,12 +832,113 @@ function changeMap(event) {
     selectMapType(nextMapType);
 }
 
-// Функция для обновления счетчика ячеек
+// Функция для обновления счетчика ячеек и списка
 function updateCellCount() {
+    updateCellList(); // Теперь обновляем и счетчик, и список
+}
+
+// Обновление списка ячеек
+function updateCellList() {
+    const cellListElement = document.getElementById('cellList');
+    const cellEmptyMessage = document.getElementById('cellEmptyMessage');
     const cellCountElement = document.getElementById('cellCount');
+    
     if (cellCountElement) {
         cellCountElement.textContent = `Количество ячеек: ${activeHexes.size}`;
     }
+    
+    if (activeHexes.size === 0) {
+        cellListElement.style.display = 'none';
+        cellEmptyMessage.style.display = 'none'; // Скрываем сообщение
+    } else {
+        cellListElement.style.display = 'block';
+        cellEmptyMessage.style.display = 'none'; // Убеждаемся, что сообщение скрыто
+        
+        cellListElement.innerHTML = '';
+        
+        let index = 1;
+        for (const [key, hex] of activeHexes.entries()) {
+            const listItem = document.createElement('div');
+            listItem.className = 'bs-list-item';
+            listItem.dataset.key = key;
+            
+            // Добавляем класс active если ячейка выделена
+            if (key === selectedCellKey) {
+                listItem.classList.add('active');
+            }
+            
+            const nameSpan = document.createElement('div');
+            nameSpan.className = 'bs-list-item-name';
+            
+            // Используем имя ячейки, если оно есть, иначе генерируем
+            if (hex.name) {
+                nameSpan.textContent = hex.name;
+            } else {
+                nameSpan.textContent = `Ячейка ${index}`;
+                hex.name = `Ячейка ${index}`;
+            }
+            
+            const infoSpan = document.createElement('div');
+            infoSpan.className = 'bs-list-item-info';
+            infoSpan.textContent = `(${hex.q}, ${hex.r})`;
+            infoSpan.title = `Координаты: q=${hex.q}, r=${hex.r}`;
+            
+            listItem.appendChild(nameSpan);
+            listItem.appendChild(infoSpan);
+            
+            // При клике на ячейку в списке - центрируем карту на ней
+            listItem.addEventListener('click', function(e) {
+                selectCellInList(key);
+            });
+            
+            cellListElement.appendChild(listItem);
+            index++;
+        }
+    }
+    
+    // Обновляем высоту окна
+    updateControlWindowHeight();
+}
+
+// Выбор ячейки в списке
+function selectCellInList(cellKey) {
+    // Если кликаем на уже выбранную ячейку - снимаем выделение
+    if (selectedCellKey === cellKey) {
+        selectedCellKey = null;
+        
+        // Снимаем выделение со всех элементов списка
+        document.querySelectorAll('#cellList .bs-list-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        draw(); // Перерисовываем без выделения
+        return;
+    }
+    
+    selectedCellKey = cellKey;
+    const hex = activeHexes.get(cellKey);
+    if (!hex || !leafletMap) return;
+    
+    // Получаем координаты центра ячейки
+    const screenPos = getHexScreenPosition(hex.q, hex.r);
+    
+    // Преобразуем экранные координаты в географические
+    if (leafletMap) {
+        const latLng = leafletMap.containerPointToLatLng([screenPos.x, screenPos.y]);
+        leafletMap.setView(latLng, leafletMap.getZoom());
+    }
+    
+    // Выделяем выбранную ячейку в списке
+    document.querySelectorAll('#cellList .bs-list-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    const selectedItem = document.querySelector(`#cellList .bs-list-item[data-key="${cellKey}"]`);
+    if (selectedItem) {
+        selectedItem.classList.add('active');
+    }
+    
+    draw(); // Перерисовываем с выделением
 }
 
 // Функция для переключения аккордеона с одиночным открытием
@@ -1182,13 +1299,16 @@ function toggleBuild(event) {
         updatePossibleHexes();
         
         markMapAsChanged();
+		
+		updateCellList();
+		
     } else if (!buildEnabled) {
         possibleHexes.clear();
     } else if (buildEnabled && activeHexes.size > 0) {
         updatePossibleHexes();
     }
 	
-    updateCellCount();
+	updateCellList();
 	
     draw();
 }
@@ -1506,16 +1626,22 @@ canvas.addEventListener('click', function(e) {
         }
         
         if (clickedActiveHex) {
-            if (activeHexes.size > 1) {
-                const key = `${clickedActiveHex.q},${clickedActiveHex.r}`;
-                activeHexes.delete(key);
-                updatePossibleHexes();
-                draw();
-                updateCellCount();
-                markMapAsChanged();
-            }
-            return;
-        }
+			if (activeHexes.size > 1) {
+				const key = `${clickedActiveHex.q},${clickedActiveHex.r}`;
+				
+				// Если удаляем выделенную ячейку - сбрасываем выделение
+				if (selectedCellKey === key) {
+					selectedCellKey = null;
+				}
+				
+				activeHexes.delete(key);
+				updatePossibleHexes();
+				draw();
+				updateCellList();
+				markMapAsChanged();
+			}
+			return;
+		}
         
         let clickedPossibleHex = null;
         for (const hex of possibleHexes.values()) {
@@ -1532,6 +1658,7 @@ canvas.addEventListener('click', function(e) {
             activeHexes.set(key, clickedPossibleHex);
             updatePossibleHexes();
             draw();
+			updateCellList();
             updateCellCount();
             markMapAsChanged();
         }
@@ -2039,10 +2166,11 @@ function restoreMapState(state) {
     gridCenterLng = state.gridCenterLng;
     
     activeHexes.clear();
+	selectedCellKey = null;
     for (const [key, hex] of state.activeHexes) {
         activeHexes.set(key, hex);
     }
-    updateCellCount();
+    updateCellList();
     clearMarkers();
     bsMarkers = state.bsMarkers || [];
     
@@ -2236,7 +2364,7 @@ function drawPreviewHex() {
     }
 }
 
-// Отрисовка всей сетки
+// Отрисовка всей сетки (с заливкой для выделенных ячеек)
 function drawGrid() {
     const gridCenterPx = getGridCenterInPixels();
     
@@ -2259,22 +2387,102 @@ function drawGrid() {
         }
     }
     
-    for (const hex of activeHexes.values()) {
+    // Обновляем имена ячеек перед отрисовкой
+    updateCellNames();
+    
+    let cellIndex = 1;
+    for (const [key, hex] of activeHexes.entries()) {
         const screenPos = getHexScreenPosition(hex.q, hex.r);
         const { x, y, radius: currentRadius } = screenPos;
         
-        if (showHex) {
-            drawHexagon(ctx, x, y, currentRadius, '#4af', 2, rotation * Math.PI / 180);
+        // Присваиваем имя ячейке, если его нет
+        if (!hex.name) {
+            hex.name = `Ячейка ${cellIndex}`;
         }
         
-        if (showCenters) {
-            drawCenter(ctx, x, y, 4, '#f44');
+        // Проверяем, является ли эта ячейка выбранной
+        const isSelected = (key === selectedCellKey);
+        
+        if (showHex) {
+            if (isSelected) {
+                // Выделенная ячейка - с насыщенной заливкой
+                ctx.save();
+                
+                // Насыщенная заливка
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = i * Math.PI / 3 - Math.PI / 2 + rotation * Math.PI / 180;
+                    const px = x + currentRadius * Math.cos(angle);
+                    const py = y + currentRadius * Math.sin(angle);
+                    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(68, 136, 255, 0.4)'; // Более насыщенная заливка
+                ctx.fill();
+                
+                // Контур выделенной ячейки
+                ctx.strokeStyle = '#4af';
+                ctx.lineWidth = 2.5; // Более толстый контур
+                ctx.stroke();
+                
+                ctx.restore();
+                
+                // Яркий центр для выделенной ячейки
+                drawCenter(ctx, x, y, 5, '#4af');
+            } else {
+                // Обычная ячейка - стандартная отрисовка
+                drawHexagon(ctx, x, y, currentRadius, '#4af', 2, rotation * Math.PI / 180);
+                
+                if (showCenters) {
+                    drawCenter(ctx, x, y, 4, '#f44');
+                }
+            }
+        } else if (showCenters) {
+            // Если отключены шестиугольники, но включены центры
+            if (isSelected) {
+                drawCenter(ctx, x, y, 5, '#4af');
+            } else {
+                drawCenter(ctx, x, y, 4, '#f44');
+            }
         }
         
         if (showCircles) {
             drawCircle(ctx, x, y, currentRadius, 'rgba(244,68,68,0.5)');
         }
+        
+        // Отрисовываем имя ячейки выше центра ячейки
+        drawCellName(ctx, x, y, hex.name, currentRadius);
+        
+        cellIndex++;
     }
+}
+
+// Рисование выделенной ячейки
+function drawSelectedHex(ctx, x, y, radius, rotationAngle) {
+    ctx.save();
+    
+    // Внешняя подсветка
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        const angle = i * Math.PI / 3 - Math.PI / 2 + rotationAngle;
+        const px = x + (radius + 5) * Math.cos(angle);
+        const py = y + (radius + 5) * Math.sin(angle);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(255, 153, 0, 0.5)'; // Оранжевая подсветка
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // Основная ячейка с уменьшенной прозрачностью
+    ctx.globalAlpha = 0.4; // Уменьшенная прозрачность
+    drawHexagon(ctx, x, y, radius, '#4af', 2, rotationAngle);
+    
+    // Яркий центр
+    ctx.globalAlpha = 1.0;
+    drawCenter(ctx, x, y, 5, '#4af'); // Оранжевый центр
+    
+    ctx.restore();
 }
 
 // Главная функция отрисовки
@@ -2303,6 +2511,11 @@ function draw() {
 document.getElementById('radiusSlider').oninput = function() {
     document.getElementById('radiusText').value = this.value;
     applyRadius();
+};
+
+document.getElementById('showNames').onchange = function() {
+    showNames = this.checked;
+    draw();
 };
 
 document.getElementById('radiusText').addEventListener('blur', function() {
@@ -2463,10 +2676,12 @@ function reset() {
     gridCenterLng = null;
     activeHexes.clear();
     possibleHexes.clear();
-	updateCellCount();
+	selectedCellKey = null;
+    updateCellList();
     showHex = true;
     showCenters = true;
     showCircles = false;
+    showNames = false;
     
     clearMarkers();
     
@@ -2478,6 +2693,7 @@ function reset() {
     document.getElementById('showHex').checked = true;
     document.getElementById('showCenters').checked = true;
     document.getElementById('showCircles').checked = false;
+    document.getElementById('showNames').checked = false; // ← ДОБАВЬТЕ ЭТУ СТРОКУ
     document.getElementById('radiusText').value = CONFIG.DEFAULT_RADIUS.toString();
     document.getElementById('rotText').value = '0';
     document.getElementById('radiusSlider').value = CONFIG.DEFAULT_RADIUS;
@@ -2513,6 +2729,83 @@ window.onresize = function() {
     updateControlWindowHeight();
 };
 
+// Обновление имен ячеек
+function updateCellNames() {
+    let index = 1;
+    for (const hex of activeHexes.values()) {
+        if (!hex.name) {
+            hex.name = `Ячейка ${index}`;
+        }
+        index++;
+    }
+    updateCellList(); // Обновляем список после изменения имен
+}
+
+// Компактное рисование имени ячейки внутри ячейки (выше центра)
+function drawCellName(ctx, centerX, centerY, name, hexRadius) {
+    // Если отображение имен отключено - не рисуем ничего
+    if (!showNames) return;
+    
+    ctx.save();
+    
+    // Позиционируем текст выше центра ячейки
+    const textY = centerY - hexRadius * 0.2;
+    
+    // Полупрозрачный темный фон для лучшей читаемости
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 1;
+    
+    // Компактный фон - подбираем размер под текст
+    ctx.font = 'bold 10px Arial, sans-serif';
+    const textWidth = ctx.measureText(name).width + 8;
+    const textHeight = 14;
+    
+    // Проверяем, чтобы фон не выходил за границы ячейки
+    const maxWidth = hexRadius * 1.5;
+    const displayName = textWidth > maxWidth ? 
+        name.substring(0, Math.floor(name.length * maxWidth / textWidth)) + '...' : 
+        name;
+    
+    const finalTextWidth = ctx.measureText(displayName).width + 8;
+    
+    // Рисуем прямоугольный фон с закругленными углами
+    const cornerRadius = 3;
+    const bgX = centerX - finalTextWidth/2;
+    const bgY = textY - textHeight/2;
+    
+    // Фон с закругленными углами
+    ctx.beginPath();
+    ctx.moveTo(bgX + cornerRadius, bgY);
+    ctx.lineTo(bgX + finalTextWidth - cornerRadius, bgY);
+    ctx.quadraticCurveTo(bgX + finalTextWidth, bgY, bgX + finalTextWidth, bgY + cornerRadius);
+    ctx.lineTo(bgX + finalTextWidth, bgY + textHeight - cornerRadius);
+    ctx.quadraticCurveTo(bgX + finalTextWidth, bgY + textHeight, bgX + finalTextWidth - cornerRadius, bgY + textHeight);
+    ctx.lineTo(bgX + cornerRadius, bgY + textHeight);
+    ctx.quadraticCurveTo(bgX, bgY + textHeight, bgX, bgY + textHeight - cornerRadius);
+    ctx.lineTo(bgX, bgY + cornerRadius);
+    ctx.quadraticCurveTo(bgX, bgY, bgX + cornerRadius, bgY);
+    ctx.closePath();
+    
+    ctx.fill();
+    ctx.stroke();
+    
+    // Текст
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffffff';
+    
+    // Без тени для более чистого вида
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    
+    ctx.fillText(displayName, centerX, textY);
+    
+    ctx.restore();
+}
+
 window.onload = () => {
     resize();
     
@@ -2530,8 +2823,9 @@ window.onload = () => {
     document.getElementById('radiusText').value = CONFIG.DEFAULT_RADIUS.toString();
     document.getElementById('rotText').value = '0';
     document.getElementById('moveGrid').checked = false;
+	document.getElementById('showNames').checked = false;
     
-	updateCellCount();
+	updateCellList();
 	
     // Инициализация элементов управления радиуса БС
     document.getElementById('markerCircleSlider').min = CONFIG.MIN_BS_RADIUS;
