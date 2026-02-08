@@ -672,6 +672,25 @@
 			
         </div>
     </div>
+	
+	<!-- Секция Кластеризация (закрыта по умолчанию) -->
+	<div class="accordion-section">
+		<div class="accordion-header" onclick="toggleAccordion('clustering')">
+			<div style="display: flex; align-items: center; gap: 8px;">
+				<button id="clusteringToggle" onclick="toggleClustering(event)">Включить</button>
+				<span>Кластеризация</span>
+			</div>
+			<span class="accordion-icon">▼</span>
+		</div>
+		<div class="accordion-content" id="clustering-content">
+			<div class="empty-section">
+				<p>Функция в разработке</p>
+				<p style="font-size: 0.85em; margin-top: 6px; color: #999;">
+					Скоро здесь можно будет объединять ячейки в кластеры
+				</p>
+			</div>
+		</div>
+	</div>
     
     <!-- Секция Установка БС (закрыта по умолчанию) -->
     <div class="accordion-section">
@@ -695,20 +714,42 @@
     </div>
     
     <!-- Секция Импорт KML (закрыта по умолчанию) -->
-    <div class="accordion-section">
-        <div class="accordion-header" onclick="toggleAccordion('kml-import')">
-            <span>Импорт KML</span>
-            <span class="accordion-icon">▼</span>
-        </div>
-        <div class="accordion-content" id="kml-import-content">
-            <div class="empty-section">
-                <p>Функция в разработке</p>
-                <p style="font-size: 0.85em; margin-top: 6px; color: #999;">
-                    Скоро здесь можно будет импортировать KML файлы
-                </p>
-            </div>
-        </div>
-    </div>
+	<div class="accordion-section">
+		<div class="accordion-header" onclick="toggleAccordion('kml-import')">
+			<div style="display: flex; align-items: center; gap: 8px;">
+				<button id="kmlToggle" onclick="openKMLFile(event)">Открыть</button>
+				<span>Импорт KML</span>
+			</div>
+			<span class="accordion-icon">▼</span>
+		</div>
+		<div class="accordion-content" id="kml-import-content">
+			<div class="empty-section">
+				<p>Функция в разработке</p>
+				<p style="font-size: 0.85em; margin-top: 6px; color: #999;">
+					Скоро здесь можно будет импортировать KML файлы
+				</p>
+			</div>
+		</div>
+	</div>
+	
+	<!-- Секция Аналитика (закрыта по умолчанию) -->
+	<div class="accordion-section">
+		<div class="accordion-header" onclick="toggleAccordion('analytics')">
+			<div style="display: flex; align-items: center; gap: 8px;">
+				<button id="analyticsToggle" onclick="runAnalytics(event)">Выполнить</button>
+				<span>Аналитика</span>
+			</div>
+			<span class="accordion-icon">▼</span>
+		</div>
+		<div class="accordion-content" id="analytics-content">
+			<div class="empty-section">
+				<p>Функция в разработке</p>
+				<p style="font-size: 0.85em; margin-top: 6px; color: #999;">
+					Скоро здесь будут доступны аналитические инструменты
+				</p>
+			</div>
+		</div>
+	</div>
 </div>
 
 <!-- Диалог добавления/редактирования маркера -->
