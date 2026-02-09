@@ -607,12 +607,12 @@
         </div>
     </div>
     
-    <!-- Секция Планирование сетки (закрыта по умолчанию) -->
+    <!-- Секция Строение сети (закрыта по умолчанию) -->
     <div class="accordion-section">
         <div class="accordion-header" onclick="toggleAccordion('network-build')">
             <div style="display: flex; align-items: center; gap: 8px;">
                 <button id="buildToggle" onclick="toggleBuild(event)">Включить</button>
-                <span>Планирование сетки</span>
+                <span>Строение сети</span>
             </div>
             <span class="accordion-icon">▼</span>
         </div>
@@ -780,6 +780,21 @@
     </div>
 </div>
 
+<!-- Диалог редактирования ячейки -->
+<div id="cellDialog" class="marker-dialog">
+    <label for="cellName">Наименование</label>
+    <input type="text" id="cellName" placeholder="Введите название ячейки">
+    
+    <label for="cellComment" style="margin-top:8px;">Комментарий</label>
+    <textarea id="cellComment" rows="3" placeholder="Введите комментарий"></textarea>
+    
+    <div class="dialog-buttons">
+        <button onclick="saveCell()">Сохранить</button>
+        <button onclick="cancelCell()">Отмена</button>
+        <button id="deleteCellBtn" class="delete-btn" onclick="deleteCell()" style="display:none;">Удалить</button>
+    </div>
+</div>
+
 <script>
 // Конфигурация
 const CONFIG = {
@@ -819,6 +834,7 @@ let gridCenterLng = null;
 let activeHexes = new Map();
 let possibleHexes = new Map();
 let selectedCellKey = null;
+let editingCellKey = null; // Ключ редактируемой ячейки
 
 // Хранилище маркеров базовых станций
 let bsMarkers = [];
@@ -890,10 +906,10 @@ function updateCellList() {
     
     if (activeHexes.size === 0) {
         cellListElement.style.display = 'none';
-        cellEmptyMessage.style.display = 'none'; // Скрываем сообщение
+        cellEmptyMessage.style.display = 'none';
     } else {
         cellListElement.style.display = 'block';
-        cellEmptyMessage.style.display = 'none'; // Убеждаемся, что сообщение скрыто
+        cellEmptyMessage.style.display = 'none';
         
         cellListElement.innerHTML = '';
         
@@ -919,17 +935,52 @@ function updateCellList() {
                 hex.name = `Ячейка ${index}`;
             }
             
+            // Добавляем информацию о комментарии как у БС
             const infoSpan = document.createElement('div');
             infoSpan.className = 'bs-list-item-info';
-            infoSpan.textContent = `(${hex.q}, ${hex.r})`;
-            infoSpan.title = `Координаты: q=${hex.q}, r=${hex.r}`;
+            
+            if (hex.comment && hex.comment.trim()) {
+                const comment = hex.comment.trim();
+                if (comment.length > 20) {
+                    infoSpan.textContent = comment.substring(0, 20) + '...';
+                    infoSpan.title = comment;
+                } else {
+                    infoSpan.textContent = comment;
+                }
+                infoSpan.style.color = '#aaa';
+            } else {
+                infoSpan.textContent = '';
+                infoSpan.title = '';
+            }
+            
+            // Добавляем кнопку редактирования
+            const editBtn = document.createElement('button');
+            editBtn.innerHTML = '✏️';
+            editBtn.style.cssText = `
+                background: transparent;
+                border: none;
+                color: #aaa;
+                cursor: pointer;
+                font-size: 12px;
+                padding: 2px 6px;
+                margin-left: 4px;
+            `;
+            editBtn.title = 'Редактировать ячейку';
+            editBtn.onclick = function(e) {
+                e.stopPropagation(); // Предотвращаем всплытие
+                editCell(key);
+            };
             
             listItem.appendChild(nameSpan);
             listItem.appendChild(infoSpan);
+            listItem.appendChild(editBtn);
             
             // При клике на ячейку в списке - центрируем карту на ней
             listItem.addEventListener('click', function(e) {
-                selectCellInList(key);
+                // Если кликнули не на кнопке редактирования
+                if (e.target !== editBtn && !editBtn.contains(e.target)) {
+                    selectCellInList(key);
+                }
             });
             
             cellListElement.appendChild(listItem);
@@ -1335,7 +1386,12 @@ function toggleBuild(event) {
             gridCenterLng = 0;
         }
         
-        activeHexes.set("0,0", { q: 0, r: 0 });
+        activeHexes.set("0,0", { 
+			q: 0, 
+			r: 0,
+			name: null,
+			comment: ''
+		});
         
         updatePossibleHexes();
         
@@ -1695,8 +1751,13 @@ canvas.addEventListener('click', function(e) {
         }
         
         if (clickedPossibleHex) {
-            const key = `${clickedPossibleHex.q},${clickedPossibleHex.r}`;
-            activeHexes.set(key, clickedPossibleHex);
+			const key = `${clickedPossibleHex.q},${clickedPossibleHex.r}`;
+			activeHexes.set(key, {
+				q: clickedPossibleHex.q,
+				r: clickedPossibleHex.r,
+				name: null,
+				comment: ''
+			});
             updatePossibleHexes();
             draw();
 			updateCellList();
@@ -2405,7 +2466,7 @@ function drawPreviewHex() {
     }
 }
 
-// Отрисовка всей сетки (с заливкой для выделенных ячеек)
+// Отрисовка всей сетки
 function drawGrid() {
     const gridCenterPx = getGridCenterInPixels();
     
@@ -2468,8 +2529,8 @@ function drawGrid() {
                 
                 ctx.restore();
                 
-                // Яркий центр для выделенной ячейки
-                drawCenter(ctx, x, y, 5, '#4af');
+                // Центр выделенной ячейки - синий цвет
+                drawCenter(ctx, x, y, 5, '#4af'); // Синий цвет вместо оранжевого
             } else {
                 // Обычная ячейка - стандартная отрисовка
                 drawHexagon(ctx, x, y, currentRadius, '#4af', 2, rotation * Math.PI / 180);
@@ -2481,7 +2542,7 @@ function drawGrid() {
         } else if (showCenters) {
             // Если отключены шестиугольники, но включены центры
             if (isSelected) {
-                drawCenter(ctx, x, y, 5, '#4af');
+                drawCenter(ctx, x, y, 5, '#4af'); // Синий цвет для выделенной
             } else {
                 drawCenter(ctx, x, y, 4, '#f44');
             }
@@ -2492,7 +2553,9 @@ function drawGrid() {
         }
         
         // Отрисовываем имя ячейки выше центра ячейки
-        drawCellName(ctx, x, y, hex.name, currentRadius);
+        // Проверяем наличие комментария для отображения иконки
+        const hasComment = hex.comment && hex.comment.trim().length > 0;
+        drawCellName(ctx, x, y, hex.name, currentRadius, hasComment);
         
         cellIndex++;
     }
@@ -2718,6 +2781,7 @@ function reset() {
     activeHexes.clear();
     possibleHexes.clear();
 	selectedCellKey = null;
+	editingCellKey = null;
     updateCellList();
     showHex = true;
     showCenters = true;
@@ -2783,7 +2847,7 @@ function updateCellNames() {
 }
 
 // Компактное рисование имени ячейки внутри ячейки (выше центра)
-function drawCellName(ctx, centerX, centerY, name, hexRadius) {
+function drawCellName(ctx, centerX, centerY, name, hexRadius, hasComment = false) {
     // Если отображение имен отключено - не рисуем ничего
     if (!showNames) return;
     
@@ -2794,24 +2858,30 @@ function drawCellName(ctx, centerX, centerY, name, hexRadius) {
     
     // Полупрозрачный темный фон для лучшей читаемости
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = hasComment ? '#4af' : 'rgba(255, 255, 255, 0.3)'; // Синяя обводка если есть комментарий
+    ctx.lineWidth = hasComment ? 1.5 : 1;
     
     // Компактный фон - подбираем размер под текст
     ctx.font = 'bold 10px Arial, sans-serif';
-    const textWidth = ctx.measureText(name).width + 8;
-    const textHeight = 14;
+    
+    // Добавляем иконку комментария к имени если есть комментарий
+    const displayText = hasComment ? `${name} 💬` : name;
+    const textWidth = ctx.measureText(displayText).width + 12;
+    const textHeight = 16;
     
     // Проверяем, чтобы фон не выходил за границы ячейки
     const maxWidth = hexRadius * 1.5;
-    const displayName = textWidth > maxWidth ? 
-        name.substring(0, Math.floor(name.length * maxWidth / textWidth)) + '...' : 
-        name;
+    let finalText = displayText;
+    if (textWidth > maxWidth) {
+        // Сокращаем текст
+        const chars = Math.floor((maxWidth - 20) / 6);
+        finalText = displayText.substring(0, chars) + '...';
+    }
     
-    const finalTextWidth = ctx.measureText(displayName).width + 8;
+    const finalTextWidth = ctx.measureText(finalText).width + 12;
     
     // Рисуем прямоугольный фон с закругленными углами
-    const cornerRadius = 3;
+    const cornerRadius = 4;
     const bgX = centerX - finalTextWidth/2;
     const bgY = textY - textHeight/2;
     
@@ -2834,17 +2904,143 @@ function drawCellName(ctx, centerX, centerY, name, hexRadius) {
     // Текст
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = hasComment ? '#ffffff' : '#cccccc'; // Более светлый текст если есть комментарий
     
-    // Без тени для более чистого вида
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
+    // Легкая тень для текста
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 2;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
     
-    ctx.fillText(displayName, centerX, textY);
+    ctx.fillText(finalText, centerX, textY);
     
     ctx.restore();
+}
+
+// Показать диалог редактирования ячейки
+function editCell(cellKey) {
+    const hex = activeHexes.get(cellKey);
+    if (!hex) return;
+    
+    // Устанавливаем текущую редактируемую ячейку
+    editingCellKey = cellKey;
+    
+    // Заполняем поля формы
+    document.getElementById('cellName').value = hex.name || '';
+    document.getElementById('cellComment').value = hex.comment || '';
+    
+    // Показываем кнопку удаления только если ячеек больше 1
+    const deleteBtn = document.getElementById('deleteCellBtn');
+    deleteBtn.style.display = activeHexes.size > 1 ? 'block' : 'none';
+    
+    // Позиционируем диалог
+    positionCellDialog(cellKey);
+    
+    // Показываем диалог
+    document.getElementById('cellDialog').classList.add('active');
+    
+    // Фокусируемся на поле имени
+    document.getElementById('cellName').focus();
+}
+
+// Позиционирование диалога рядом с ячейкой
+function positionCellDialog(cellKey) {
+    const hex = activeHexes.get(cellKey);
+    if (!hex || !leafletMap) return;
+    
+    const dialog = document.getElementById('cellDialog');
+    const screenPos = getHexScreenPosition(hex.q, hex.r);
+    
+    // Преобразуем координаты канваса в координаты окна
+    const rect = canvas.getBoundingClientRect();
+    const dialogWidth = 300;
+    const dialogHeight = 320;
+    
+    let left = rect.left + screenPos.x + 20;
+    let top = rect.top + screenPos.y;
+    
+    // Корректируем позицию, чтобы диалог не выходил за границы экрана
+    if (left + dialogWidth > window.innerWidth) {
+        left = rect.left + screenPos.x - dialogWidth - 20;
+    }
+    if (top + dialogHeight > window.innerHeight) {
+        top = rect.top + screenPos.y - dialogHeight;
+    }
+    
+    dialog.style.left = left + 'px';
+    dialog.style.top = top + 'px';
+}
+
+// Сохранить изменения ячейки
+function saveCell() {
+    if (!editingCellKey) return;
+    
+    const hex = activeHexes.get(editingCellKey);
+    if (!hex) return;
+    
+    const nameInput = document.getElementById('cellName');
+    const commentInput = document.getElementById('cellComment');
+    
+    let name = nameInput.value.trim();
+    const comment = commentInput.value.trim();
+    
+    // Если имя пустое, используем стандартное
+    if (!name) {
+        const index = Array.from(activeHexes.keys()).indexOf(editingCellKey) + 1;
+        name = `Ячейка ${index}`;
+        nameInput.value = name;
+    }
+    
+    // Обновляем данные ячейки
+    hex.name = name;
+    hex.comment = comment;
+    
+    // Обновляем список и отрисовку
+    updateCellList();
+    draw();
+    
+    // Помечаем карту как измененную
+    markMapAsChanged();
+    
+    // Скрываем диалог
+    hideCellDialog();
+}
+
+// Удалить ячейку
+function deleteCell() {
+    if (!editingCellKey || activeHexes.size <= 1) return;
+    
+    // Если удаляем выделенную ячейку - сбрасываем выделение
+    if (selectedCellKey === editingCellKey) {
+        selectedCellKey = null;
+    }
+    
+    // Удаляем ячейку
+    activeHexes.delete(editingCellKey);
+    
+    // Обновляем возможные ячейки
+    updatePossibleHexes();
+    
+    // Обновляем интерфейс
+    updateCellList();
+    draw();
+    
+    // Помечаем карту как измененную
+    markMapAsChanged();
+    
+    // Скрываем диалог
+    hideCellDialog();
+}
+
+// Отменить редактирование
+function cancelCell() {
+    hideCellDialog();
+}
+
+// Скрыть диалог
+function hideCellDialog() {
+    document.getElementById('cellDialog').classList.remove('active');
+    editingCellKey = null;
 }
 
 window.onload = () => {
@@ -2939,6 +3135,21 @@ window.onload = () => {
     document.querySelector('.file-btn-save-image').addEventListener('click', function() {
         alert('Функция "Сохранить изображение" в разработке');
     });
+	
+	// Обработчики клавиш для диалога редактирования ячеек
+	document.getElementById('cellName').addEventListener('keydown', function(e) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			saveCell();
+		}
+	});
+
+	document.getElementById('cellComment').addEventListener('keydown', function(e) {
+		if (e.key === 'Enter' && e.ctrlKey) {
+			e.preventDefault();
+			saveCell();
+		}
+	});
 };
 </script>
 </body>
