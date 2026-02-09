@@ -773,16 +773,18 @@
 <!-- Диалог редактирования ячейки -->
 <div id="cellDialog" class="marker-dialog">
     <label for="cellName">Наименование</label>
-    <input type="text" id="cellName" placeholder="Введите название ячейки">
+    <input type="text" id="cellName" placeholder="Введите название">
     
     <label for="cellComment" style="margin-top:8px;">Комментарий</label>
     <textarea id="cellComment" rows="3" placeholder="Введите комментарий"></textarea>
     
     <div class="dialog-buttons">
-        <button onclick="saveCell()">Сохранить</button>
-        <button onclick="cancelCell()">Отмена</button>
-        <button id="deleteCellBtn" class="delete-btn" onclick="deleteCell()" style="display:none;">Удалить</button>
-    </div>
+    <button onclick="saveItem()">Сохранить</button>
+    <button onclick="cancelItem()">Отмена</button>
+    <button id="deleteCellBtn" class="delete-btn" onclick="deleteItem()" style="display:none;">
+        Удалить
+    </button>
+</div>
 </div>
 
 <script>
@@ -816,6 +818,8 @@ let dragStartPixelY = 0;
 let dragStartLat = 0;
 let dragStartLng = 0;
 let originalMarkerValues = null;
+let clusters = [];
+let editingItem = null;
 
 // Центр сетки в географических координатах
 let gridCenterLat = null;
@@ -882,106 +886,274 @@ function changeMap(event) {
 
 // Функция для обновления счетчика ячеек и списка
 function updateCellCount() {
-    updateCellList(); // Теперь обновляем и счетчик, и список
+    renderClustersAndCells(); // Теперь обновляем и счетчик, и список
+}
+
+function createCluster() {
+    // Собираем все занятые номера кластеров
+    const usedNumbers = new Set();
+    
+    clusters.forEach(cl => {
+        const match = cl.name.match(/Кластер\s+(\d+)/);
+        if (match) {
+            const num = parseInt(match[1], 10);
+            if (num > 0) usedNumbers.add(num);
+        }
+    });
+
+    // Находим первое свободное число, начиная с 1
+    let freeNum = 1;
+    while (usedNumbers.has(freeNum)) {
+        freeNum++;
+    }
+
+    const clusterName = `Кластер ${freeNum}`;
+
+    const newCluster = {
+        id: Date.now(),
+        name: clusterName,
+        comment: ""  // если используешь комментарии
+        // cells: [], // если позже понадобится
+    };
+
+    // Добавляем в конец (как ты просил ранее)
+    clusters.push(newCluster);
+
+    // Обновляем счётчик
+    document.getElementById('clusterCount').textContent = 
+        `Количество кластеров: ${clusters.length}`;
+
+    // Перерисовываем список
+    renderClustersAndCells();
+
+    // markMapAsChanged();   // если нужно
 }
 
 // Обновление списка ячеек
-function updateCellList() {
-    const cellListElement = document.getElementById('cellList');
-    const cellEmptyMessage = document.getElementById('cellEmptyMessage');
-    const cellCountElement = document.getElementById('cellCount');
-    
-    if (cellCountElement) {
-        cellCountElement.textContent = `Количество ячеек: ${activeHexes.size}`;
+function renderClustersAndCells() {
+    const listEl = document.getElementById('cellList');
+    const cellCountEl = document.getElementById('cellCount');
+    listEl.innerHTML = '';
+
+    // 1. Кластеры (сверху)
+    clusters.forEach(cluster => {
+        const item = document.createElement('div');
+        item.className = 'bs-list-item';
+        item.dataset.clusterId = cluster.id;
+
+        const nameSpan = document.createElement('div');
+        nameSpan.className = 'bs-list-item-name';
+        nameSpan.textContent = cluster.name;
+
+        // ────────────── ДОБАВЛЯЕМ КОММЕНТАРИЙ КАК У БС ──────────────
+        const infoSpan = document.createElement('div');
+        infoSpan.className = 'bs-list-item-info';
+
+        if (cluster.comment && cluster.comment.trim()) {
+            const comment = cluster.comment.trim();
+            if (comment.length > 20) {
+                infoSpan.textContent = comment.substring(0, 20) + '...';
+                infoSpan.title = comment;
+            } else {
+                infoSpan.textContent = comment;
+            }
+            infoSpan.style.color = '#aaa';
+        } else {
+            infoSpan.textContent = '';
+        }
+        // ───────────────────────────────────────────────────────────
+
+        const editBtn = document.createElement('button');
+        editBtn.innerHTML = '✏️';
+        editBtn.style.cssText = `
+            background: transparent;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px 6px;
+            margin-left: 4px;
+        `;
+        editBtn.title = 'Редактировать кластер';
+        editBtn.onclick = function(e) {
+            e.stopPropagation();
+            editItem("cluster", cluster.id);
+        };
+
+        item.appendChild(nameSpan);
+        item.appendChild(infoSpan);     // ← добавили
+        item.appendChild(editBtn);
+
+        listEl.appendChild(item);
+    });
+
+    // 2. Ячейки
+    let index = 1;
+    for (const [key, hex] of activeHexes.entries()) {
+        const listItem = document.createElement('div');
+        listItem.className = 'bs-list-item';
+        listItem.dataset.key = key;
+
+        if (key === selectedCellKey) {
+            listItem.classList.add('active');
+        }
+
+        const nameSpan = document.createElement('div');
+        nameSpan.className = 'bs-list-item-name';
+        nameSpan.textContent = hex.name || `Ячейка ${index}`;
+
+        // ────────────── ДОБАВЛЯЕМ КОММЕНТАРИЙ КАК У БС ──────────────
+        const infoSpan = document.createElement('div');
+        infoSpan.className = 'bs-list-item-info';
+
+        if (hex.comment && hex.comment.trim()) {
+            const comment = hex.comment.trim();
+            if (comment.length > 20) {
+                infoSpan.textContent = comment.substring(0, 20) + '...';
+                infoSpan.title = comment;
+            } else {
+                infoSpan.textContent = comment;
+            }
+            infoSpan.style.color = '#aaa';
+        } else {
+            infoSpan.textContent = '';
+        }
+        // ───────────────────────────────────────────────────────────
+
+        const editBtn = document.createElement('button');
+        editBtn.innerHTML = '✏️';
+        editBtn.style.cssText = `
+            background: transparent;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px 6px;
+            margin-left: 4px;
+        `;
+        editBtn.onclick = (e) => {
+            e.stopPropagation();
+            editItem("cell", key);
+        };
+
+        listItem.appendChild(nameSpan);
+        listItem.appendChild(infoSpan);     // ← добавили
+        listItem.appendChild(editBtn);
+
+        listItem.addEventListener('click', (e) => {
+            if (e.target !== editBtn) {
+                selectCellInList(key);
+            }
+        });
+
+        listEl.appendChild(listItem);
+        index++;
     }
-    
-    if (activeHexes.size === 0) {
-        cellListElement.style.display = 'none';
-        cellEmptyMessage.style.display = 'none';
+
+    // Показываем/скрываем список
+    if (clusters.length + activeHexes.size > 0) {
+        listEl.style.display = 'block';
     } else {
-        cellListElement.style.display = 'block';
-        cellEmptyMessage.style.display = 'none';
-        
-        cellListElement.innerHTML = '';
-        
-        let index = 1;
-        for (const [key, hex] of activeHexes.entries()) {
-            const listItem = document.createElement('div');
-            listItem.className = 'bs-list-item';
-            listItem.dataset.key = key;
-            
-            // Добавляем класс active если ячейка выделена
-            if (key === selectedCellKey) {
-                listItem.classList.add('active');
-            }
-            
-            const nameSpan = document.createElement('div');
-            nameSpan.className = 'bs-list-item-name';
-            
-            // Используем имя ячейки, если оно есть, иначе генерируем
-            if (hex.name) {
-                nameSpan.textContent = hex.name;
-            } else {
-                nameSpan.textContent = `Ячейка ${index}`;
-                hex.name = `Ячейка ${index}`;
-            }
-            
-            // Добавляем информацию о комментарии как у БС
-            const infoSpan = document.createElement('div');
-            infoSpan.className = 'bs-list-item-info';
-            
-            if (hex.comment && hex.comment.trim()) {
-                const comment = hex.comment.trim();
-                if (comment.length > 20) {
-                    infoSpan.textContent = comment.substring(0, 20) + '...';
-                    infoSpan.title = comment;
-                } else {
-                    infoSpan.textContent = comment;
-                }
-                infoSpan.style.color = '#aaa';
-            } else {
-                infoSpan.textContent = '';
-                infoSpan.title = '';
-            }
-            
-            // Добавляем кнопку редактирования
-            const editBtn = document.createElement('button');
-            editBtn.innerHTML = '✏️';
-            editBtn.style.cssText = `
-                background: transparent;
-                border: none;
-                color: #aaa;
-                cursor: pointer;
-                font-size: 12px;
-                padding: 2px 6px;
-                margin-left: 4px;
-            `;
-            editBtn.title = 'Редактировать ячейку';
-            editBtn.onclick = function(e) {
-                e.stopPropagation(); // Предотвращаем всплытие
-                editCell(key);
-            };
-            
-            listItem.appendChild(nameSpan);
-            listItem.appendChild(infoSpan);
-            listItem.appendChild(editBtn);
-            
-            // При клике на ячейку в списке - центрируем карту на ней
-            listItem.addEventListener('click', function(e) {
-                // Если кликнули не на кнопке редактирования
-                if (e.target !== editBtn && !editBtn.contains(e.target)) {
-                    selectCellInList(key);
-                }
-            });
-            
-            cellListElement.appendChild(listItem);
-            index++;
+        listEl.style.display = 'none';
+    }
+
+    cellCountEl.textContent = `Количество ячеек: ${activeHexes.size}`;
+}
+
+function editItem(type, id) {
+    editingItem = { type, id };
+
+    let name = "";
+    let comment = "";
+
+    if (type === "cell") {
+        const hex = activeHexes.get(id);
+        if (!hex) return;
+        name = hex.name || "";
+        comment = hex.comment || "";
+    } else if (type === "cluster") {
+        const cluster = clusters.find(c => c.id === id);
+        if (!cluster) return;
+        name = cluster.name || "";
+        comment = cluster.comment || "";
+    }
+
+    document.getElementById('cellName').value = name;
+    document.getElementById('cellComment').value = comment;
+
+    // Показываем кнопку удаления (для ячеек — если >1, для кластеров — всегда или по условию)
+    const deleteBtn = document.getElementById('deleteCellBtn');
+    deleteBtn.style.display = (type === "cell" && activeHexes.size > 1) || type === "cluster" 
+        ? 'block' 
+        : 'none';
+
+    // Позиционируем диалог (можно оставить по центру или улучшить)
+    const dialog = document.getElementById('cellDialog');
+    dialog.style.left = '50%';
+    dialog.style.top = '20%';
+    dialog.style.transform = 'translate(-50%, 0)';
+    dialog.classList.add('active');
+
+    document.getElementById('cellName').focus();
+}
+
+function saveItem() {
+    if (!editingItem) return;
+
+    const nameInput = document.getElementById('cellName');
+    const commentInput = document.getElementById('cellComment');
+
+    let newName = nameInput.value.trim();
+    const newComment = commentInput.value.trim();
+
+    if (!newName) newName = "Без названия";  // или оставить старое
+
+    if (editingItem.type === "cell") {
+        const hex = activeHexes.get(editingItem.id);
+        if (hex) {
+            hex.name = newName;
+            hex.comment = newComment;
+        }
+    } else if (editingItem.type === "cluster") {
+        const cluster = clusters.find(c => c.id === editingItem.id);
+        if (cluster) {
+            cluster.name = newName;
+            cluster.comment = newComment;
         }
     }
-    
-    // Обновляем высоту окна
-    updateControlWindowHeight();
+
+    hideItemDialog();
+    renderClustersAndCells();   // или updateStructureList / updateCellList — что у вас сейчас
+    markMapAsChanged?.();       // если есть
 }
+
+function deleteItem() {
+    if (!editingItem) return;
+
+    if (editingItem.type === "cell") {
+        if (activeHexes.size <= 1) return;
+        if (!confirm("Удалить ячейку?")) return;
+        activeHexes.delete(editingItem.id);
+    } else if (editingItem.type === "cluster") {
+        if (!confirm("Удалить кластер?")) return;
+        clusters = clusters.filter(c => c.id !== editingItem.id);
+        // если позже добавите привязку ячеек — здесь их можно освободить
+    }
+
+    hideItemDialog();
+    renderClustersAndCells();
+    markMapAsChanged?.();
+}
+
+function cancelItem() {
+    hideItemDialog();
+}
+
+function hideItemDialog() {
+    document.getElementById('cellDialog').classList.remove('active');
+    editingItem = null;
+}
+
 
 // Выбор ячейки в списке
 function selectCellInList(cellKey) {
@@ -1388,7 +1560,7 @@ function toggleBuild(event) {
         
         markMapAsChanged();
 		
-		updateCellList();
+		renderClustersAndCells();
 		
     } else if (!buildEnabled) {
         possibleHexes.clear();
@@ -1396,7 +1568,7 @@ function toggleBuild(event) {
         updatePossibleHexes();
     }
 	
-	updateCellList();
+	renderClustersAndCells();
 	
     draw();
 }
@@ -1725,7 +1897,7 @@ canvas.addEventListener('click', function(e) {
 				activeHexes.delete(key);
 				updatePossibleHexes();
 				draw();
-				updateCellList();
+				renderClustersAndCells();
 				markMapAsChanged();
 			}
 			return;
@@ -1751,7 +1923,7 @@ canvas.addEventListener('click', function(e) {
 			});
             updatePossibleHexes();
             draw();
-			updateCellList();
+			renderClustersAndCells();
             updateCellCount();
             markMapAsChanged();
         }
@@ -2310,7 +2482,7 @@ function restoreMapState(state) {
     for (const [key, hex] of state.activeHexes) {
         activeHexes.set(key, hex);
     }
-    updateCellList();
+    renderClustersAndCells();
     clearMarkers();
     bsMarkers = state.bsMarkers || [];
     
@@ -2830,7 +3002,7 @@ function reset() {
     possibleHexes.clear();
 	selectedCellKey = null;
 	editingCellKey = null;
-    updateCellList();
+    renderClustersAndCells();
     showHex = true;
     showCenters = true;
     showCircles = false;
@@ -2891,7 +3063,7 @@ function updateCellNames() {
         }
         index++;
     }
-    updateCellList(); // Обновляем список после изменения имен
+    renderClustersAndCells(); // Обновляем список после изменения имен
 }
 
 // Компактное рисование имени ячейки внутри ячейки (выше центра)
@@ -2965,32 +3137,6 @@ function drawCellName(ctx, centerX, centerY, name, hexRadius, hasComment = false
     ctx.restore();
 }
 
-// Показать диалог редактирования ячейки
-function editCell(cellKey) {
-    const hex = activeHexes.get(cellKey);
-    if (!hex) return;
-    
-    // Устанавливаем текущую редактируемую ячейку
-    editingCellKey = cellKey;
-    
-    // Заполняем поля формы
-    document.getElementById('cellName').value = hex.name || '';
-    document.getElementById('cellComment').value = hex.comment || '';
-    
-    // Показываем кнопку удаления только если ячеек больше 1
-    const deleteBtn = document.getElementById('deleteCellBtn');
-    deleteBtn.style.display = activeHexes.size > 1 ? 'block' : 'none';
-    
-    // Позиционируем диалог
-    positionCellDialog(cellKey);
-    
-    // Показываем диалог
-    document.getElementById('cellDialog').classList.add('active');
-    
-    // Фокусируемся на поле имени
-    document.getElementById('cellName').focus();
-}
-
 // Позиционирование диалога рядом с ячейкой
 function positionCellDialog(cellKey) {
     const hex = activeHexes.get(cellKey);
@@ -3019,78 +3165,6 @@ function positionCellDialog(cellKey) {
     dialog.style.top = top + 'px';
 }
 
-// Сохранить изменения ячейки
-function saveCell() {
-    if (!editingCellKey) return;
-    
-    const hex = activeHexes.get(editingCellKey);
-    if (!hex) return;
-    
-    const nameInput = document.getElementById('cellName');
-    const commentInput = document.getElementById('cellComment');
-    
-    let name = nameInput.value.trim();
-    const comment = commentInput.value.trim();
-    
-    // Если имя пустое, используем стандартное
-    if (!name) {
-        const index = Array.from(activeHexes.keys()).indexOf(editingCellKey) + 1;
-        name = `Ячейка ${index}`;
-        nameInput.value = name;
-    }
-    
-    // Обновляем данные ячейки
-    hex.name = name;
-    hex.comment = comment;
-    
-    // Обновляем список и отрисовку
-    updateCellList();
-    draw();
-    
-    // Помечаем карту как измененную
-    markMapAsChanged();
-    
-    // Скрываем диалог
-    hideCellDialog();
-}
-
-// Удалить ячейку
-function deleteCell() {
-    if (!editingCellKey || activeHexes.size <= 1) return;
-    
-    // Если удаляем выделенную ячейку - сбрасываем выделение
-    if (selectedCellKey === editingCellKey) {
-        selectedCellKey = null;
-    }
-    
-    // Удаляем ячейку
-    activeHexes.delete(editingCellKey);
-    
-    // Обновляем возможные ячейки
-    updatePossibleHexes();
-    
-    // Обновляем интерфейс
-    updateCellList();
-    draw();
-    
-    // Помечаем карту как измененную
-    markMapAsChanged();
-    
-    // Скрываем диалог
-    hideCellDialog();
-}
-
-// Отменить редактирование
-function cancelCell() {
-    hideCellDialog();
-}
-
-// Скрыть диалог
-function hideCellDialog() {
-    document.getElementById('cellDialog').classList.remove('active');
-    editingCellKey = null;
-}
-
 window.onload = () => {
     resize();
     
@@ -3110,7 +3184,7 @@ window.onload = () => {
     document.getElementById('moveGrid').checked = false;
 	document.getElementById('showNames').checked = false;
     
-	updateCellList();
+	renderClustersAndCells();
 	
     // Инициализация элементов управления радиуса БС
     document.getElementById('markerCircleSlider').min = CONFIG.MIN_BS_RADIUS;
@@ -3179,6 +3253,8 @@ window.onload = () => {
     document.querySelector('.file-btn-save').addEventListener('click', function() {
         alert('Функция "Сохранить" в разработке');
     });
+	
+	document.getElementById('createClusterBtn').addEventListener('click', createCluster);
     
     document.querySelector('.file-btn-save-image').addEventListener('click', function() {
         alert('Функция "Сохранить изображение" в разработке');
