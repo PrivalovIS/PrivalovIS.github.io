@@ -815,6 +815,7 @@ let dragStartPixelX = 0;
 let dragStartPixelY = 0;
 let dragStartLat = 0;
 let dragStartLng = 0;
+let originalMarkerValues = null;
 
 // Центр сетки в географических координатах
 let gridCenterLat = null;
@@ -2010,6 +2011,12 @@ function editMarker(markerId) {
     const marker = bsMarkers[markerIndex2];
     editingMarkerId = markerId;
     
+    // Сохраняем оригинальные значения
+    originalMarkerValues = {
+        showCircle: marker.showCircle || false,
+        circleRadius: marker.circleRadius || CONFIG.DEFAULT_BS_RADIUS
+    };
+    
     document.getElementById('markerName').value = marker.name || '';
     document.getElementById('markerComment').value = marker.comment || '';
     document.getElementById('markerShowCircle').checked = marker.showCircle || false;
@@ -2096,16 +2103,21 @@ function showMarkerDialog(isEditing = false) {
 // Скрыть диалог
 function hideMarkerDialog() {
     document.getElementById('markerDialog').classList.remove('active');
-    currentMarkerData = null;
+    
+    // Сбрасываем значения только если это не редактирование (для него восстановление в cancelMarker)
+    if (!editingMarkerId) {
+        currentMarkerData = null;
+        
+        document.getElementById('markerShowCircle').checked = false;
+        document.getElementById('markerCircleSlider').value = CONFIG.DEFAULT_BS_RADIUS;
+        document.getElementById('markerCircleText').value = CONFIG.DEFAULT_BS_RADIUS;
+        document.getElementById('markerCircleControls').style.display = 'none';
+        
+        removePreviewCircle();
+    }
+    
     editingMarkerId = null;
-    
-    removeTempMarker();
-    removePreviewCircle();
-    
-    document.getElementById('markerShowCircle').checked = false;
-    document.getElementById('markerCircleSlider').value = CONFIG.DEFAULT_BS_RADIUS;
-    document.getElementById('markerCircleText').value = CONFIG.DEFAULT_BS_RADIUS;
-    document.getElementById('markerCircleControls').style.display = 'none';
+    originalMarkerValues = null; // Сбрасываем сохраненные значения
 }
 
 // Сохранить маркер
@@ -2136,28 +2148,11 @@ function saveMarker() {
                 leafletMarkers[leafletMarkerIndex].showCircle = showCircle;
                 leafletMarkers[leafletMarkerIndex].circleRadius = circleRadius;
                 
-                if (leafletMarkers[leafletMarkerIndex].circle && leafletMap) {
-                    leafletMap.removeLayer(leafletMarkers[leafletMarkerIndex].circle);
-                }
-                
-                if (showCircle && circleRadius > 0) {
-                    leafletMarkers[leafletMarkerIndex].circle = L.circle([leafletMarkers[leafletMarkerIndex].lat, leafletMarkers[leafletMarkerIndex].lng], {
-                        radius: circleRadius,
-                        color: '#ff4444',
-                        fillColor: '#ff4444',
-                        fillOpacity: 0.1,
-                        weight: 2,
-                        dashArray: '5, 5'
-                    }).addTo(leafletMap);
-                } else {
-                    leafletMarkers[leafletMarkerIndex].circle = null;
-                }
-                
-                updateMarkerPopup(leafletMarkers[leafletMarkerIndex]);
+                // Обновляем круг
+                updateMarkerCircle(leafletMarkers[leafletMarkerIndex]);
             }
             
             updateBsList();
-            
             markMapAsChanged();
         }
     } else if (currentMarkerData) {
@@ -2189,9 +2184,14 @@ function saveMarker() {
         }
         
         updateBsList();
-        
         markMapAsChanged();
     }
+    
+    // Удаляем предпросмотр
+    removePreviewCircle();
+    
+    // Сбрасываем сохраненные значения
+    originalMarkerValues = null;
     
     hideMarkerDialog();
     
@@ -2202,8 +2202,56 @@ function saveMarker() {
     updateControlWindowHeight();
 }
 
-// Отменить добавление маркера
+// Отменить добавление/редактирование маркера
 function cancelMarker() {
+    // Если это редактирование существующего маркера, восстанавливаем оригинальные значения
+    if (editingMarkerId && originalMarkerValues) {
+        const markerIndex = bsMarkers.findIndex(m => m.id === editingMarkerId);
+        if (markerIndex !== -1) {
+            const leafletMarkerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
+            if (leafletMarkerIndex !== -1) {
+                // Восстанавливаем оригинальные настройки круга
+                leafletMarkers[leafletMarkerIndex].showCircle = originalMarkerValues.showCircle;
+                leafletMarkers[leafletMarkerIndex].circleRadius = originalMarkerValues.circleRadius;
+                
+                // Обновляем круг на карте
+                if (leafletMarkers[leafletMarkerIndex].circle && leafletMap) {
+                    leafletMap.removeLayer(leafletMarkers[leafletMarkerIndex].circle);
+                }
+                
+                if (originalMarkerValues.showCircle && originalMarkerValues.circleRadius > 0) {
+                    leafletMarkers[leafletMarkerIndex].circle = L.circle(
+                        [leafletMarkers[leafletMarkerIndex].lat, leafletMarkers[leafletMarkerIndex].lng], 
+                        {
+                            radius: originalMarkerValues.circleRadius,
+                            color: '#ff4444',
+                            fillColor: '#ff4444',
+                            fillOpacity: 0.1,
+                            weight: 2,
+                            dashArray: '5, 5'
+                        }
+                    ).addTo(leafletMap);
+                } else {
+                    leafletMarkers[leafletMarkerIndex].circle = null;
+                }
+                
+                // Обновляем попап
+                updateMarkerPopup(leafletMarkers[leafletMarkerIndex]);
+            }
+            
+            // Обновляем данные в основном массиве
+            bsMarkers[markerIndex].showCircle = originalMarkerValues.showCircle;
+            bsMarkers[markerIndex].circleRadius = originalMarkerValues.circleRadius;
+        }
+    }
+    
+    // Удаляем предпросмотр
+    removePreviewCircle();
+    
+    // Сбрасываем сохраненные значения
+    originalMarkerValues = null;
+    
+    // Скрываем диалог
     hideMarkerDialog();
     
     if (!editingMarkerId && bsModeEnabled) {
@@ -2674,7 +2722,7 @@ document.getElementById('showCircles').onchange = function() {
     draw();
 };
 
-// Обработчики для контроля радиуса БС при добавлении
+// Обработчики для контроля радиуса БС при добавлении/редактировании
 document.getElementById('markerShowCircle').onchange = function() {
     const circleControls = document.getElementById('markerCircleControls');
     circleControls.style.display = this.checked ? 'block' : 'none';
@@ -2690,11 +2738,18 @@ document.getElementById('markerShowCircle').onchange = function() {
         }
     }
     
-    if (editingMarkerId) {
-        const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
+    // Если редактируем маркер, обновляем предпросмотр (но не сам маркер)
+    if (editingMarkerId && leafletMap) {
+        const markerIndex = bsMarkers.findIndex(m => m.id === editingMarkerId);
         if (markerIndex !== -1) {
-            leafletMarkers[markerIndex].showCircle = this.checked;
-            updateMarkerCircle(leafletMarkers[markerIndex]);
+            const marker = bsMarkers[markerIndex];
+            const circleRadius = parseInt(document.getElementById('markerCircleText').value) || CONFIG.DEFAULT_BS_RADIUS;
+            
+            if (this.checked) {
+                createPreviewCircle(marker.lat, marker.lng, circleRadius);
+            } else {
+                removePreviewCircle();
+            }
         }
     }
 };
@@ -2707,11 +2762,12 @@ document.getElementById('markerCircleSlider').oninput = function() {
         updatePreviewCircle(currentMarkerData.lat, currentMarkerData.lng, parseInt(value));
     }
     
-    if (editingMarkerId) {
-        const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
+    // Если редактируем маркер, обновляем предпросмотр (но не сам маркер)
+    if (editingMarkerId && leafletMap && document.getElementById('markerShowCircle').checked) {
+        const markerIndex = bsMarkers.findIndex(m => m.id === editingMarkerId);
         if (markerIndex !== -1) {
-            leafletMarkers[markerIndex].circleRadius = parseInt(value);
-            updateMarkerCircle(leafletMarkers[markerIndex]);
+            const marker = bsMarkers[markerIndex];
+            updatePreviewCircle(marker.lat, marker.lng, parseInt(value));
         }
     }
 };
@@ -2726,11 +2782,12 @@ document.getElementById('markerCircleText').addEventListener('blur', function() 
         updatePreviewCircle(currentMarkerData.lat, currentMarkerData.lng, clampedValue);
     }
     
-    if (editingMarkerId) {
-        const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
+    // Если редактируем маркер, обновляем предпросмотр (но не сам маркер)
+    if (editingMarkerId && leafletMap && document.getElementById('markerShowCircle').checked) {
+        const markerIndex = bsMarkers.findIndex(m => m.id === editingMarkerId);
         if (markerIndex !== -1) {
-            leafletMarkers[markerIndex].circleRadius = clampedValue;
-            updateMarkerCircle(leafletMarkers[markerIndex]);
+            const marker = bsMarkers[markerIndex];
+            updatePreviewCircle(marker.lat, marker.lng, clampedValue);
         }
     }
 });
@@ -2747,11 +2804,12 @@ document.getElementById('markerCircleText').addEventListener('keydown', function
             updatePreviewCircle(currentMarkerData.lat, currentMarkerData.lng, clampedValue);
         }
         
-        if (editingMarkerId) {
-            const markerIndex = leafletMarkers.findIndex(m => m.id === editingMarkerId);
+        // Если редактируем маркер, обновляем предпросмотр (но не сам маркер)
+        if (editingMarkerId && leafletMap && document.getElementById('markerShowCircle').checked) {
+            const markerIndex = bsMarkers.findIndex(m => m.id === editingMarkerId);
             if (markerIndex !== -1) {
-                leafletMarkers[markerIndex].circleRadius = clampedValue;
-                updateMarkerCircle(leafletMarkers[markerIndex]);
+                const marker = bsMarkers[markerIndex];
+                updatePreviewCircle(marker.lat, marker.lng, clampedValue);
             }
         }
     }
