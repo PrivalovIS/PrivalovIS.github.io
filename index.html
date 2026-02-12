@@ -647,16 +647,19 @@
         </div>
     </div>
     
-    <!-- Секция Строение сети (закрыта по умолчанию) -->
+    <!-- Секция Сотовое строение (закрыта по умолчанию) -->
     <div class="accordion-section">
         <div class="accordion-header" onclick="toggleAccordion('network-build')">
             <div style="display: flex; align-items: center; gap: 8px;">
-                <button id="buildToggle" onclick="toggleBuild(event)">Включить</button>
-                <span>Строение сети</span>
+                <!-- <button id="buildToggle" onclick="toggleBuild(event)">Включить</button>-->
+                <span>Сотовое строение</span>
             </div>
             <span class="accordion-icon">▼</span>
         </div>
         <div class="accordion-content" id="network-build-content">
+		<button id="buildToggleInside" onclick="toggleBuild(event)" style="width: 100%; margin-top: 10px; margin-bottom: 8px;">
+			Включить строение
+		</button>
             <div class="compact-row">
                 <label>Радиус, м (10-5000)</label>
                 <div class="range-group">
@@ -721,6 +724,25 @@
 			
         </div>
     </div>
+	
+	<!-- Секция Произвольное строение (закрыта по умолчанию) -->
+	<div class="accordion-section">
+		<div class="accordion-header" onclick="toggleAccordion('kml-import')">
+			<div style="display: flex; align-items: center; gap: 8px;">
+				<button id="kmlToggle" onclick="openKMLFile(event)">Открыть</button>
+				<span>Произвольное строение</span>
+			</div>
+			<span class="accordion-icon">▼</span>
+		</div>
+		<div class="accordion-content" id="kml-import-content">
+			<div class="empty-section">
+				<p>Функция в разработке</p>
+				<p style="font-size: 0.85em; margin-top: 6px; color: #999;">
+					Скоро здесь можно будет произвольно планировать сеть
+				</p>
+			</div>
+		</div>
+	</div>
     
     <!-- Секция Установка БС (закрыта по умолчанию) -->
     <div class="accordion-section">
@@ -742,25 +764,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- Секция Импорт KML (закрыта по умолчанию) -->
-	<div class="accordion-section">
-		<div class="accordion-header" onclick="toggleAccordion('kml-import')">
-			<div style="display: flex; align-items: center; gap: 8px;">
-				<button id="kmlToggle" onclick="openKMLFile(event)">Открыть</button>
-				<span>Импорт KML</span>
-			</div>
-			<span class="accordion-icon">▼</span>
-		</div>
-		<div class="accordion-content" id="kml-import-content">
-			<div class="empty-section">
-				<p>Функция в разработке</p>
-				<p style="font-size: 0.85em; margin-top: 6px; color: #999;">
-					Скоро здесь можно будет импортировать KML файлы
-				</p>
-			</div>
-		</div>
-	</div>
 	
 	<!-- Секция Аналитика (закрыта по умолчанию) -->
 	<div class="accordion-section">
@@ -1149,11 +1152,18 @@ function editItem(type, id) {
     document.getElementById('cellName').value = name;
     document.getElementById('cellComment').value = comment;
 
-    // Показываем кнопку удаления (для ячеек — если >1, для кластеров — всегда или по условию)
+    // ИСПРАВЛЕНИЕ: Кнопка удаления показывается всегда для ячеек и кластеров
     const deleteBtn = document.getElementById('deleteCellBtn');
-    deleteBtn.style.display = (type === "cell" && activeHexes.size > 1) || type === "cluster" 
-        ? 'block' 
-        : 'none';
+    
+    if (type === "cell") {
+        // Для ячеек показываем кнопку всегда, даже если последняя
+        deleteBtn.style.display = 'block';
+    } else if (type === "cluster") {
+        // Для кластеров показываем кнопку всегда
+        deleteBtn.style.display = 'block';
+    } else {
+        deleteBtn.style.display = 'none';
+    }
 
     // Позиционируем диалог (можно оставить по центру или улучшить)
     const dialog = document.getElementById('cellDialog');
@@ -1199,13 +1209,19 @@ function deleteItem() {
     if (!editingItem) return;
 
     if (editingItem.type === "cell") {
-        if (activeHexes.size <= 1) return;
+        // ИСПРАВЛЕНИЕ: Убираем проверку на размер, разрешаем удаление любой ячейки
         if (!confirm("Удалить ячейку?")) return;
+        
         activeHexes.delete(editingItem.id);
+        
+        // Если после удаления не осталось ячеек, сбрасываем выделение
+        if (activeHexes.size === 0) {
+            selectedCellKey = null;
+        }
+        
     } else if (editingItem.type === "cluster") {
         if (!confirm("Удалить кластер?")) return;
         clusters = clusters.filter(c => c.id !== editingItem.id);
-        // если позже добавите привязку ячеек — здесь их можно освободить
     }
 
     hideItemDialog();
@@ -1605,37 +1621,27 @@ function applyRotation() {
     draw();
 }
 
+// Функция переключения строения (ОБНОВЛЕННАЯ)
 function toggleBuild(event) {
     if (event) event.stopPropagation();
     
-    // Если режим БС включен, выключаем его
     if (bsModeEnabled) {
-        // Проверяем, открыт ли диалог добавления БС
-        if (document.getElementById('markerDialog').classList.contains('active')) {
-            cancelMarker();
-        }
-        
+        if (document.getElementById('markerDialog').classList.contains('active')) cancelMarker();
         bsModeEnabled = false;
         document.getElementById('bsToggle').classList.remove('active');
         document.getElementById('bsToggle').textContent = 'Включить';
         updateCursor();
-        
         removeTempMarker();
         removePreviewCircle();
-        
-        if (leafletMap) {
-            leafletMap.dragging.enable();
-            leafletMap.scrollWheelZoom.enable();
-        }
+        if (leafletMap) leafletMap.dragging.enable(), leafletMap.scrollWheelZoom.enable();
     }
     
     buildEnabled = !buildEnabled;
-    const btn = document.getElementById('buildToggle');
-    btn.textContent = buildEnabled ? 'Выключить' : 'Включить';
+    const btn = document.getElementById('buildToggleInside');
+    btn.textContent = buildEnabled ? 'Выключить строение' : 'Включить строение';
     btn.classList.toggle('active', buildEnabled);
     
     updateCursor();
-    
     canvas.style.pointerEvents = (buildEnabled || moveGridEnabled) ? 'auto' : 'none';
     
     if (buildEnabled && ((leafletMap && gridCenterLat === null && gridCenterLng === null) || (!leafletMap && gridCenterLat === null))) {
@@ -1647,28 +1653,17 @@ function toggleBuild(event) {
             gridCenterLat = 0;
             gridCenterLng = 0;
         }
-        
-        activeHexes.set("0,0", { 
-			q: 0, 
-			r: 0,
-			name: null,
-			comment: ''
-		});
-        
+        activeHexes.set("0,0", { q: 0, r: 0, name: null, comment: '' });
         updatePossibleHexes();
-        
         markMapAsChanged();
-		
-		renderClustersAndCells();
-		
+        renderClustersAndCells();
     } else if (!buildEnabled) {
         possibleHexes.clear();
     } else if (buildEnabled && activeHexes.size > 0) {
         updatePossibleHexes();
     }
-	
-	renderClustersAndCells();
-	
+    
+    renderClustersAndCells();
     draw();
 }
 
@@ -1687,8 +1682,14 @@ function toggleBSMode(event) {
     // Если режим построения включен, выключаем его
     if (buildEnabled) {
         buildEnabled = false;
-        document.getElementById('buildToggle').classList.remove('active');
-        document.getElementById('buildToggle').textContent = 'Включить';
+        // !!! ИСПРАВЛЕНИЕ: используем новую кнопку вместо удаленной !!!
+        const buildBtn = document.getElementById('buildToggleInside');
+        if (buildBtn) {
+            buildBtn.textContent = 'Включить строение';
+            buildBtn.classList.remove('active');
+            buildBtn.style.background = '#2a3444';
+            buildBtn.style.color = '#ddd';
+        }
         possibleHexes.clear();
     }
     
@@ -1727,7 +1728,6 @@ function toggleBSMode(event) {
     }
     
     updateBsList();
-    
     draw();
 }
 
@@ -1985,22 +1985,23 @@ canvas.addEventListener('click', function(e) {
         }
         
         if (clickedActiveHex) {
-			if (activeHexes.size > 1) {
-				const key = `${clickedActiveHex.q},${clickedActiveHex.r}`;
-				
-				// Если удаляем выделенную ячейку - сбрасываем выделение
-				if (selectedCellKey === key) {
-					selectedCellKey = null;
-				}
-				
-				activeHexes.delete(key);
-				updatePossibleHexes();
-				draw();
-				renderClustersAndCells();
-				markMapAsChanged();
-			}
-			return;
-		}
+            // !!! ИСПРАВЛЕНИЕ: проверяем размер до удаления и позволяем удалить последнюю ячейку !!!
+            const key = `${clickedActiveHex.q},${clickedActiveHex.r}`;
+            
+            // Удаляем ячейку (разрешено всегда, даже если осталась одна)
+            // Если удаляем выделенную ячейку - сбрасываем выделение
+            if (selectedCellKey === key) {
+                selectedCellKey = null;
+            }
+            
+            activeHexes.delete(key);
+            updatePossibleHexes();
+            draw();
+            renderClustersAndCells();
+            markMapAsChanged();
+            
+            return;
+        }
         
         let clickedPossibleHex = null;
         for (const hex of possibleHexes.values()) {
@@ -2013,16 +2014,16 @@ canvas.addEventListener('click', function(e) {
         }
         
         if (clickedPossibleHex) {
-			const key = `${clickedPossibleHex.q},${clickedPossibleHex.r}`;
-			activeHexes.set(key, {
-				q: clickedPossibleHex.q,
-				r: clickedPossibleHex.r,
-				name: null,
-				comment: ''
-			});
+            const key = `${clickedPossibleHex.q},${clickedPossibleHex.r}`;
+            activeHexes.set(key, {
+                q: clickedPossibleHex.q,
+                r: clickedPossibleHex.r,
+                name: null,
+                comment: ''
+            });
             updatePossibleHexes();
             draw();
-			renderClustersAndCells();
+            renderClustersAndCells();
             updateCellCount();
             markMapAsChanged();
         }
@@ -3136,8 +3137,6 @@ function reset() {
     
     clearMarkers();
     
-    document.getElementById('buildToggle').textContent = 'Включить';
-    document.getElementById('buildToggle').classList.remove('active');
     document.getElementById('bsToggle').textContent = 'Включить';
     document.getElementById('bsToggle').classList.remove('active');
     document.getElementById('moveGrid').checked = false;
@@ -3150,24 +3149,27 @@ function reset() {
     document.getElementById('radiusSlider').value = CONFIG.DEFAULT_RADIUS;
     document.getElementById('rotSlider').value = 0;
     
-    canvas.style.pointerEvents = 'none';
-    document.body.classList.remove('bs-cursor');
-    updateCursor();
-    
-    bgMode = currentBgMode;
-    
-    if (leafletMap) {
-        leafletMap.dragging.enable();
-        leafletMap.scrollWheelZoom.enable();
-    }
-    
-    isMapChanged = false;
-    updateFileToggleButton();
-    
-    updateControlWindowHeight();
-    
-    draw();
-}
+	const btn = document.getElementById('buildToggleInside');
+	if (btn) btn.textContent = 'Включить строение', btn.classList.remove('active');
+		
+		canvas.style.pointerEvents = 'none';
+		document.body.classList.remove('bs-cursor');
+		updateCursor();
+		
+		bgMode = currentBgMode;
+		
+		if (leafletMap) {
+			leafletMap.dragging.enable();
+			leafletMap.scrollWheelZoom.enable();
+		}
+		
+		isMapChanged = false;
+		updateFileToggleButton();
+		
+		updateControlWindowHeight();
+		
+		draw();
+	}
 
 // Инициализация кнопок файлового меню
 document.querySelector('.file-btn-close').addEventListener('click', function() {
@@ -3345,6 +3347,9 @@ window.onload = () => {
             }
         }
     });
+	
+	const btn = document.getElementById('buildToggleInside');
+	if (btn) btn.textContent = buildEnabled ? 'Выключить строение' : 'Включить строение';
     
     // Убеждаемся, что bgMode установлен
     if (!bgMode || bgMode === '') {
