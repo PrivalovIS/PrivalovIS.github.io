@@ -581,6 +581,89 @@
 			min-height: 24px;
 			padding: 4px 8px;
 		}
+		
+		/* Стили для кнопки Создать зону */
+		#createZoneBtn {
+			transition: all 0.2s ease;
+		}
+
+		#createZoneBtn:hover {
+			opacity: 0.9;
+			background: #3a4454 !important;
+		}
+
+		#createZoneBtn.active:hover {
+			opacity: 0.9;
+			background: #2a8cff !important; /* Более темный синий при наведении */
+		}
+
+		#createZoneBtn:active {
+			opacity: 0.7;
+			transform: scale(0.98);
+		}
+		
+		/* Стили для вершин зоны как у БС */
+		.bs-marker {
+			cursor: move !important;
+			transition: transform 0.2s;
+		}
+
+		.bs-marker.dragging {
+			z-index: 1000 !important;
+			opacity: 0.7;
+			transform: scale(1.2);
+		}
+
+		/* Стили для вершин зоны */
+		.zone-vertex-marker {
+			cursor: move !important;
+		}
+
+		.zone-vertex-marker .dragging {
+			z-index: 1000 !important;
+			opacity: 0.7;
+			transform: scale(1.2);
+		}
+
+		/* Курсор при перетаскивании */
+		.zone-vertex-marker.dragging {
+		    z-index: 1000 !important;
+			opacity: 0.7;
+			transform: scale(1.2);
+		}
+		
+		/* Убираем задержки при перетаскивании */
+		.leaflet-marker-icon {
+			transition: none !important;
+		}
+		
+		/* Отключаем анимацию Leaflet для маркеров */
+		.leaflet-marker-icon.leaflet-zoom-animated {
+			transition: none !important;
+		}
+		
+		/* Стили для срединных вершин */
+		.zone-mid-vertex-marker {
+			cursor: move !important;
+			transition: all 0.1s;
+		}
+
+		.zone-mid-vertex-marker:hover {
+			opacity: 1 !important;
+			transform: scale(1.2);
+		}
+
+		.zone-mid-vertex-marker .dragging,
+		.zone-mid-vertex-marker.dragging {
+			opacity: 0.9 !important;
+			transform: scale(1.3);
+			z-index: 1000 !important;
+		}
+
+		/* Основные вершины при наведении */
+		.zone-vertex-marker:hover {
+			transform: scale(1.2);
+		}
     </style>
 </head>
 <body>
@@ -954,6 +1037,25 @@ function changeMap(event) {
 function toggleZoneMode(event) {
     if (event) event.stopPropagation();
     
+    // Если режим зон включен - удаляем текущую зону и начинаем новую
+    if (zoneModeEnabled) {
+        // Отменяем текущее построение
+        cancelPolygon();
+        currentZoneColor = getNextZoneColor(); // Новый цвет для новой зоны
+        
+        // Начинаем новую зону сразу
+        if (leafletMap) {
+            leafletMap.dragging.disable();
+            leafletMap.scrollWheelZoom.enable();
+            leafletMap.on('click', onMapClickForZone);
+            leafletMap.on('mousemove', onMapMouseMoveForZone);
+            startNewPolygon();
+        }
+        
+        updateCursor();
+        return;
+    }
+    
     // Отключаем другие режимы
     if (buildEnabled) {
         buildEnabled = false;
@@ -963,7 +1065,7 @@ function toggleZoneMode(event) {
             buildBtn.classList.remove('active');
             buildBtn.style.background = '#2a3444';
             buildBtn.style.color = '#ddd';
-            buildBtn.style.border = 'none'; // у кластера нет обводки
+            buildBtn.style.border = 'none';
         }
         possibleHexes.clear();
         draw();
@@ -982,37 +1084,27 @@ function toggleZoneMode(event) {
         document.getElementById('moveGrid').checked = false;
     }
     
-    // Переключаем режим зон
-    zoneModeEnabled = !zoneModeEnabled;
-    const btn = document.getElementById('createZoneBtn');
-    btn.textContent = zoneModeEnabled ? 'Завершить зону' : 'Создать зону';
-    btn.classList.toggle('active', zoneModeEnabled);
+    // Включаем режим зон
+    zoneModeEnabled = true;
+    currentZoneColor = getNextZoneColor();
     
-    // СТИЛЬ БЕЗ ОБВОДКИ (КАК У КЛАСТЕРА)
+    const btn = document.getElementById('createZoneBtn');
+    btn.textContent = 'Создать зону';
+    btn.classList.add('active'); // Добавляем класс active
+    btn.style.background = '#4af'; // Синий цвет
+    btn.style.color = '#000';
     btn.style.border = 'none';
-    if (zoneModeEnabled) {
-        btn.style.background = '#4af';
-        btn.style.color = '#000';
-    } else {
-        btn.style.background = '#2a3444';
-        btn.style.color = '#ddd';
-    }
     
     // ВАЖНО: отключаем canvas pointer events, чтобы клики уходили на карту
     canvas.style.pointerEvents = 'none';
     document.body.classList.remove('bs-cursor');
     
     if (leafletMap) {
-        if (zoneModeEnabled) {
-            leafletMap.dragging.disable();
-            leafletMap.scrollWheelZoom.enable();
-            leafletMap.on('click', onMapClickForZone);
-            startNewPolygon();
-        } else {
-            leafletMap.dragging.enable();
-            leafletMap.off('click', onMapClickForZone);
-            finishZone();
-        }
+        leafletMap.dragging.disable();
+        leafletMap.scrollWheelZoom.enable();
+        leafletMap.on('click', onMapClickForZone);
+        leafletMap.on('mousemove', onMapMouseMoveForZone);
+        startNewPolygon();
     }
     
     updateCursor();
@@ -1023,8 +1115,6 @@ function startNewPolygon() {
     currentPolygon = [];
     tempPoints = [];
     removeTempPolygon();
-    currentZoneColor = getNextZoneColor();
-    console.log('Новый цвет зоны:', currentZoneColor);
     
     if (leafletMap) {
         leafletMap.dragging.disable();
@@ -1211,8 +1301,8 @@ function finishZone() {
         
         const btn = document.getElementById('createZoneBtn');
         btn.textContent = 'Создать зону';
-        btn.classList.remove('active');
-        btn.style.background = '#2a3444';
+        btn.classList.remove('active'); // Убираем active
+        btn.style.background = '#2a3444'; // Серый цвет
         btn.style.color = '#ddd';
         btn.style.border = 'none';
         
@@ -1255,8 +1345,8 @@ function finishZone() {
     
     const btn = document.getElementById('createZoneBtn');
     btn.textContent = 'Создать зону';
-    btn.classList.remove('active');
-    btn.style.background = '#2a3444';
+    btn.classList.remove('active'); // Убираем active
+    btn.style.background = '#2a3444'; // Серый цвет
     btn.style.color = '#ddd';
     btn.style.border = 'none';
     
@@ -1306,12 +1396,10 @@ function drawZone(zone) {
         leafletMap.removeLayer(zone.layer);
     }
     
-    // Удаляем старые маркеры вершин если есть
-    if (zone.vertexMarkers) {
-        zone.vertexMarkers.forEach(marker => {
-            if (leafletMap) leafletMap.removeLayer(marker);
-        });
-        zone.vertexMarkers = [];
+    // Убеждаемся, что полигон замкнут (последняя точка = первая)
+    if (zone.points.length > 0) {
+        const firstPoint = zone.points[0];
+        zone.points[zone.points.length - 1] = [firstPoint[0], firstPoint[1]];
     }
     
     // Создаем полигон
@@ -1321,7 +1409,9 @@ function drawZone(zone) {
         opacity: 0.8,
         fillColor: zone.color,
         fillOpacity: 0.2,
-        dashArray: null
+        dashArray: null,
+        smoothFactor: 0,
+        noClip: true
     }).addTo(leafletMap);
     
     // Добавляем всплывающее окно
@@ -1374,11 +1464,18 @@ function drawZone(zone) {
         // Открываем попап
         zone.layer.openPopup();
         
-        // Показываем вершины (на случай, если popupopen не сработает)
+        // Показываем вершины
         showZoneVertices(zone);
         
         updateZoneList();
     });
+}
+
+// Обновить полигон зоны после перемещения вершин
+function updateZonePolygon(zone) {
+    if (zone.layer && leafletMap) {
+        zone.layer.setLatLngs(zone.points);
+    }
 }
 
 // Показать вершины зоны
@@ -1394,35 +1491,180 @@ function showZoneVertices(zone) {
     
     zone.vertexMarkers = [];
     
-    // Отображаем все точки полигона (кроме последней, она совпадает с первой)
+    // ===== ОСНОВНЫЕ ВЕРШИНЫ =====
     for (let i = 0; i < zone.points.length - 1; i++) {
         const point = zone.points[i];
         const latlng = L.latLng(point[0], point[1]);
         
         const marker = L.marker(latlng, {
             icon: L.divIcon({
-                html: `<div style="background: ${zone.color}; width: 12px; height: 12px; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>`,
+                html: `<div style="background: ${zone.color}; width: 12px; height: 12px; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 4px rgba(0,0,0,0.5); cursor: move;"></div>`,
                 iconSize: [16, 16],
                 iconAnchor: [8, 8],
                 className: 'zone-vertex-marker'
             }),
-            draggable: false,
-            interactive: false
+            draggable: true
         }).addTo(leafletMap);
         
+        marker.vertexIndex = i;
+        marker.zoneId = zone.id;
+        marker.isMainVertex = true;
+        
+        marker.on('drag', function(e) {
+            const newLatLng = e.target.getLatLng();
+            const currentZone = zones.find(z => z.id === marker.zoneId);
+            if (currentZone) {
+                currentZone.points[marker.vertexIndex] = [newLatLng.lat, newLatLng.lng];
+                
+                if (marker.vertexIndex === 0) {
+                    const lastIndex = currentZone.points.length - 1;
+                    currentZone.points[lastIndex] = [newLatLng.lat, newLatLng.lng];
+                }
+                
+                if (currentZone.layer) {
+                    currentZone.layer.setLatLngs(currentZone.points);
+                }
+                
+                // ОБНОВЛЯЕМ ТОЛЬКО СРЕДИННЫЕ ВЕРШИНЫ, НЕ ПЕРЕСОЗДАВАЯ ВСЕ
+                updateMidVertices(currentZone);
+            }
+        });
+        
+        marker.on('dragstart', function(e) {
+            const iconElement = marker.getElement();
+            if (iconElement) iconElement.classList.add('dragging');
+            leafletMap.dragging.disable();
+        });
+        
+        marker.on('dragend', function(e) {
+            const iconElement = marker.getElement();
+            if (iconElement) iconElement.classList.remove('dragging');
+            leafletMap.dragging.enable();
+            
+            const currentZone = zones.find(z => z.id === marker.zoneId);
+            if (currentZone) markMapAsChanged();
+        });
+        
         zone.vertexMarkers.push(marker);
+    }
+    
+    // ===== СРЕДИННЫЕ ВЕРШИНЫ =====
+    updateMidVertices(zone);
+}
+
+// ОТДЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ СРЕДИННЫХ ВЕРШИН
+function updateMidVertices(zone) {
+    if (!leafletMap || !zone) return;
+    
+    // Удаляем только срединные вершины
+    if (zone.midVertexMarkers) {
+        zone.midVertexMarkers.forEach(marker => {
+            if (leafletMap) leafletMap.removeLayer(marker);
+        });
+    }
+    
+    zone.midVertexMarkers = [];
+    
+    // Создаем срединные вершины заново
+    for (let i = 0; i < zone.points.length - 1; i++) {
+        const currentPoint = zone.points[i];
+        const nextPoint = zone.points[i + 1];
+        
+        const midLat = (currentPoint[0] + nextPoint[0]) / 2;
+        const midLng = (currentPoint[1] + nextPoint[1]) / 2;
+        const midLatLng = L.latLng(midLat, midLng);
+        
+        const midMarker = L.marker(midLatLng, {
+            icon: L.divIcon({
+                html: `<div style="background: ${zone.color}; width: 10px; height: 10px; border: 1.5px solid white; border-radius: 50%; opacity: 0.6; box-shadow: 0 0 3px rgba(0,0,0,0.3); cursor: move;"></div>`,
+                iconSize: [14, 14],
+                iconAnchor: [7, 7],
+                className: 'zone-mid-vertex-marker'
+            }),
+            draggable: true
+        }).addTo(leafletMap);
+        
+        midMarker.vertexIndex = i;
+        midMarker.zoneId = zone.id;
+        midMarker.isMidVertex = true;
+        
+        // ВАЖНО: Запоминаем, что эта вершина сейчас перетаскивается
+        let isDragging = false;
+        
+        midMarker.on('dragstart', function(e) {
+            isDragging = true;
+            const iconElement = midMarker.getElement();
+            if (iconElement) iconElement.classList.add('dragging');
+            leafletMap.dragging.disable();
+        });
+        
+        midMarker.on('drag', function(e) {
+            if (!isDragging) return;
+            
+            const newLatLng = e.target.getLatLng();
+            const currentZone = zones.find(z => z.id === midMarker.zoneId);
+            if (currentZone) {
+                const idx = midMarker.vertexIndex;
+                
+                // Вставляем новую вершину ТОЛЬКО ПЕРВЫЙ РАЗ
+                if (!midMarker.vertexInserted) {
+                    const newPoint = [newLatLng.lat, newLatLng.lng];
+                    currentZone.points.splice(idx + 1, 0, newPoint);
+                    midMarker.vertexInserted = true;
+                    midMarker.newVertexIndex = idx + 1;
+                } else {
+                    // Обновляем позицию уже созданной вершины
+                    currentZone.points[midMarker.newVertexIndex] = [newLatLng.lat, newLatLng.lng];
+                }
+                
+                // Обновляем полигон
+                if (currentZone.layer) {
+                    currentZone.layer.setLatLngs(currentZone.points);
+                }
+            }
+        });
+        
+        midMarker.on('dragend', function(e) {
+            isDragging = false;
+            
+            const iconElement = midMarker.getElement();
+            if (iconElement) iconElement.classList.remove('dragging');
+            leafletMap.dragging.enable();
+            
+            const currentZone = zones.find(z => z.id === midMarker.zoneId);
+            if (currentZone) {
+                // Полностью перерисовываем все вершины для корректного отображения
+                showZoneVertices(currentZone);
+                markMapAsChanged();
+            }
+            
+            midMarker.vertexInserted = false;
+        });
+        
+        if (!zone.midVertexMarkers) zone.midVertexMarkers = [];
+        zone.midVertexMarkers.push(midMarker);
     }
 }
 
 // Скрыть вершины зоны
 function hideZoneVertices(zone) {
-    if (!leafletMap || !zone.vertexMarkers) return;
+    if (!leafletMap || !zone) return;
     
-    zone.vertexMarkers.forEach(marker => {
-        if (leafletMap) leafletMap.removeLayer(marker);
-    });
+    // Удаляем основные вершины
+    if (zone.vertexMarkers) {
+        zone.vertexMarkers.forEach(marker => {
+            if (leafletMap) leafletMap.removeLayer(marker);
+        });
+        zone.vertexMarkers = [];
+    }
     
-    zone.vertexMarkers = [];
+    // Удаляем срединные вершины
+    if (zone.midVertexMarkers) {
+        zone.midVertexMarkers.forEach(marker => {
+            if (leafletMap) leafletMap.removeLayer(marker);
+        });
+        zone.midVertexMarkers = [];
+    }
 }
 
 // Удаление зоны по ID (из попапа)
@@ -1599,23 +1841,16 @@ function deleteZone(zoneId) {
     
     const index = zones.findIndex(z => z.id === zoneId);
     if (index !== -1) {
-        // Скрываем вершины перед удалением
         hideZoneVertices(zones[index]);
         
-        // Удаляем полигон с карты
         if (zones[index].layer && leafletMap) {
             leafletMap.removeLayer(zones[index].layer);
         }
         
         zones.splice(index, 1);
         
-        if (selectedZoneId === zoneId) {
-            selectedZoneId = null;
-        }
-        
-        if (editingZoneId === zoneId) {
-            cancelZone();
-        }
+        if (selectedZoneId === zoneId) selectedZoneId = null;
+        if (editingZoneId === zoneId) cancelZone();
         
         updateZoneList();
         markMapAsChanged();
@@ -1625,10 +1860,7 @@ function deleteZone(zoneId) {
 // Очистка всех зон
 function clearZones() {
     zones.forEach(zone => {
-        // Скрываем вершины
         hideZoneVertices(zone);
-        
-        // Удаляем полигон
         if (zone.layer && leafletMap) {
             leafletMap.removeLayer(zone.layer);
         }
@@ -1640,7 +1872,6 @@ function clearZones() {
     zoneColorIndex = 0;
     cancelZone();
     
-    // Обновляем счетчик и список
     const zoneCountEl = document.getElementById('zoneCount');
     if (zoneCountEl) {
         zoneCountEl.textContent = 'Количество зон: 0';
@@ -4198,18 +4429,16 @@ window.onload = () => {
 			if (zoneModeEnabled) {
 				e.preventDefault();
 				
-				// Просто выключаем режим без сообщений
 				zoneModeEnabled = false;
 				currentZoneColor = null;
 				
 				const btn = document.getElementById('createZoneBtn');
 				btn.textContent = 'Создать зону';
-				btn.classList.remove('active');
-				btn.style.background = '#2a3444';
+				btn.classList.remove('active'); // Убираем active
+				btn.style.background = '#2a3444'; // Серый цвет
 				btn.style.color = '#ddd';
 				btn.style.border = 'none';
 				
-				// Очищаем все временные объекты
 				cancelPolygon();
 				
 				if (leafletMap) {
