@@ -1366,18 +1366,15 @@ function finishZone() {
     markMapAsChanged();
 }
 
-// Палитра ярких контрастных цветов для зон (по порядку) - ДОЛЖНА БЫТЬ В ГЛОБАЛЬНОЙ ОБЛАСТИ
+// Палитра ярких контрастных цветов для зон (по порядку)
 const zoneColorPalette = [
     '#FF3333', // 1. ярко-красный
     '#FF9500', // 2. ярко-оранжевый
     '#FFD600', // 3. ярко-желтый
-    '#33FF33', // 4. ярко-зеленый
-    '#00CCFF', // 5. ярко-голубой
-    '#3366FF', // 6. ярко-синий
-    '#9933FF', // 7. ярко-фиолетовый
-    '#FF33FF', // 8. ярко-розовый
-    '#FF6699', // 9. розово-красный
-    '#00FF99'  // 10. ярко-мятный
+    '#00CCFF', // 4. ярко-голубой
+    '#3366FF', // 5. ярко-синий
+    '#FF6699', // 6. розово-красный
+    '#00FF99'  // 7. ярко-мятный
 ];
 
 // Получить следующий цвет по порядку
@@ -1444,14 +1441,25 @@ function drawZone(zone) {
         showZoneVertices(zone);
     });
     
-    // ПРИ ЗАКРЫТИИ ПОПАПА - СКРЫВАЕМ ВЕРШИНЫ
-    zone.layer.on('popupclose', function() {
+    // ИСПРАВЛЕНИЕ: ПРИ ЗАКРЫТИИ ПОПАПА - ПРОВЕРЯЕМ, ЧТО ЭТО КРЕСТИК
+    zone.layer.on('popupclose', function(e) {
+        // Проверяем, был ли клик по крестику
+        const popup = zone.layer.getPopup();
+        if (popup && popup._closeButton) {
+            // Если закрыли крестиком - вершины остаются
+            return;
+        }
+        // В остальных случаях - скрываем вершины
         hideZoneVertices(zone);
+        if (selectedZoneId === zone.id) {
+            selectedZoneId = null;
+            updateZoneList();
+        }
     });
     
     // ОБРАБОТЧИК КЛИКА - ПРИНУДИТЕЛЬНО ОТКРЫВАЕМ ПОПАП И ПОКАЗЫВАЕМ ВЕРШИНЫ
     zone.layer.on('click', function() {
-        // Сначала скрываем вершины предыдущей зоны
+        // Скрываем вершины предыдущей зоны
         if (selectedZoneId && selectedZoneId !== zone.id) {
             const oldZone = zones.find(z => z.id === selectedZoneId);
             if (oldZone) {
@@ -1929,73 +1937,72 @@ function renderClustersAndCells() {
     const listEl = document.getElementById('cellList');
     const cellCountEl = document.getElementById('cellCount');
     listEl.innerHTML = '';
-	// Массив цветов из твоего списка (только акцентные, без жёлтого на фоне)
-	const clusterColors = [
-		"#4CAF50",   // зелёный
-		"#FF9800",   // оранжевый
-		"#F44336",   // красный
-		"#9C27B0",   // фиолетовый
-		"#00BCD4",   // бирюзовый
-		"#E91E63",   // розовый/пурпурный
-		// "#FFEB3B"  // жёлтый обычно слишком светлый для фона → лучше не использовать как основной
-	];
-	
+    
+    // ЦВЕТА ДЛЯ КЛАСТЕРОВ - ТЕ ЖЕ, ЧТО У ЗОН
+    const clusterColors = [
+        '#FF3333', // 1. ярко-красный
+        '#FF9500', // 2. ярко-оранжевый
+        '#FFD600', // 3. ярко-желтый
+        '#00CCFF', // 4. ярко-голубой
+        '#3366FF', // 5. ярко-синий
+        '#FF6699', // 6. розово-красный
+        '#00FF99'  // 7. ярко-мятный
+    ];
 
     // 1. Кластеры (сверху)
     clusters.forEach((cluster, index) => {
-		const item = document.createElement('div');
-		item.className = 'bs-list-item cluster';
-		item.dataset.clusterId = cluster.id;
+        const item = document.createElement('div');
+        item.className = 'bs-list-item cluster';
+        item.dataset.clusterId = cluster.id;
 
-		// Циклическое распределение цветов
-		const colorIndex = index % clusterColors.length;
-		const accentColor = clusterColors[colorIndex];
+        // Циклическое распределение цветов
+        const colorIndex = index % clusterColors.length;
+        const accentColor = clusterColors[colorIndex];
 
-		// Для фона берём более тёмный/приглушённый вариант того же цвета
-		let bgColor;
-		if (accentColor === "#FFEB3B") {
-			bgColor = "#FFF9C4";           // очень светлый жёлтый
-		} else {
-			// затемняем основной цвет для фона
-			bgColor = adjustBrightness(accentColor, 0.28);   // функция ниже
-		}
+        // Для фона берём более тёмный/приглушённый вариант того же цвета
+        let bgColor;
+        if (accentColor === "#FFEB3B") {
+            bgColor = "#FFF9C4";
+        } else {
+            bgColor = adjustBrightness(accentColor, 0.28);
+        }
 
-		item.style.setProperty('--cluster-bg', bgColor);
-		item.style.setProperty('--cluster-accent', accentColor);
-		item.style.setProperty('--cluster-bg-hover', adjustBrightness(accentColor, 0.45));
-		
-		const nameSpan = document.createElement('div');
-		nameSpan.className = 'bs-list-item-name';
-		nameSpan.textContent = cluster.name;
+        item.style.setProperty('--cluster-bg', bgColor);
+        item.style.setProperty('--cluster-accent', accentColor);
+        item.style.setProperty('--cluster-bg-hover', adjustBrightness(accentColor, 0.45));
+        
+        const nameSpan = document.createElement('div');
+        nameSpan.className = 'bs-list-item-name';
+        nameSpan.textContent = cluster.name;
 
-		const infoSpan = document.createElement('div');
-		infoSpan.className = 'bs-list-item-info';
-		if (cluster.comment?.trim()) {
-			const txt = cluster.comment.trim();
-			infoSpan.textContent = txt.length > 28 ? txt.slice(0, 25) + '…' : txt;
-			infoSpan.title = txt;
-		}
+        const infoSpan = document.createElement('div');
+        infoSpan.className = 'bs-list-item-info';
+        if (cluster.comment?.trim()) {
+            const txt = cluster.comment.trim();
+            infoSpan.textContent = txt.length > 28 ? txt.slice(0, 25) + '…' : txt;
+            infoSpan.title = txt;
+        }
 
-		const editBtn = document.createElement('button');
-		editBtn.innerHTML = '✏️';
-		editBtn.style.cssText = `
-			background: transparent;
-			border: none;
-			color: white;
-			opacity: 0.75;
-			cursor: pointer;
-			font-size: 14px;
-			padding: 4px 8px;
-			margin-left: auto;
-		`;
-		editBtn.onclick = e => {
-			e.stopPropagation();
-			editItem("cluster", cluster.id);
-		};
+        const editBtn = document.createElement('button');
+        editBtn.innerHTML = '✏️';
+        editBtn.style.cssText = `
+            background: transparent;
+            border: none;
+            color: white;
+            opacity: 0.75;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px 8px;
+            margin-left: auto;
+        `;
+        editBtn.onclick = e => {
+            e.stopPropagation();
+            editItem("cluster", cluster.id);
+        };
 
-		item.append(nameSpan, infoSpan, editBtn);
-		listEl.appendChild(item);
-	});
+        item.append(nameSpan, infoSpan, editBtn);
+        listEl.appendChild(item);
+    });
 
     // 2. Ячейки
     let index = 1;
@@ -4293,7 +4300,7 @@ function positionCellDialog(cellKey) {
 document.addEventListener('click', function(e) {
     // Если клик не по полигону и не по попапу
     if (!e.target.closest('.leaflet-popup') && !e.target.closest('.leaflet-interactive')) {
-        // Закрываем все попапы и скрываем вершины
+        // Закрываем все попапы
         if (leafletMap) {
             leafletMap.closePopup();
             
