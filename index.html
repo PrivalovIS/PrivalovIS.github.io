@@ -1301,8 +1301,8 @@ function finishZone() {
         
         const btn = document.getElementById('createZoneBtn');
         btn.textContent = 'Создать зону';
-        btn.classList.remove('active'); // Убираем active
-        btn.style.background = '#2a3444'; // Серый цвет
+        btn.classList.remove('active');
+        btn.style.background = '#2a3444';
         btn.style.color = '#ddd';
         btn.style.border = 'none';
         
@@ -1321,7 +1321,10 @@ function finishZone() {
     currentPolygon.push(currentPolygon[0]);
     
     const zoneId = Date.now();
-    const zoneName = `Зона ${zones.length + 1}`;
+    
+    // ПОЛУЧАЕМ СЛЕДУЮЩИЙ ДОСТУПНЫЙ НОМЕР ЗОНЫ
+    const zoneNumber = getNextZoneNumber();
+    const zoneName = `Зона ${zoneNumber}`;
     
     const newZone = {
         id: zoneId,
@@ -1345,8 +1348,8 @@ function finishZone() {
     
     const btn = document.getElementById('createZoneBtn');
     btn.textContent = 'Создать зону';
-    btn.classList.remove('active'); // Убираем active
-    btn.style.background = '#2a3444'; // Серый цвет
+    btn.classList.remove('active');
+    btn.style.background = '#2a3444';
     btn.style.color = '#ddd';
     btn.style.border = 'none';
     
@@ -1364,6 +1367,32 @@ function finishZone() {
     canvas.style.pointerEvents = 'none';
     
     markMapAsChanged();
+}
+
+// Получить следующий доступный номер зоны
+function getNextZoneNumber() {
+    if (zones.length === 0) return 1;
+    
+    // Собираем все существующие номера зон
+    const usedNumbers = new Set();
+    
+    zones.forEach(zone => {
+        const match = zone.name.match(/Зона (\d+)/);
+        if (match) {
+            const num = parseInt(match[1], 10);
+            if (!isNaN(num)) {
+                usedNumbers.add(num);
+            }
+        }
+    });
+    
+    // Ищем минимальное свободное число, начиная с 1
+    let number = 1;
+    while (usedNumbers.has(number)) {
+        number++;
+    }
+    
+    return number;
 }
 
 // Палитра ярких контрастных цветов для зон (по порядку)
@@ -2157,19 +2186,28 @@ function saveItem() {
             cluster.name = newName;
             cluster.comment = newComment;
         }
-    } else if (editingItem.type === "zone") {  // ← ДОБАВИТЬ
-        const zone = zones.find(z => z.id === editingItem.id);
-        if (zone) {
-            zone.name = newName;
-            zone.comment = newComment;
-            
-            // Обновляем попап на карте
-            if (zone.layer) {
-                zone.layer.closePopup();
-                drawZone(zone);
-            }
-        }
-    }
+    } else if (editingItem.type === "zone") {
+		const zone = zones.find(z => z.id === editingItem.id);
+		if (zone) {
+			let newName = nameInput.value.trim();
+			
+			// Если имя пустое - генерируем следующее доступное
+			if (!newName) {
+				const zoneNumber = getNextZoneNumber();
+				newName = `Зона ${zoneNumber}`;
+			}
+			
+			// Если имя не соответствует формату "Зона N", но не пустое - оставляем как есть
+			zone.name = newName;
+			zone.comment = newComment;
+			
+			// Обновляем попап на карте
+			if (zone.layer) {
+				zone.layer.closePopup();
+				drawZone(zone);
+			}
+		}
+	}
 
     hideItemDialog();
     renderClustersAndCells();
