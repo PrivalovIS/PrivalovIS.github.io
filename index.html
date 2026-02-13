@@ -1346,6 +1346,33 @@ function linesIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
            (d3 > 0 && d4 < 0 || d3 < 0 && d4 > 0);
 }
 
+// Проверка, пересекается ли полигон с существующими зонами (кроме указанной)
+function isPolygonIntersectingZones(points, excludeZoneId = null) {
+    // Проверяем каждую сторону полигона
+    for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        
+        // Проверяем со всеми существующими зонами
+        for (const zone of zones) {
+            if (excludeZoneId && zone.id === excludeZoneId) continue;
+            
+            for (let j = 0; j < zone.points.length - 1; j++) {
+                const p3 = zone.points[j];
+                const p4 = zone.points[j + 1];
+                
+                if (linesIntersect(
+                    p1[0], p1[1], p2[0], p2[1],
+                    p3[0], p3[1], p4[0], p4[1]
+                )) {
+                    return { intersects: true, zoneId: zone.id };
+                }
+            }
+        }
+    }
+    return { intersects: false };
+}
+
 // Отмена создания полигона
 function cancelPolygon() {
     currentPolygon = [];
@@ -1676,27 +1703,83 @@ function showZoneVertices(zone) {
 		marker.on('drag', function(e) {
 			const newLatLng = e.target.getLatLng();
 			const currentZone = zones.find(z => z.id === marker.zoneId);
-			if (currentZone) {
-				currentZone.points[marker.vertexIndex] = [newLatLng.lat, newLatLng.lng];
+			if (!currentZone) return;
+			
+			// Сохраняем старые координаты
+			const oldLat = currentZone.points[marker.vertexIndex][0];
+			const oldLng = currentZone.points[marker.vertexIndex][1];
+			
+			// ПОЛУЧАЕМ ПРЕДЫДУЩУЮ ПОЗИЦИЮ МАРКЕРА
+			const prevPos = marker._prevLatLng || L.latLng(oldLat, oldLng);
+			
+			// ИНТЕРПОЛЯЦИЯ - проверяем промежуточные точки
+			const steps = 5; // Количество промежуточных проверок
+			for (let s = 1; s <= steps; s++) {
+				const t = s / steps;
+				const checkLat = prevPos.lat + (newLatLng.lat - prevPos.lat) * t;
+				const checkLng = prevPos.lng + (newLatLng.lng - prevPos.lng) * t;
+				
+				// Временно ставим точку в промежуточное положение
+				currentZone.points[marker.vertexIndex] = [checkLat, checkLng];
 				
 				if (marker.vertexIndex === 0) {
 					const lastIndex = currentZone.points.length - 1;
-					currentZone.points[lastIndex] = [newLatLng.lat, newLatLng.lng];
+					currentZone.points[lastIndex] = [checkLat, checkLng];
 				}
 				
-				if (currentZone.layer) {
-					currentZone.layer.setLatLngs(currentZone.points);
-				}
+				const { intersects } = isPolygonIntersectingZones(currentZone.points, currentZone.id);
 				
-				updateMidVertices(currentZone);
+				if (intersects) {
+					// Возвращаемся к предыдущей безопасной позиции
+					const safeLat = s === 1 ? oldLat : prevPos.lat + (newLatLng.lat - prevPos.lat) * ((s - 1) / steps);
+					const safeLng = s === 1 ? oldLng : prevPos.lng + (newLatLng.lng - prevPos.lng) * ((s - 1) / steps);
+					
+					currentZone.points[marker.vertexIndex] = [safeLat, safeLng];
+					if (marker.vertexIndex === 0) {
+						const lastIndex = currentZone.points.length - 1;
+						currentZone.points[lastIndex] = [safeLat, safeLng];
+					}
+					
+					e.target.setLatLng([safeLat, safeLng]);
+					
+					if (currentZone.layer) {
+						currentZone.layer.setLatLngs(currentZone.points);
+					}
+					updateMidVertices(currentZone);
+					
+					marker._prevLatLng = L.latLng(safeLat, safeLng);
+					return;
+				}
 			}
+			
+			// Если все проверки пройдены - устанавливаем финальную позицию
+			currentZone.points[marker.vertexIndex] = [newLatLng.lat, newLatLng.lng];
+			if (marker.vertexIndex === 0) {
+				const lastIndex = currentZone.points.length - 1;
+				currentZone.points[lastIndex] = [newLatLng.lat, newLatLng.lng];
+			}
+			
+			// Запоминаем текущую позицию для следующего шага
+			marker._prevLatLng = newLatLng;
+			
+			if (currentZone.layer) {
+				currentZone.layer.setLatLngs(currentZone.points);
+			}
+			updateMidVertices(currentZone);
 		});
         
         marker.on('dragstart', function(e) {
-            const iconElement = marker.getElement();
-            if (iconElement) iconElement.classList.add('dragging');
-            leafletMap.dragging.disable();
-        });
+			const iconElement = marker.getElement();
+			if (iconElement) iconElement.classList.add('dragging');
+			leafletMap.dragging.disable();
+			
+			// Запоминаем начальную позицию
+			const currentZone = zones.find(z => z.id === marker.zoneId);
+			if (currentZone) {
+				const point = currentZone.points[marker.vertexIndex];
+				marker._prevLatLng = L.latLng(point[0], point[1]);
+			}
+		});
         
         marker.on('dragend', function(e) {
             const iconElement = marker.getElement();
@@ -1754,37 +1837,83 @@ function updateMidVertices(zone) {
         let isDragging = false;
         
         midMarker.on('dragstart', function(e) {
-            isDragging = true;
-            const iconElement = midMarker.getElement();
-            if (iconElement) iconElement.classList.add('dragging');
-            leafletMap.dragging.disable();
-        });
+			isDragging = true;
+			const iconElement = midMarker.getElement();
+			if (iconElement) iconElement.classList.add('dragging');
+			leafletMap.dragging.disable();
+			
+			// Запоминаем начальную позицию
+			const currentZone = zones.find(z => z.id === midMarker.zoneId);
+			if (currentZone && midMarker.newVertexIndex !== undefined) {
+				const point = currentZone.points[midMarker.newVertexIndex];
+				midMarker._prevLatLng = L.latLng(point[0], point[1]);
+			}
+		});
         
         midMarker.on('drag', function(e) {
-            if (!isDragging) return;
-            
-            const newLatLng = e.target.getLatLng();
-            const currentZone = zones.find(z => z.id === midMarker.zoneId);
-            if (currentZone) {
-                const idx = midMarker.vertexIndex;
-                
-                // Вставляем новую вершину ТОЛЬКО ПЕРВЫЙ РАЗ
-                if (!midMarker.vertexInserted) {
-                    const newPoint = [newLatLng.lat, newLatLng.lng];
-                    currentZone.points.splice(idx + 1, 0, newPoint);
-                    midMarker.vertexInserted = true;
-                    midMarker.newVertexIndex = idx + 1;
-                } else {
-                    // Обновляем позицию уже созданной вершины
-                    currentZone.points[midMarker.newVertexIndex] = [newLatLng.lat, newLatLng.lng];
-                }
-                
-                // Обновляем полигон
-                if (currentZone.layer) {
-                    currentZone.layer.setLatLngs(currentZone.points);
-                }
-            }
-        });
+			if (!isDragging) return;
+			
+			const newLatLng = e.target.getLatLng();
+			const currentZone = zones.find(z => z.id === midMarker.zoneId);
+			if (!currentZone) return;
+			
+			const idx = midMarker.vertexIndex;
+			
+			if (!midMarker.vertexInserted) {
+				const newPoint = [newLatLng.lat, newLatLng.lng];
+				currentZone.points.splice(idx + 1, 0, newPoint);
+				midMarker.vertexInserted = true;
+				midMarker.newVertexIndex = idx + 1;
+				
+				// Запоминаем начальную позицию
+				midMarker._prevLatLng = newLatLng;
+				
+				if (currentZone.layer) {
+					currentZone.layer.setLatLngs(currentZone.points);
+				}
+			} else {
+				const oldLat = currentZone.points[midMarker.newVertexIndex][0];
+				const oldLng = currentZone.points[midMarker.newVertexIndex][1];
+				
+				// Получаем предыдущую позицию
+				const prevPos = midMarker._prevLatLng || L.latLng(oldLat, oldLng);
+				
+				// ИНТЕРПОЛЯЦИЯ
+				const steps = 5;
+				for (let s = 1; s <= steps; s++) {
+					const t = s / steps;
+					const checkLat = prevPos.lat + (newLatLng.lat - prevPos.lat) * t;
+					const checkLng = prevPos.lng + (newLatLng.lng - prevPos.lng) * t;
+					
+					currentZone.points[midMarker.newVertexIndex] = [checkLat, checkLng];
+					
+					const { intersects } = isPolygonIntersectingZones(currentZone.points, currentZone.id);
+					
+					if (intersects) {
+						const safeLat = s === 1 ? oldLat : prevPos.lat + (newLatLng.lat - prevPos.lat) * ((s - 1) / steps);
+						const safeLng = s === 1 ? oldLng : prevPos.lng + (newLatLng.lng - prevPos.lng) * ((s - 1) / steps);
+						
+						currentZone.points[midMarker.newVertexIndex] = [safeLat, safeLng];
+						e.target.setLatLng([safeLat, safeLng]);
+						
+						if (currentZone.layer) {
+							currentZone.layer.setLatLngs(currentZone.points);
+						}
+						
+						midMarker._prevLatLng = L.latLng(safeLat, safeLng);
+						return;
+					}
+				}
+				
+				// Финальная позиция
+				currentZone.points[midMarker.newVertexIndex] = [newLatLng.lat, newLatLng.lng];
+				midMarker._prevLatLng = newLatLng;
+				
+				if (currentZone.layer) {
+					currentZone.layer.setLatLngs(currentZone.points);
+				}
+			}
+		});
         
         midMarker.on('dragend', function(e) {
             isDragging = false;
