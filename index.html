@@ -664,6 +664,25 @@
 		.zone-vertex-marker:hover {
 			transform: scale(1.2);
 		}
+		
+		/* Попап вершины */
+		.vertex-popup .leaflet-popup-content-wrapper {
+			padding: 6px !important;
+			min-width: 0 !important;
+			width: fit-content !important;
+			background: rgba(20,25,35,0.95) !important;
+		}
+
+		.vertex-popup .leaflet-popup-content {
+			margin: 0 !important;
+			padding: 0 !important;
+			width: fit-content !important;
+			min-width: 0 !important;
+		}
+
+		.vertex-popup .leaflet-popup-tip {
+			background: rgba(20,25,35,0.95) !important;
+		}
     </style>
 </head>
 <body>
@@ -1699,6 +1718,43 @@ function showZoneVertices(zone) {
         marker.zoneId = zone.id;
         marker.isMainVertex = true;
         
+		// ===== ПОПАП ДЛЯ ОСНОВНОЙ ВЕРШИНЫ =====
+		const popupContent = document.createElement('div');
+		popupContent.style.cssText = `
+			padding: 0;
+			margin: 0;
+			min-width: auto;
+			width: fit-content;
+		`;
+
+		const buttonsDiv = document.createElement('div');
+		buttonsDiv.className = 'popup-buttons';
+		buttonsDiv.style.cssText = `
+			padding: 0;
+			margin: 0;
+			width: fit-content;
+		`;
+
+		buttonsDiv.innerHTML = `
+			<button onclick="deleteVertex(${zone.id}, ${i});" 
+					style="background:#ff4444; color:white; border:none; border-radius:4px; padding:5px 12px; font-size:0.85em; cursor:pointer; width:100%; white-space:nowrap;">
+				Удалить
+			</button>
+		`;
+
+		popupContent.appendChild(buttonsDiv);
+
+		// Убираем крестик закрытия и лишние отступы
+		marker.bindPopup(popupContent, {
+			closeButton: false,
+			className: 'vertex-popup'
+		});
+        
+        // Обработчик клика для открытия попапа
+        marker.on('click', function(e) {
+            this.openPopup();
+        });
+        
         // В обработчике drag вершины - УПРОЩАЕМ, УБИРАЕМ ПРОВЕРКУ
 		marker.on('drag', function(e) {
 			const newLatLng = e.target.getLatLng();
@@ -1798,6 +1854,31 @@ function showZoneVertices(zone) {
     
     // ===== СРЕДИННЫЕ ВЕРШИНЫ =====
     updateMidVertices(zone);
+}
+
+// Удаление вершины зоны
+function deleteVertex(zoneId, vertexIndex) {
+    const zone = zones.find(z => z.id === zoneId);
+    if (!zone) return;
+    
+    // Если после удаления останется 3 точки или меньше - удаляем всю зону
+    if (zone.points.length <= 4) { // 4 потому что последняя дублирует первую
+        deleteZone(zoneId);
+        return;
+    }
+    
+    // Удаляем вершину
+    zone.points.splice(vertexIndex, 1);
+    
+    // Обновляем полигон
+    if (zone.layer) {
+        zone.layer.setLatLngs(zone.points);
+    }
+    
+    // Перерисовываем вершины
+    showZoneVertices(zone);
+    
+    markMapAsChanged();
 }
 
 // ОТДЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ СРЕДИННЫХ ВЕРШИН
