@@ -1709,11 +1709,11 @@ function showZoneVertices(zone) {
 			const oldLat = currentZone.points[marker.vertexIndex][0];
 			const oldLng = currentZone.points[marker.vertexIndex][1];
 			
-			// ПОЛУЧАЕМ ПРЕДЫДУЩУЮ ПОЗИЦИЮ МАРКЕРА
+			// Получаем предыдущую позицию
 			const prevPos = marker._prevLatLng || L.latLng(oldLat, oldLng);
 			
 			// ИНТЕРПОЛЯЦИЯ - проверяем промежуточные точки
-			const steps = 5; // Количество промежуточных проверок
+			const steps = 5;
 			for (let s = 1; s <= steps; s++) {
 				const t = s / steps;
 				const checkLat = prevPos.lat + (newLatLng.lat - prevPos.lat) * t;
@@ -1727,9 +1727,13 @@ function showZoneVertices(zone) {
 					currentZone.points[lastIndex] = [checkLat, checkLng];
 				}
 				
-				const { intersects } = isPolygonIntersectingZones(currentZone.points, currentZone.id);
+				// ===== ПРОВЕРКА ПЕРЕСЕЧЕНИЯ С СОБСТВЕННОЙ ЗОНОЙ =====
+				const selfIntersects = isSelfIntersecting(currentZone.points);
 				
-				if (intersects) {
+				// ===== ПРОВЕРКА ПЕРЕСЕЧЕНИЯ С ДРУГИМИ ЗОНАМИ =====
+				const { intersects: otherIntersects } = isPolygonIntersectingZones(currentZone.points, currentZone.id);
+				
+				if (selfIntersects || otherIntersects) {
 					// Возвращаемся к предыдущей безопасной позиции
 					const safeLat = s === 1 ? oldLat : prevPos.lat + (newLatLng.lat - prevPos.lat) * ((s - 1) / steps);
 					const safeLng = s === 1 ? oldLng : prevPos.lng + (newLatLng.lng - prevPos.lng) * ((s - 1) / steps);
@@ -1752,14 +1756,13 @@ function showZoneVertices(zone) {
 				}
 			}
 			
-			// Если все проверки пройдены - устанавливаем финальную позицию
+			// Если все проверки пройдены
 			currentZone.points[marker.vertexIndex] = [newLatLng.lat, newLatLng.lng];
 			if (marker.vertexIndex === 0) {
 				const lastIndex = currentZone.points.length - 1;
 				currentZone.points[lastIndex] = [newLatLng.lat, newLatLng.lng];
 			}
 			
-			// Запоминаем текущую позицию для следующего шага
 			marker._prevLatLng = newLatLng;
 			
 			if (currentZone.layer) {
@@ -1864,8 +1867,6 @@ function updateMidVertices(zone) {
 				currentZone.points.splice(idx + 1, 0, newPoint);
 				midMarker.vertexInserted = true;
 				midMarker.newVertexIndex = idx + 1;
-				
-				// Запоминаем начальную позицию
 				midMarker._prevLatLng = newLatLng;
 				
 				if (currentZone.layer) {
@@ -1875,7 +1876,6 @@ function updateMidVertices(zone) {
 				const oldLat = currentZone.points[midMarker.newVertexIndex][0];
 				const oldLng = currentZone.points[midMarker.newVertexIndex][1];
 				
-				// Получаем предыдущую позицию
 				const prevPos = midMarker._prevLatLng || L.latLng(oldLat, oldLng);
 				
 				// ИНТЕРПОЛЯЦИЯ
@@ -1887,9 +1887,13 @@ function updateMidVertices(zone) {
 					
 					currentZone.points[midMarker.newVertexIndex] = [checkLat, checkLng];
 					
-					const { intersects } = isPolygonIntersectingZones(currentZone.points, currentZone.id);
+					// ===== ПРОВЕРКА ПЕРЕСЕЧЕНИЯ С СОБСТВЕННОЙ ЗОНОЙ =====
+					const selfIntersects = isSelfIntersecting(currentZone.points);
 					
-					if (intersects) {
+					// ===== ПРОВЕРКА ПЕРЕСЕЧЕНИЯ С ДРУГИМИ ЗОНАМИ =====
+					const { intersects: otherIntersects } = isPolygonIntersectingZones(currentZone.points, currentZone.id);
+					
+					if (selfIntersects || otherIntersects) {
 						const safeLat = s === 1 ? oldLat : prevPos.lat + (newLatLng.lat - prevPos.lat) * ((s - 1) / steps);
 						const safeLng = s === 1 ? oldLng : prevPos.lng + (newLatLng.lng - prevPos.lng) * ((s - 1) / steps);
 						
@@ -1937,6 +1941,51 @@ function updateMidVertices(zone) {
     }
 }
 
+// Проверка, пересекается ли полигон сам с собой (кроме соседних сторон)
+function isSelfIntersecting(points) {
+    // Нужно минимум 4 точки для самопересечения (3 стороны + замыкающая)
+    if (points.length < 4) return false;
+    
+    // Проверяем каждую пару несмежных сторон
+    for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        
+        // Начинаем с i+2, чтобы пропустить смежные стороны
+        for (let j = i + 2; j < points.length - 1; j++) {
+            const p3 = points[j];
+            const p4 = points[j + 1];
+            
+            // Не проверяем стороны, у которых общая вершина
+            if (i === 0 && j === points.length - 2) continue; // Первая и последняя смежны через замыкающую
+            
+            if (linesIntersect(
+                p1[0], p1[1], p2[0], p2[1],
+                p3[0], p3[1], p4[0], p4[1]
+            )) {
+                return true;
+            }
+        }
+    }
+    
+    // Дополнительно проверяем замыкающую сторону (последняя с первой)
+    if (points.length >= 3) {
+        const p1 = points[points.length - 2];
+        const p2 = points[points.length - 1];
+        const p3 = points[0];
+        const p4 = points[1];
+        
+        if (linesIntersect(
+            p1[0], p1[1], p2[0], p2[1],
+            p3[0], p3[1], p4[0], p4[1]
+        )) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 // Скрыть вершины зоны
 function hideZoneVertices(zone) {
     if (!leafletMap || !zone) return;
@@ -1960,8 +2009,11 @@ function hideZoneVertices(zone) {
 
 // Удаление зоны по ID (из попапа)
 function deleteZoneById(zoneId) {
-    editingItem = { type: "zone", id: zoneId };
-    deleteItem();
+    deleteZone(zoneId); // Просто вызываем deleteZone без editingItem
+    // Закрываем попап
+    if (leafletMap) {
+        leafletMap.closePopup();
+    }
 }
 
 // Обновление списка зон
@@ -1975,8 +2027,7 @@ function updateZoneList() {
     
     if (zones.length === 0) {
         zoneListEl.style.display = 'none';
-        zoneEmptyEl.style.display = 'block';
-        zoneEmptyEl.textContent = 'Зоны отсутствуют';
+        zoneEmptyEl.style.display = 'none'; // ← ПРОСТО СКРЫВАЕМ, НЕ ПОКАЗЫВАЕМ ТЕКСТ
         return;
     }
     
@@ -2128,21 +2179,40 @@ function editZone(zoneId) {
 // Удаление зоны
 function deleteZone(zoneId) {
     if (!zoneId) return;
-    if (!confirm('Удалить зону?')) return;
     
     const index = zones.findIndex(z => z.id === zoneId);
     if (index !== -1) {
-        hideZoneVertices(zones[index]);
+        // ПОЛНОСТЬЮ УДАЛЯЕМ ВСЕ МАРКЕРЫ ВЕРШИН
+        const zone = zones[index];
         
-        if (zones[index].layer && leafletMap) {
-            leafletMap.removeLayer(zones[index].layer);
+        // Удаляем основные вершины
+        if (zone.vertexMarkers) {
+            zone.vertexMarkers.forEach(marker => {
+                if (leafletMap) leafletMap.removeLayer(marker);
+            });
+            zone.vertexMarkers = [];
         }
         
+        // Удаляем срединные вершины
+        if (zone.midVertexMarkers) {
+            zone.midVertexMarkers.forEach(marker => {
+                if (leafletMap) leafletMap.removeLayer(marker);
+            });
+            zone.midVertexMarkers = [];
+        }
+        
+        // Удаляем полигон
+        if (zone.layer && leafletMap) {
+            leafletMap.removeLayer(zone.layer);
+        }
+        
+        // Удаляем из массива
         zones.splice(index, 1);
         
+        // Сбрасываем выделение
         if (selectedZoneId === zoneId) selectedZoneId = null;
-        if (editingZoneId === zoneId) cancelZone();
         
+        // Обновляем список
         updateZoneList();
         markMapAsChanged();
     }
@@ -2151,7 +2221,23 @@ function deleteZone(zoneId) {
 // Очистка всех зон
 function clearZones() {
     zones.forEach(zone => {
-        hideZoneVertices(zone);
+        // Удаляем основные вершины
+        if (zone.vertexMarkers) {
+            zone.vertexMarkers.forEach(marker => {
+                if (leafletMap) leafletMap.removeLayer(marker);
+            });
+            zone.vertexMarkers = [];
+        }
+        
+        // Удаляем срединные вершины
+        if (zone.midVertexMarkers) {
+            zone.midVertexMarkers.forEach(marker => {
+                if (leafletMap) leafletMap.removeLayer(marker);
+            });
+            zone.midVertexMarkers = [];
+        }
+        
+        // Удаляем полигон
         if (zone.layer && leafletMap) {
             leafletMap.removeLayer(zone.layer);
         }
@@ -2159,9 +2245,8 @@ function clearZones() {
     
     zones = [];
     selectedZoneId = null;
-    editingZoneId = null;
     zoneColorIndex = 0;
-    cancelZone();
+    currentZoneColor = null;
     
     const zoneCountEl = document.getElementById('zoneCount');
     if (zoneCountEl) {
@@ -2481,19 +2566,37 @@ function deleteItem() {
         if (!confirm("Удалить кластер?")) return;
         clusters = clusters.filter(c => c.id !== editingItem.id);
         
-    } else if (editingItem.type === "zone") {  // ← ДОБАВИТЬ
-        if (!confirm("Удалить зону?")) return;
+    } else if (editingItem.type === "zone") {
+    const index = zones.findIndex(z => z.id === editingItem.id);
+    if (index !== -1) {
+        const zone = zones[index];
         
-        const index = zones.findIndex(z => z.id === editingItem.id);
-        if (index !== -1) {
-            if (zones[index].layer && leafletMap) {
-                leafletMap.removeLayer(zones[index].layer);
-            }
-            zones.splice(index, 1);
-            if (selectedZoneId === editingItem.id) selectedZoneId = null;
-            updateZoneList();
+        // Удаляем основные вершины
+        if (zone.vertexMarkers) {
+            zone.vertexMarkers.forEach(marker => {
+                if (leafletMap) leafletMap.removeLayer(marker);
+            });
+            zone.vertexMarkers = [];
         }
+        
+        // Удаляем срединные вершины
+        if (zone.midVertexMarkers) {
+            zone.midVertexMarkers.forEach(marker => {
+                if (leafletMap) leafletMap.removeLayer(marker);
+            });
+            zone.midVertexMarkers = [];
+        }
+        
+        // Удаляем полигон
+        if (zone.layer && leafletMap) {
+            leafletMap.removeLayer(zone.layer);
+        }
+        
+        zones.splice(index, 1);
+        if (selectedZoneId === editingItem.id) selectedZoneId = null;
+        updateZoneList();
     }
+}
 
     hideItemDialog();
     renderClustersAndCells();
