@@ -1129,6 +1129,32 @@ function toggleZoneMode(event) {
     updateCursor();
 }
 
+// Получить следующий доступный номер БС
+function getNextBSNumber() {
+    if (bsMarkers.length === 0) return 1;
+    
+    // Собираем все существующие номера БС
+    const usedNumbers = new Set();
+    
+    bsMarkers.forEach(marker => {
+        const match = marker.name.match(/^Базовая станция (\d+)$/); // Точное соответствие "БС N"
+        if (match) {
+            const num = parseInt(match[1], 10);
+            if (!isNaN(num)) {
+                usedNumbers.add(num);
+            }
+        }
+    });
+    
+    // Ищем минимальное свободное число, начиная с 1
+    let number = 1;
+    while (usedNumbers.has(number)) {
+        number++;
+    }
+    
+    return number;
+}
+
 // Начало нового полигона
 function startNewPolygon() {
     currentPolygon = [];
@@ -2849,7 +2875,7 @@ function updateBsList() {
             
             const nameSpan = document.createElement('div');
             nameSpan.className = 'bs-list-item-name';
-            nameSpan.textContent = marker.name || `БС ${index + 1}`;
+            nameSpan.textContent = marker.name || `Базовая станция ${index + 1}`;
             
             const infoSpan = document.createElement('div');
             infoSpan.className = 'bs-list-item-info';
@@ -3404,32 +3430,35 @@ canvas.addEventListener('click', function(e) {
     currentClickPosition = { x: clickX, y: clickY };
     
     // Если включен режим установки БС
-    if (bsModeEnabled && leafletMap) {
-        const latLng = leafletMap.containerPointToLatLng([clickX, clickY]);
-        
-        createTempMarker(latLng.lat, latLng.lng);
-        
-        currentMarkerData = {
-            lat: latLng.lat,
-            lng: latLng.lng,
-            temp: true
-        };
-        
-        const defaultName = `Базовая станция ${bsMarkers.length + 1}`;
-        document.getElementById('markerName').value = defaultName;
-        document.getElementById('markerName').placeholder = defaultName;
-        
-        document.getElementById('markerShowCircle').checked = false;
-        document.getElementById('markerCircleSlider').value = CONFIG.DEFAULT_BS_RADIUS;
-        document.getElementById('markerCircleText').value = CONFIG.DEFAULT_BS_RADIUS;
-        document.getElementById('markerCircleControls').style.display = 'none';
-        
-        removePreviewCircle();
-        
-        positionDialogNearMarker(clickX, clickY);
-        showMarkerDialog(false);
-        return;
-    }
+	if (bsModeEnabled && leafletMap) {
+		const latLng = leafletMap.containerPointToLatLng([clickX, clickY]);
+		
+		createTempMarker(latLng.lat, latLng.lng);
+		
+		currentMarkerData = {
+			lat: latLng.lat,
+			lng: latLng.lng,
+			temp: true
+		};
+		
+		// ПОЛУЧАЕМ СЛЕДУЮЩИЙ ДОСТУПНЫЙ НОМЕР
+		const nextNumber = getNextBSNumber();
+		const defaultName = `Базовая станция ${nextNumber}`;
+		
+		document.getElementById('markerName').value = defaultName;
+		document.getElementById('markerName').placeholder = defaultName;
+		
+		document.getElementById('markerShowCircle').checked = false;
+		document.getElementById('markerCircleSlider').value = CONFIG.DEFAULT_BS_RADIUS;
+		document.getElementById('markerCircleText').value = CONFIG.DEFAULT_BS_RADIUS;
+		document.getElementById('markerCircleControls').style.display = 'none';
+		
+		removePreviewCircle();
+		
+		positionDialogNearMarker(clickX, clickY);
+		showMarkerDialog(false);
+		return;
+	}
     
     // Если включен режим построения - обрабатываем клики по ячейкам
     if (buildEnabled) {
@@ -3836,7 +3865,10 @@ function showMarkerDialog(isEditing = false) {
     if (isEditing) {
         document.getElementById('deleteMarkerBtn').style.display = 'block';
     } else {
-        const defaultName = `Базовая станция ${bsMarkers.length + 1}`;
+        // ПОЛУЧАЕМ СЛЕДУЮЩИЙ ДОСТУПНЫЙ НОМЕР
+        const nextNumber = getNextBSNumber();
+        const defaultName = `Базовая станция ${nextNumber}`;
+        
         document.getElementById('markerName').value = defaultName;
         document.getElementById('markerName').placeholder = defaultName;
         document.getElementById('markerComment').value = '';
@@ -3908,36 +3940,44 @@ function saveMarker() {
             markMapAsChanged();
         }
     } else if (currentMarkerData) {
-        const markerId = Date.now();
-        const marker = {
-            id: markerId,
-            lat: currentMarkerData.lat,
-            lng: currentMarkerData.lng,
-            name: name,
-            comment: comment,
-            showCircle: showCircle,
-            circleRadius: circleRadius
-        };
-        
-        bsMarkers.push(marker);
-        
-        const leafletMarker = createMarker(
-            marker.lat, 
-            marker.lng, 
-            marker.name, 
-            marker.comment, 
-            markerId,
-            marker.showCircle,
-            marker.circleRadius
-        );
-        
-        if (leafletMarker) {
-            leafletMarkers.push(leafletMarker);
-        }
-        
-        updateBsList();
-        markMapAsChanged();
+    const markerId = Date.now();
+    
+    // Проверяем имя, если пустое или пользователь стер - генерируем следующее
+    let finalName = name;
+    if (!finalName || finalName.trim() === '') {
+        const nextNumber = getNextBSNumber();
+        finalName = `Базовая станция ${nextNumber}`;
     }
+    
+    const marker = {
+        id: markerId,
+        lat: currentMarkerData.lat,
+        lng: currentMarkerData.lng,
+        name: finalName,
+        comment: comment,
+        showCircle: showCircle,
+        circleRadius: circleRadius
+    };
+    
+    bsMarkers.push(marker);
+    
+    const leafletMarker = createMarker(
+        marker.lat, 
+        marker.lng, 
+        marker.name, 
+        marker.comment, 
+        markerId,
+        marker.showCircle,
+        marker.circleRadius
+    );
+    
+    if (leafletMarker) {
+        leafletMarkers.push(leafletMarker);
+    }
+    
+    updateBsList();
+    markMapAsChanged();
+}
     
     // Удаляем предпросмотр
     removePreviewCircle();
