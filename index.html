@@ -1134,13 +1134,14 @@ function onMapMouseMoveForZone(e) {
         window.tempGuideLine = null;
     }
     
-    // Используем цвет текущей зоны
-    const zoneColor = currentZoneColor || '#4af';
-    
-    // Создаем линию от последней точки к курсору
     const lastPoint = tempPoints[tempPoints.length - 1];
+    const hasIntersection = isLineIntersecting(lastPoint.lat, lastPoint.lng, e.latlng.lat, e.latlng.lng);
+    
+    // Только меняем цвет линии, но все равно рисуем
+    const lineColor = hasIntersection ? '#ff4444' : (currentZoneColor || '#4af');
+    
     window.tempGuideLine = L.polyline([lastPoint, e.latlng], {
-        color: zoneColor,
+        color: lineColor,
         weight: 2,
         opacity: 0.7,
         dashArray: '5, 8'
@@ -1152,6 +1153,16 @@ function onMapClickForZone(e) {
     if (!zoneModeEnabled) return;
     
     const latlng = e.latlng;
+    
+    // Если есть хотя бы одна точка, проверяем пересечение
+    if (tempPoints.length > 0) {
+        const lastPoint = tempPoints[tempPoints.length - 1];
+        
+        if (isLineIntersecting(lastPoint.lat, lastPoint.lng, latlng.lat, latlng.lng)) {
+            // Просто игнорируем клик
+            return;
+        }
+    }
     
     // Обычное добавление новой точки
     currentPolygon.push([latlng.lat, latlng.lng]);
@@ -1275,6 +1286,64 @@ function removeTempPolygon() {
         leafletMap.removeLayer(window.tempGuideLine);
         window.tempGuideLine = null;
     }
+}
+
+// Простая проверка пересечения с существующими зонами
+function isLineIntersecting(lat1, lng1, lat2, lng2, excludeZoneId = null) {
+    // Проверяем пересечение с текущей строящейся зоной
+    if (tempPoints.length > 0) {
+        for (let i = 0; i < tempPoints.length - 1; i++) {
+            const p1 = tempPoints[i];
+            const p2 = tempPoints[i + 1];
+            
+            if (linesIntersect(
+                lat1, lng1, lat2, lng2,
+                p1.lat, p1.lng, p2.lat, p2.lng
+            )) {
+                return true;
+            }
+        }
+    }
+    
+    // Проверяем все существующие зоны
+    for (const zone of zones) {
+        if (excludeZoneId && zone.id === excludeZoneId) continue;
+        
+        for (let i = 0; i < zone.points.length - 1; i++) {
+            const p1 = zone.points[i];
+            const p2 = zone.points[i + 1];
+            
+            if (linesIntersect(
+                lat1, lng1, lat2, lng2,
+                p1[0], p1[1], p2[0], p2[1]
+            )) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
+// Проверка пересечения двух отрезков
+function linesIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+    // Вычисляем направляющие векторы
+    const v1 = [x2 - x1, y2 - y1];
+    const v2 = [x4 - x3, y4 - y3];
+    const v3 = [x3 - x1, y3 - y1];
+    const v4 = [x4 - x1, y4 - y1];
+    const v5 = [x1 - x3, y1 - y3];
+    const v6 = [x2 - x3, y2 - y3];
+    
+    // Вычисляем векторные произведения
+    const d1 = v1[0] * v3[1] - v1[1] * v3[0];
+    const d2 = v1[0] * v4[1] - v1[1] * v4[0];
+    const d3 = v2[0] * v5[1] - v2[1] * v5[0];
+    const d4 = v2[0] * v6[1] - v2[1] * v6[0];
+    
+    // Проверяем строгое пересечение (не касание)
+    return (d1 > 0 && d2 < 0 || d1 < 0 && d2 > 0) && 
+           (d3 > 0 && d4 < 0 || d3 < 0 && d4 > 0);
 }
 
 // Отмена создания полигона
@@ -1547,25 +1616,25 @@ function showZoneVertices(zone) {
         marker.zoneId = zone.id;
         marker.isMainVertex = true;
         
-        marker.on('drag', function(e) {
-            const newLatLng = e.target.getLatLng();
-            const currentZone = zones.find(z => z.id === marker.zoneId);
-            if (currentZone) {
-                currentZone.points[marker.vertexIndex] = [newLatLng.lat, newLatLng.lng];
-                
-                if (marker.vertexIndex === 0) {
-                    const lastIndex = currentZone.points.length - 1;
-                    currentZone.points[lastIndex] = [newLatLng.lat, newLatLng.lng];
-                }
-                
-                if (currentZone.layer) {
-                    currentZone.layer.setLatLngs(currentZone.points);
-                }
-                
-                // ОБНОВЛЯЕМ ТОЛЬКО СРЕДИННЫЕ ВЕРШИНЫ, НЕ ПЕРЕСОЗДАВАЯ ВСЕ
-                updateMidVertices(currentZone);
-            }
-        });
+        // В обработчике drag вершины - УПРОЩАЕМ, УБИРАЕМ ПРОВЕРКУ
+		marker.on('drag', function(e) {
+			const newLatLng = e.target.getLatLng();
+			const currentZone = zones.find(z => z.id === marker.zoneId);
+			if (currentZone) {
+				currentZone.points[marker.vertexIndex] = [newLatLng.lat, newLatLng.lng];
+				
+				if (marker.vertexIndex === 0) {
+					const lastIndex = currentZone.points.length - 1;
+					currentZone.points[lastIndex] = [newLatLng.lat, newLatLng.lng];
+				}
+				
+				if (currentZone.layer) {
+					currentZone.layer.setLatLngs(currentZone.points);
+				}
+				
+				updateMidVertices(currentZone);
+			}
+		});
         
         marker.on('dragstart', function(e) {
             const iconElement = marker.getElement();
