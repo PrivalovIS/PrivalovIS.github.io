@@ -1386,6 +1386,62 @@ function finishZone() {
         return;
     }
     
+    // ===== ПРОВЕРКА ПЕРЕСЕЧЕНИЙ ЗАМЫКАЮЩЕЙ ЛИНИИ =====
+    const firstPoint = tempPoints[0];
+    const lastPoint = tempPoints[tempPoints.length - 1];
+    
+    // Проверяем пересечение замыкающей линии с существующими линиями зоны
+    for (let i = 0; i < tempPoints.length - 1; i++) {
+        const p1 = tempPoints[i];
+        const p2 = tempPoints[i + 1];
+        
+        if (linesIntersect(
+            firstPoint.lat, firstPoint.lng, lastPoint.lat, lastPoint.lng,
+            p1.lat, p1.lng, p2.lat, p2.lng
+        )) {
+            // Показываем красным ЗАМЫКАЮЩУЮ ЛИНИЮ
+            const errorLine = L.polyline([firstPoint, lastPoint], {
+                color: '#ff4444',
+                weight: 4,
+                opacity: 0.9,
+                dashArray: '5, 5'
+            }).addTo(leafletMap);
+            
+            setTimeout(() => {
+                if (leafletMap) leafletMap.removeLayer(errorLine);
+            }, 1000);
+            
+            return; // Отменяем создание зоны
+        }
+    }
+    
+    // Проверка пересечения замыкающей линии с существующими зонами
+    for (const zone of zones) {
+        for (let j = 0; j < zone.points.length - 1; j++) {
+            const p3 = zone.points[j];
+            const p4 = zone.points[j + 1];
+            
+            if (linesIntersect(
+                firstPoint.lat, firstPoint.lng, lastPoint.lat, lastPoint.lng,
+                p3[0], p3[1], p4[0], p4[1]
+            )) {
+                // Показываем красным ЗАМЫКАЮЩУЮ ЛИНИЮ
+                const errorLine = L.polyline([firstPoint, lastPoint], {
+                    color: '#ff4444',
+                    weight: 4,
+                    opacity: 0.9,
+                    dashArray: '5, 5'
+                }).addTo(leafletMap);
+                
+                setTimeout(() => {
+                    if (leafletMap) leafletMap.removeLayer(errorLine);
+                }, 1000);
+                
+                return; // Отменяем создание зоны
+            }
+        }
+    }
+    
     // Замыкаем полигон
     currentPolygon.push(currentPolygon[0]);
     
