@@ -752,12 +752,12 @@
     <!-- Секция Сотовое строение (закрыта по умолчанию) -->
     <div class="accordion-section">
         <div class="accordion-header" onclick="toggleAccordion('network-build')">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <!-- <button id="buildToggle" onclick="toggleBuild(event)">Включить</button>-->
-                <span>Сотовое строение</span>
-            </div>
-            <span class="accordion-icon">▼</span>
-        </div>
+			<div style="display: flex; align-items: center; gap: 8px;">
+				<button id="networkToggleBtn" onclick="toggleNetworkMode(event)" class="active">Выключить</button>
+				<span>Сотовое строение</span>
+			</div>
+			<span class="accordion-icon">▼</span>
+		</div>
         <div class="accordion-content" id="network-build-content">
 		<button id="buildToggleInside" onclick="toggleBuild(event)" style="width: 100%; margin-top: 10px; margin-bottom: 8px;">
 			Включить строение
@@ -831,7 +831,7 @@
 	<div class="accordion-section">
 		<div class="accordion-header" onclick="toggleAccordion('kml-import')">
 			<div style="display: flex; align-items: center; gap: 8px;">
-				<button id="kmlToggle" onclick="openKMLFile(event)">Открыть</button>
+				<button id="arbitraryToggleBtn" onclick="toggleArbitraryMode(event)">Включить</button>
 				<span>Произвольное строение</span>
 			</div>
 			<span class="accordion-icon">▼</span>
@@ -2425,59 +2425,112 @@ function renderClustersAndCells() {
     ];
 
     // 1. Кластеры (сверху)
-    clusters.forEach((cluster, index) => {
-        const item = document.createElement('div');
-        item.className = 'bs-list-item cluster';
-        item.dataset.clusterId = cluster.id;
+	clusters.forEach((cluster, index) => {
+		const item = document.createElement('div');
+		item.className = 'bs-list-item cluster';
+		item.dataset.clusterId = cluster.id;
 
-        // Циклическое распределение цветов
-        const colorIndex = index % clusterColors.length;
-        const accentColor = clusterColors[colorIndex];
+		// Циклическое распределение цветов
+		const colorIndex = index % clusterColors.length;
+		const accentColor = clusterColors[colorIndex];
 
-        // Для фона берём более тёмный/приглушённый вариант того же цвета
-        let bgColor;
-        if (accentColor === "#FFEB3B") {
-            bgColor = "#FFF9C4";
-        } else {
-            bgColor = adjustBrightness(accentColor, 0.28);
-        }
+		// Для фона берём более тёмный/приглушённый вариант того же цвета
+		let bgColor;
+		if (accentColor === "#FFEB3B") {
+			bgColor = "#FFF9C4";
+		} else {
+			bgColor = adjustBrightness(accentColor, 0.28);
+		}
 
-        item.style.setProperty('--cluster-bg', bgColor);
-        item.style.setProperty('--cluster-accent', accentColor);
-        item.style.setProperty('--cluster-bg-hover', adjustBrightness(accentColor, 0.45));
-        
-        const nameSpan = document.createElement('div');
-        nameSpan.className = 'bs-list-item-name';
-        nameSpan.textContent = cluster.name;
+		item.style.setProperty('--cluster-bg', bgColor);
+		item.style.setProperty('--cluster-accent', accentColor);
+		item.style.setProperty('--cluster-bg-hover', adjustBrightness(accentColor, 0.45));
+		
+		const nameSpan = document.createElement('div');
+		nameSpan.className = 'bs-list-item-name';
+		nameSpan.textContent = cluster.name;
 
-        const infoSpan = document.createElement('div');
-        infoSpan.className = 'bs-list-item-info';
-        if (cluster.comment?.trim()) {
-            const txt = cluster.comment.trim();
-            infoSpan.textContent = txt.length > 28 ? txt.slice(0, 25) + '…' : txt;
-            infoSpan.title = txt;
-        }
+		const infoSpan = document.createElement('div');
+		infoSpan.className = 'bs-list-item-info';
+		if (cluster.comment?.trim()) {
+			const txt = cluster.comment.trim();
+			infoSpan.textContent = txt.length > 28 ? txt.slice(0, 25) + '…' : txt;
+			infoSpan.title = txt;
+		}
 
-        const editBtn = document.createElement('button');
-        editBtn.innerHTML = '✏️';
-        editBtn.style.cssText = `
-            background: transparent;
-            border: none;
-            color: white;
-            opacity: 0.75;
-            cursor: pointer;
-            font-size: 14px;
-            padding: 4px 8px;
-            margin-left: auto;
-        `;
-        editBtn.onclick = e => {
-            e.stopPropagation();
-            editItem("cluster", cluster.id);
-        };
+		// КНОПКА "+" В СТИЛЕ ИНТЕРФЕЙСА
+		const plusBtn = document.createElement('button');
+		plusBtn.innerHTML = '+';
+		plusBtn.style.cssText = `
+			background: #2a3444;
+			border: 1px solid #27ae60;
+			color: #27ae60;
+			font-size: 16px;
+			font-weight: normal;
+			cursor: pointer;
+			padding: 2px 8px;
+			margin-left: 4px;
+			border-radius: 4px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.2s;
+			line-height: 1;
+		`;
+		plusBtn.onmouseover = function() {
+			this.style.background = '#27ae60';
+			this.style.color = '#fff';
+			this.style.borderColor = '#27ae60';
+		};
+		plusBtn.onmouseout = function() {
+			this.style.background = '#2a3444';
+			this.style.color = '#27ae60';
+			this.style.borderColor = '#27ae60';
+		};
+		plusBtn.onclick = function(e) {
+			e.stopPropagation();
+			showClusterMessage(cluster.name);
+		};
 
-        item.append(nameSpan, infoSpan, editBtn);
-        listEl.appendChild(item);
-    });
+		const editBtn = document.createElement('button');
+		editBtn.innerHTML = '✏️';
+		editBtn.style.cssText = `
+			background: transparent;
+			border: none;
+			color: #aaa;
+			cursor: pointer;
+			font-size: 14px;
+			padding: 2px 6px;
+			margin-left: 4px;
+			opacity: 0.7;
+			transition: opacity 0.2s;
+		`;
+		editBtn.onmouseover = function() {
+			this.style.opacity = '1';
+		};
+		editBtn.onmouseout = function() {
+			this.style.opacity = '0.7';
+		};
+		editBtn.onclick = e => {
+			e.stopPropagation();
+			editItem("cluster", cluster.id);
+		};
+
+		// Контейнер для кнопок
+		const controlsDiv = document.createElement('div');
+		controlsDiv.style.cssText = `
+			display: flex;
+			align-items: center;
+			margin-left: auto;
+			gap: 2px;
+		`;
+		
+		controlsDiv.appendChild(editBtn);
+		controlsDiv.appendChild(plusBtn);
+
+		item.append(nameSpan, infoSpan, controlsDiv);
+		listEl.appendChild(item);
+	});
 
     // 2. Ячейки
     let index = 1;
@@ -3145,6 +3198,54 @@ function toggleBuild(event) {
     
     renderClustersAndCells();
     draw();
+}
+
+// ТОЛЬКО СМЕНА ТЕКСТА И ЦВЕТА - для кнопки Выключить/Включить в Сотовом строении
+function toggleNetworkMode(event) {
+    if (event) event.stopPropagation();
+    
+    const btn = event.currentTarget;
+    const arbitraryBtn = document.getElementById('arbitraryToggleBtn');
+    
+    if (btn.textContent === 'Выключить') {
+        // Выключаем текущую - включаем произвольную
+        btn.textContent = 'Включить';
+        btn.classList.remove('active');
+        
+        arbitraryBtn.textContent = 'Выключить';
+        arbitraryBtn.classList.add('active');
+    } else {
+        // Включаем текущую - выключаем произвольную
+        btn.textContent = 'Выключить';
+        btn.classList.add('active');
+        
+        arbitraryBtn.textContent = 'Включить';
+        arbitraryBtn.classList.remove('active');
+    }
+}
+
+// ТОЛЬКО СМЕНА ТЕКСТА И ЦВЕТА - для кнопки Включить/Выключить в Произвольном строении
+function toggleArbitraryMode(event) {
+    if (event) event.stopPropagation();
+    
+    const btn = event.currentTarget;
+    const networkBtn = document.getElementById('networkToggleBtn');
+    
+    if (btn.textContent === 'Включить') {
+        // Включаем текущую - выключаем сотовую
+        btn.textContent = 'Выключить';
+        btn.classList.add('active');
+        
+        networkBtn.textContent = 'Включить';
+        networkBtn.classList.remove('active');
+    } else {
+        // Выключаем текущую - включаем сотовую
+        btn.textContent = 'Включить';
+        btn.classList.remove('active');
+        
+        networkBtn.textContent = 'Выключить';
+        networkBtn.classList.add('active');
+    }
 }
 
 // Основная функция переключения режима БС
