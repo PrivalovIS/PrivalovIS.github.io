@@ -683,45 +683,6 @@
 		.vertex-popup .leaflet-popup-tip {
 			background: rgba(20,25,35,0.95) !important;
 		}
-		
-		/* Попап для ячеек — стили почти идентичны попапам БС */
-		.cell-popup .leaflet-popup-content-wrapper {
-			background: rgba(20,25,35,0.95) !important;
-			color: #ddd !important;
-			border: 1px solid #3a4454 !important;
-			border-radius: 8px !important;
-			box-shadow: 0 4px 12px #0006 !important;
-		}
-		.cell-popup .leaflet-popup-content {
-			margin: 12px !important;
-			min-width: 220px !important;
-			font-family: system-ui, sans-serif !important;
-		}
-		.cell-popup .leaflet-popup-tip {
-			background: rgba(20,25,35,0.95) !important;
-		}
-		.cell-popup .marker-popup-title {
-			font-size: 1.05em;
-			font-weight: bold;
-			color: #fff;
-			margin-bottom: 8px;
-		}
-		.cell-popup .marker-popup-comment {
-			color: #bbb;
-			font-size: 0.9em;
-			line-height: 1.4;
-			margin: 8px 0;
-		}
-		.cell-popup .popup-buttons {
-			display: flex;
-			gap: 6px;
-			margin-top: 12px;
-		}
-		.cell-popup .popup-buttons button {
-			flex: 1;
-			padding: 6px 10px;
-			font-size: 0.9em;
-		}
     </style>
 </head>
 <body>
@@ -922,65 +883,84 @@
 	<div class="accordion-section">
 		<div class="accordion-header" onclick="toggleAccordion('analytics')">
 			<div style="display: flex; align-items: center; gap: 8px;">
-				<button id="analyticsToggle" onclick="runAnalytics(event)">Выполнить</button>
 				<span>Аналитика</span>
 			</div>
 			<span class="accordion-icon">▼</span>
 		</div>
 		<div class="accordion-content" id="analytics-content">
-			<div class="empty-section">
-				<p>Функция в разработке</p>
-				<p style="font-size: 0.85em; margin-top: 6px; color: #999;">
-					Скоро здесь будут доступны аналитические инструменты
-				</p>
+			<!-- КНОПКА СОЗДАНИЯ ОБЪЕКТА -->
+			<button id="createObjectBtn" onclick="createObject()" style="width: 100%; margin-top: 10px; margin-bottom: 8px; background: #2a3444; color: #ddd; border: none; transition: background 0.2s;" 
+					onmouseover="this.style.background='#3a4454'" 
+					onmouseout="this.style.background='#2a3444'">
+				Создать объект
+			</button>
+			
+			<!-- КНОПКА ИМПОРТА ОБЪЕКТОВ -->
+			<button id="importObjectsBtn" onclick="importObjects()" style="width: 100%; margin-bottom: 8px; background: #2a3444; color: #ddd; border: none; transition: background 0.2s;" 
+					onmouseover="this.style.background='#3a4454'" 
+					onmouseout="this.style.background='#2a3444'">
+				Импортировать объекты
+			</button>
+			
+			<!-- НАДПИСЬ КОЛИЧЕСТВО ОБЪЕКТОВ -->
+			<div id="objectCount" class="bs-count" style="text-align: center; margin-bottom: 12px;">
+				Количество объектов: 0
+			</div>
+			
+			<!-- СПИСОК ОБЪЕКТОВ -->
+			<div id="objectList" class="bs-list" style="display: none; max-height: 200px;">
+				<!-- Список объектов будет генерироваться динамически -->
+			</div>
+			
+			<div id="objectEmptyMessage" class="empty-section" style="display: none;">
+				Объекты отсутствуют
 			</div>
 		</div>
 	</div>
-</div>
 
-<!-- Диалог добавления/редактирования маркера -->
-<div id="markerDialog" class="marker-dialog">
-    <label for="markerName">Наименование</label>
-    <input type="text" id="markerName" placeholder="Введите название">
-    
-    <label for="markerComment" style="margin-top:8px;">Комментарий</label>
-    <textarea id="markerComment" rows="2" placeholder="Введите комментарий"></textarea>
-    
-    <div class="compact-checkbox" style="margin-top:12px;">
-        <input type="checkbox" id="markerShowCircle">
-        <label for="markerShowCircle">Показывать радиус</label>
-    </div>
-    
-    <div id="markerCircleControls" style="margin-top:8px; display:none;">
-        <label>Радиус, м (10-15000)</label>
-        <div class="range-group">
-            <input type="range" id="markerCircleSlider" min="10" max="15000" value="500" step="10">
-        </div>
-        <input type="text" id="markerCircleText" class="number-input" value="500" style="width: 100%;">
-    </div>
-    
-    <div class="dialog-buttons">
-        <button onclick="saveMarker()">Сохранить</button>
-        <button onclick="cancelMarker()">Отмена</button>
-        <button id="deleteMarkerBtn" class="delete-btn" onclick="deleteMarker()" style="display:none;">Удалить</button>
-    </div>
-</div>
+	<!-- Диалог добавления/редактирования маркера -->
+	<div id="markerDialog" class="marker-dialog">
+		<label for="markerName">Наименование</label>
+		<input type="text" id="markerName" placeholder="Введите название">
+		
+		<label for="markerComment" style="margin-top:8px;">Комментарий</label>
+		<textarea id="markerComment" rows="2" placeholder="Введите комментарий"></textarea>
+		
+		<div class="compact-checkbox" style="margin-top:12px;">
+			<input type="checkbox" id="markerShowCircle">
+			<label for="markerShowCircle">Показывать радиус</label>
+		</div>
+		
+		<div id="markerCircleControls" style="margin-top:8px; display:none;">
+			<label>Радиус, м (10-15000)</label>
+			<div class="range-group">
+				<input type="range" id="markerCircleSlider" min="10" max="15000" value="500" step="10">
+			</div>
+			<input type="text" id="markerCircleText" class="number-input" value="500" style="width: 100%;">
+		</div>
+		
+		<div class="dialog-buttons">
+			<button onclick="saveMarker()">Сохранить</button>
+			<button onclick="cancelMarker()">Отмена</button>
+			<button id="deleteMarkerBtn" class="delete-btn" onclick="deleteMarker()" style="display:none;">Удалить</button>
+		</div>
+	</div>
 
-<!-- Диалог редактирования ячейки -->
-<div id="cellDialog" class="marker-dialog">
-    <label for="cellName">Наименование</label>
-    <input type="text" id="cellName" placeholder="Введите название">
-    
-    <label for="cellComment" style="margin-top:8px;">Комментарий</label>
-    <textarea id="cellComment" rows="3" placeholder="Введите комментарий"></textarea>
-    
-    <div class="dialog-buttons">
-    <button onclick="saveItem()">Сохранить</button>
-    <button onclick="cancelItem()">Отмена</button>
-    <button id="deleteCellBtn" class="delete-btn" onclick="deleteItem()" style="display:none;">
-        Удалить
-    </button>
-</div>
+	<!-- Диалог редактирования ячейки -->
+	<div id="cellDialog" class="marker-dialog">
+		<label for="cellName">Наименование</label>
+		<input type="text" id="cellName" placeholder="Введите название">
+		
+		<label for="cellComment" style="margin-top:8px;">Комментарий</label>
+		<textarea id="cellComment" rows="3" placeholder="Введите комментарий"></textarea>
+		
+		<div class="dialog-buttons">
+		<button onclick="saveItem()">Сохранить</button>
+		<button onclick="cancelItem()">Отмена</button>
+		<button id="deleteCellBtn" class="delete-btn" onclick="deleteItem()" style="display:none;">
+			Удалить
+		</button>
+	</div>
 </div>
 
 <script>
@@ -1016,7 +996,7 @@ let dragStartLng = 0;
 let originalMarkerValues = null;
 let clusters = [];
 let editingItem = null;
-let cellPopupLayer = null;  // не обязательно, но полезно для отладки
+
 
 // Переменные для произвольных зон (полигонов)
 let zoneModeEnabled = false;
@@ -1257,154 +1237,99 @@ function onMapClickForZone(e) {
     drawTempPolygon();
 }
 
-// Отрисовка всей сетки - ПОЛНОСТЬЮ ЗАМЕНИТЕ ЭТУ ФУНКЦИЮ
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    updateCellCount();
-
-    if ((!leafletMap && bgMode !== 'image') || (activeHexes.size === 0 && !buildEnabled && !moveGridEnabled && !bsModeEnabled)) {
-        if (!leafletMap && bgMode !== 'image') return;
-        drawPreviewHex();
-        return;
+// Отрисовка временного полигона
+function drawTempPolygon() {
+    removeTempPolygon();
+    
+    if (!leafletMap || tempPoints.length === 0) return;
+    
+    // Рисуем линии между точками - ЦВЕТОМ ЗОНЫ
+    if (tempPoints.length > 1) {
+        tempPolygonLayer = L.polyline(tempPoints, {
+            color: currentZoneColor || '#4af',
+            weight: 3,
+            opacity: 0.8,
+            dashArray: '5, 5'
+        }).addTo(leafletMap);
     }
-
-    if (!buildEnabled && activeHexes.size === 0) {
-        drawPreviewHex();
-    }
-
-    if (activeHexes.size > 0 || buildEnabled) {
-        drawGrid();
-    }
-
-    // ───────────────────────────────────────────────
-    // Привязка попапов к активным ячейкам (только если НЕ в режиме строительства)
-    // ───────────────────────────────────────────────
-    if (!buildEnabled && leafletMap) {
-        // СНАЧАЛА УДАЛЯЕМ ВСЕ СТАРЫЕ СЛОИ
-        activeHexes.forEach(hex => {
-            if (hex.leafletLayer && leafletMap) {
-                leafletMap.removeLayer(hex.leafletLayer);
-                hex.leafletLayer = null;
-            }
-        });
-
-        let cellIndex = 1;
-        for (const [key, hex] of activeHexes.entries()) {
-            const screenPos = getHexScreenPosition(hex.q, hex.r);
-            const { x: centerX, y: centerY, radius: hexRadius } = screenPos;
-
-            // Присваиваем имя, если его нет
-            if (!hex.name) {
-                hex.name = `Ячейка ${cellIndex}`;
-            }
-
-            // Отрисовка самой ячейки (оставляем как было)
-            const isSelected = (key === selectedCellKey);
-
-            if (showHex) {
-                if (isSelected) {
-                    ctx.save();
-                    ctx.beginPath();
-                    for (let i = 0; i < 6; i++) {
-                        const angle = i * Math.PI / 3 - Math.PI / 2 + rotation * Math.PI / 180;
-                        const px = centerX + hexRadius * Math.cos(angle);
-                        const py = centerY + hexRadius * Math.sin(angle);
-                        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    
+    // Рисуем точки
+    window.tempPointMarkers = [];
+    tempPoints.forEach((point, index) => {
+        const marker = L.marker([point.lat, point.lng], {
+            icon: L.divIcon({
+                html: `<div style="background: ${currentZoneColor || '#4af'}; width: 12px; height: 12px; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8],
+                className: 'zone-point-marker'
+            }),
+            draggable: false,
+            interactive: true
+        }).addTo(leafletMap);
+        
+        // ОБРАБОТЧИК ДЛЯ ПЕРВОЙ ТОЧКИ - отмена/завершение
+        if (index === 0) {
+            marker.on('click', function() {
+                if (tempPoints.length < 3) {
+                    cancelPolygon();
+                    zoneModeEnabled = false;
+                    currentZoneColor = null;
+                    
+                    const btn = document.getElementById('createZoneBtn');
+                    btn.textContent = 'Создать зону';
+                    btn.classList.remove('active');
+                    btn.style.background = '#2a3444';
+                    btn.style.color = '#ddd';
+                    btn.style.border = 'none';
+                    
+                    if (leafletMap) {
+                        leafletMap.dragging.enable();
+                        leafletMap.off('click', onMapClickForZone);
+                        leafletMap.off('mousemove', onMapMouseMoveForZone);
                     }
-                    ctx.closePath();
-                    ctx.fillStyle = 'rgba(68, 136, 255, 0.4)';
-                    ctx.fill();
-                    ctx.strokeStyle = '#4af';
-                    ctx.lineWidth = 2.5;
-                    ctx.stroke();
-                    ctx.restore();
-
-                    drawCenter(ctx, centerX, centerY, 5, '#4af');
+                    
+                    canvas.style.pointerEvents = 'none';
+                    updateCursor();
                 } else {
-                    drawHexagon(ctx, centerX, centerY, hexRadius, '#4af', 2, rotation * Math.PI / 180);
-                    if (showCenters) {
-                        drawCenter(ctx, centerX, centerY, 4, '#f44');
-                    }
-                }
-            } else if (showCenters) {
-                drawCenter(ctx, centerX, centerY, isSelected ? 5 : 4, isSelected ? '#4af' : '#f44');
-            }
-
-            if (showCircles) {
-                drawCircle(ctx, centerX, centerY, hexRadius, 'rgba(244,68,68,0.5)');
-            }
-
-            const hasComment = hex.comment && hex.comment.trim().length > 0;
-            drawCellName(ctx, centerX, centerY, hex.name, hexRadius, hasComment);
-
-            // ─── СОЗДАЁМ НОВЫЙ НЕВИДИМЫЙ ШЕСТИУГОЛЬНИК С АКТУАЛЬНЫМИ КООРДИНАТАМИ ───
-            // Получаем 6 вершин шестиугольника в экранных координатах с учетом вращения
-            const vertices = [];
-            for (let i = 0; i < 6; i++) {
-                const angle = i * Math.PI / 3 - Math.PI / 2 + rotation * Math.PI / 180;
-                const vx = centerX + hexRadius * Math.cos(angle);
-                const vy = centerY + hexRadius * Math.sin(angle);
-                const latlng = leafletMap.containerPointToLatLng([vx, vy]);
-                vertices.push(latlng);
-            }
-
-            // Создаём полигон (невидимый, но интерактивный)
-            hex.leafletLayer = L.polygon(vertices, {
-                color: 'transparent',
-                fillColor: 'transparent',
-                fillOpacity: 0,
-                weight: 0,
-                interactive: true,
-                className: 'cell-hit-polygon'
-            }).addTo(leafletMap);
-
-            // Формируем попап (как раньше)
-            const popupContent = document.createElement('div');
-
-            const title = document.createElement('div');
-            title.className = 'marker-popup-title';
-            title.textContent = hex.name || `Ячейка`;
-
-            const buttonsDiv = document.createElement('div');
-            buttonsDiv.className = 'popup-buttons';
-            buttonsDiv.innerHTML = `
-                <button onclick="editItem('cell', '${key}'); L.DomEvent.stopPropagation(event);">Редактировать</button>
-                <button onclick="deleteCell('${key}'); L.DomEvent.stopPropagation(event);" style="background:#ff4444;color:white;">Удалить</button>
-            `;
-
-            popupContent.appendChild(title);
-            if (hex.comment && hex.comment.trim()) {
-                const commentDiv = document.createElement('div');
-                commentDiv.className = 'marker-popup-comment';
-                commentDiv.textContent = hex.comment;
-                popupContent.appendChild(commentDiv);
-            }
-            popupContent.appendChild(buttonsDiv);
-
-            hex.leafletLayer.bindPopup(popupContent, {
-                className: 'cell-popup',
-                closeButton: true,
-                autoClose: true,
-                closeOnClick: false
-            });
-
-            // Выделяем ячейку при открытии попапа
-            hex.leafletLayer.on('popupopen', function () {
-                selectedCellKey = key;
-                draw();
-            });
-
-            // Снимаем выделение при закрытии
-            hex.leafletLayer.on('popupclose', function () {
-                if (selectedCellKey === key) {
-                    selectedCellKey = null;
-                    draw();
+                    finishZone();
                 }
             });
-
-            cellIndex++;
         }
-    }
+        
+        // ОБРАБОТЧИК ДЛЯ ВТОРОЙ ТОЧКИ - отмена при 2 точках
+        if (index === 1 && tempPoints.length === 2) {
+            marker.on('click', function() {
+                cancelPolygon();
+                zoneModeEnabled = false;
+                currentZoneColor = null;
+                
+                const btn = document.getElementById('createZoneBtn');
+                btn.textContent = 'Создать зону';
+                btn.classList.remove('active');
+                btn.style.background = '#2a3444';
+                btn.style.color = '#ddd';
+                btn.style.border = 'none';
+                
+                if (leafletMap) {
+                    leafletMap.dragging.enable();
+                    leafletMap.off('click', onMapClickForZone);
+                    leafletMap.off('mousemove', onMapMouseMoveForZone);
+                }
+                
+                canvas.style.pointerEvents = 'none';
+                updateCursor();
+            });
+        }
+        
+        // ОБРАБОТЧИК ДЛЯ ПОСЛЕДНЕЙ ТОЧКИ - только если точек >= 3
+        if (index === tempPoints.length - 1 && tempPoints.length >= 3) {
+            marker.on('click', function() {
+                finishZone();
+            });
+        }
+        
+        window.tempPointMarkers.push(marker);
+    });
 }
 
 // Удаление временного полигона
@@ -2858,33 +2783,6 @@ function deleteItem() {
     markMapAsChanged?.();
 }
 
-function deleteCell(key) {
-    if (!confirm("Удалить ячейку?")) return;
-
-    const hex = activeHexes.get(key);
-    if (hex && hex.leafletLayer && leafletMap) {
-        leafletMap.removeLayer(hex.leafletLayer);
-        hex.leafletLayer = null;
-    }
-
-    activeHexes.delete(key);
-
-    if (selectedCellKey === key) {
-        selectedCellKey = null;
-    }
-
-    updatePossibleHexes();
-    renderClustersAndCells();
-    
-    // Очищаем и пересоздаем слои для оставшихся ячеек
-    if (!buildEnabled && leafletMap) {
-        clearCellLayers();
-    }
-    
-    draw();
-    markMapAsChanged();
-}
-
 function cancelItem() {
     hideItemDialog();
 }
@@ -3111,17 +3009,6 @@ function updateBsList() {
     }
 }
 
-function clearCellLayers() {
-    if (!leafletMap) return;
-    
-    activeHexes.forEach(hex => {
-        if (hex.leafletLayer && leafletMap) {
-            leafletMap.removeLayer(hex.leafletLayer);
-            hex.leafletLayer = null;
-        }
-    });
-}
-
 // Выбор БС в списке
 function selectBsInList(bsId) {
     selectedBsId = bsId;
@@ -3241,7 +3128,6 @@ function validateRadiusInput(value) {
     return num >= CONFIG.MIN_RADIUS && num <= CONFIG.MAX_RADIUS;
 }
 
-// ЗАМЕНИТЕ функцию applyRadius() полностью
 function applyRadius() {
     const slider = document.getElementById('radiusSlider');
     const text = document.getElementById('radiusText');
@@ -3266,22 +3152,8 @@ function applyRadius() {
         updatePossibleHexes();
     }
     draw();
-    
-    // ВАЖНО: принудительно обновляем слои при изменении радиуса
-    if (!buildEnabled && leafletMap) {
-        // Удаляем все старые слои
-        activeHexes.forEach(hex => {
-            if (hex.leafletLayer && leafletMap) {
-                leafletMap.removeLayer(hex.leafletLayer);
-                hex.leafletLayer = null;
-            }
-        });
-        // Перерисовываем с новыми координатами
-        draw();
-    }
 }
 
-// ЗАМЕНИТЕ функцию applyRotation() полностью
 function applyRotation() {
     const slider = document.getElementById('rotSlider');
     const text = document.getElementById('rotText');
@@ -3300,19 +3172,6 @@ function applyRotation() {
     text.value = Math.round(displayRotation * 100) / 100;
     
     draw();
-    
-    // ВАЖНО: принудительно обновляем слои при изменении вращения
-    if (!buildEnabled && leafletMap) {
-        // Удаляем все старые слои
-        activeHexes.forEach(hex => {
-            if (hex.leafletLayer && leafletMap) {
-                leafletMap.removeLayer(hex.leafletLayer);
-                hex.leafletLayer = null;
-            }
-        });
-        // Перерисовываем с новыми координатами
-        draw();
-    }
 }
 
 // Функция переключения строения (ОБНОВЛЕННАЯ)
@@ -3353,12 +3212,8 @@ function toggleBuild(event) {
         renderClustersAndCells();
     } else if (!buildEnabled) {
         possibleHexes.clear();
-        // Очищаем слои при выходе из режима строительства
-        clearCellLayers();
     } else if (buildEnabled && activeHexes.size > 0) {
         updatePossibleHexes();
-        // Очищаем слои при входе в режим строительства
-        clearCellLayers();
     }
     
     renderClustersAndCells();
@@ -4466,21 +4321,8 @@ function initBackground() {
     
     // Обновляем отрисовку при изменении карты
     leafletMap.on('move zoom', function() {
-		draw();
-		
-		// ВАЖНО: принудительно обновляем слои при перемещении/зуме карты
-		if (!buildEnabled && activeHexes.size > 0) {
-			// Удаляем все старые слои
-			activeHexes.forEach(hex => {
-				if (hex.leafletLayer && leafletMap) {
-					leafletMap.removeLayer(hex.leafletLayer);
-					hex.leafletLayer = null;
-				}
-			});
-			// Перерисовываем с новыми координатами
-			draw();
-		}
-	});
+        draw();
+    });
     
     // Всегда включаем управление картой
     leafletMap.dragging.enable();
@@ -4702,151 +4544,23 @@ function drawSelectedHex(ctx, x, y, radius, rotationAngle) {
     ctx.restore();
 }
 
-// Отрисовка всей сетки
+// Главная функция отрисовки
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     updateCellCount();
-
     if ((!leafletMap && bgMode !== 'image') || (activeHexes.size === 0 && !buildEnabled && !moveGridEnabled && !bsModeEnabled)) {
         if (!leafletMap && bgMode !== 'image') return;
+        
         drawPreviewHex();
         return;
     }
-
+    
     if (!buildEnabled && activeHexes.size === 0) {
         drawPreviewHex();
     }
-
+    
     if (activeHexes.size > 0 || buildEnabled) {
         drawGrid();
-    }
-
-    // ───────────────────────────────────────────────
-    // Привязка попапов к активным ячейкам (только если НЕ в режиме строительства)
-    // ───────────────────────────────────────────────
-    if (!buildEnabled && leafletMap) {
-        let cellIndex = 1;
-        for (const [key, hex] of activeHexes.entries()) {
-            const screenPos = getHexScreenPosition(hex.q, hex.r);
-            const { x, y, radius: currentRadius } = screenPos;
-
-            // Присваиваем имя, если его нет
-            if (!hex.name) {
-                hex.name = `Ячейка ${cellIndex}`;
-            }
-
-            // Отрисовка самой ячейки (оставляем как было)
-            const isSelected = (key === selectedCellKey);
-
-            if (showHex) {
-                if (isSelected) {
-                    ctx.save();
-                    ctx.beginPath();
-                    for (let i = 0; i < 6; i++) {
-                        const angle = i * Math.PI / 3 - Math.PI / 2 + rotation * Math.PI / 180;
-                        const px = x + currentRadius * Math.cos(angle);
-                        const py = y + currentRadius * Math.sin(angle);
-                        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-                    }
-                    ctx.closePath();
-                    ctx.fillStyle = 'rgba(68, 136, 255, 0.4)';
-                    ctx.fill();
-                    ctx.strokeStyle = '#4af';
-                    ctx.lineWidth = 2.5;
-                    ctx.stroke();
-                    ctx.restore();
-
-                    drawCenter(ctx, x, y, 5, '#4af');
-                } else {
-                    drawHexagon(ctx, x, y, currentRadius, '#4af', 2, rotation * Math.PI / 180);
-                    if (showCenters) {
-                        drawCenter(ctx, x, y, 4, '#f44');
-                    }
-                }
-            } else if (showCenters) {
-                drawCenter(ctx, x, y, isSelected ? 5 : 4, isSelected ? '#4af' : '#f44');
-            }
-
-            if (showCircles) {
-                drawCircle(ctx, x, y, currentRadius, 'rgba(244,68,68,0.5)');
-            }
-
-            const hasComment = hex.comment && hex.comment.trim().length > 0;
-            drawCellName(ctx, x, y, hex.name, currentRadius, hasComment);
-
-            // ─── Создаём НЕВИДИМЫЙ шестиугольник по форме ячейки для ловли кликов ───
-		if (!hex.leafletLayer && !buildEnabled && leafletMap) {
-			const screenPos = getHexScreenPosition(hex.q, hex.r);
-			const { x: centerX, y: centerY, radius: hexRadius } = screenPos;
-
-			// Получаем 6 вершин шестиугольника в экранных координатах
-			const vertices = [];
-			for (let i = 0; i < 6; i++) {
-				const angle = i * Math.PI / 3 - Math.PI / 2 + rotation * Math.PI / 180;
-				const vx = centerX + hexRadius * Math.cos(angle);
-				const vy = centerY + hexRadius * Math.sin(angle);
-				const latlng = leafletMap.containerPointToLatLng([vx, vy]);
-				vertices.push(latlng);
-			}
-
-			// Создаём полигон (невидимый, но интерактивный)
-			hex.leafletLayer = L.polygon(vertices, {
-				color: 'transparent',
-				fillColor: 'transparent',
-				fillOpacity: 0,
-				weight: 0,
-				interactive: true,
-				className: 'cell-hit-polygon'   // для отладки в devtools можно увидеть
-			}).addTo(leafletMap);
-
-			// Формируем попап (как раньше)
-			const popupContent = document.createElement('div');
-
-			const title = document.createElement('div');
-			title.className = 'marker-popup-title';
-			title.textContent = hex.name || `Ячейка`;
-
-			const commentDiv = document.createElement('div');
-			commentDiv.className = 'marker-popup-comment';
-			commentDiv.textContent = hex.comment || '(комментарий отсутствует)';
-
-			const buttonsDiv = document.createElement('div');
-			buttonsDiv.className = 'popup-buttons';
-			buttonsDiv.innerHTML = `
-				<button onclick="editItem('cell', '${key}'); L.DomEvent.stopPropagation(event);">Редактировать</button>
-				<button onclick="deleteCell('${key}'); L.DomEvent.stopPropagation(event);" style="background:#ff4444;color:white;">Удалить</button>
-			`;
-
-			popupContent.appendChild(title);
-			if (hex.comment && hex.comment.trim()) {
-				popupContent.appendChild(commentDiv);
-			}
-			popupContent.appendChild(buttonsDiv);
-
-			hex.leafletLayer.bindPopup(popupContent, {
-				className: 'cell-popup',
-				closeButton: true,
-				autoClose: true,
-				closeOnClick: false
-			});
-
-			// Выделяем ячейку при открытии попапа
-			hex.leafletLayer.on('popupopen', function () {
-				selectedCellKey = key;
-				draw();
-			});
-
-			// Снимаем выделение при закрытии
-			hex.leafletLayer.on('popupclose', function () {
-				if (selectedCellKey === key) {
-					selectedCellKey = null;
-					draw();
-				}
-			});
-		}
-
-            cellIndex++;
-        }
     }
 }
 
@@ -5032,14 +4746,10 @@ function reset() {
     gridCenterLat = null;
     gridCenterLng = null;
     activeHexes.clear();
-	possibleHexes.clear();
+    possibleHexes.clear();
 	selectedCellKey = null;
 	editingCellKey = null;
-
-	// Очищаем слои
-	clearCellLayers();
-
-	renderClustersAndCells();
+    renderClustersAndCells();
     showHex = true;
     showCenters = true;
     showCircles = false;
@@ -5100,14 +4810,6 @@ function reset() {
 		updateControlWindowHeight();
 		
 		draw();
-		
-		// Очистка привязанных слоёв ячеек
-		activeHexes.forEach(hex => {
-			if (hex.leafletLayer && leafletMap) {
-				leafletMap.removeLayer(hex.leafletLayer);
-				hex.leafletLayer = null;
-			}
-		});
 	}
 
 // Инициализация кнопок файлового меню
@@ -5203,6 +4905,17 @@ function drawCellName(ctx, centerX, centerY, name, hexRadius, hasComment = false
     
     ctx.restore();
 }
+
+// Функция для обновления счетчика объектов в аналитике
+function updateAnalyticsObjectCount() {
+    const objectCountEl = document.querySelector('#analytics-content .bs-count');
+    if (objectCountEl) {
+        // Здесь будет реальный подсчет объектов, когда появится функционал
+        objectCountEl.textContent = 'Количество объектов: 0';
+    }
+}
+
+// Вызывайте эту функцию везде, где создаются/удаляются объекты
 
 // Позиционирование диалога рядом с ячейкой
 function positionCellDialog(cellKey) {
@@ -5341,6 +5054,23 @@ window.onload = () => {
             }
             bgMode = 'osm';
         }
+    }
+	
+	// Обработчики для кнопок аналитики
+    const createObjBtn = document.getElementById('createObjectBtn');
+    if (createObjBtn) {
+        createObjBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            alert('Функция создания объекта в разработке');
+        });
+    }
+    
+    const importObjBtn = document.getElementById('importObjectsBtn');
+    if (importObjBtn) {
+        importObjBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            alert('Функция импорта объектов в разработке');
+        });
     }
     
     // Инициализируем карту
