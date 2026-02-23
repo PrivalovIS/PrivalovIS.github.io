@@ -707,7 +707,120 @@
 		.number-input[type=number] {
 			-moz-appearance: textfield;
 			appearance: textfield;
-		}	
+		}
+		
+		/* Стили для переключателя (toggle switch) */
+		.toggle-switch {
+			position: relative;
+			display: inline-block;
+			width: 40px;
+			height: 20px;
+			margin: 0;
+			pointer-events: auto;
+			z-index: 10;
+		}
+
+		.toggle-switch input {
+			opacity: 0;
+			width: 0;
+			height: 0;
+		}
+
+		.toggle-slider {
+			position: absolute;
+			cursor: pointer;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: #4a4a4a;
+			transition: .3s;
+			border-radius: 20px;
+		}
+
+		.toggle-slider:before {
+			position: absolute;
+			content: "";
+			height: 16px;
+			width: 16px;
+			left: 2px;
+			bottom: 2px;
+			background-color: #888;
+			transition: .3s;
+			border-radius: 50%;
+		}
+
+		input:checked + .toggle-slider {
+			background-color: #4af;
+		}
+
+		input:checked + .toggle-slider:before {
+			transform: translateX(20px);
+			background-color: white;
+		}
+
+		/* Делаем переключатели более заметными при наведении */
+		.toggle-switch:hover .toggle-slider {
+			background-color: #5a5a5a;
+		}
+
+		.toggle-switch:hover input:checked + .toggle-slider {
+			background-color: #2a8cff;
+		}
+		
+		/* Стили для неактивного состояния списка зон */
+		.accordion-section.disabled .accordion-content .bs-list {
+			opacity: 0.5;
+			pointer-events: none;
+		}
+
+		/* Все остальные элементы остаются активными */
+		.accordion-section.disabled .accordion-content button:not(#createZoneBtn),
+		.accordion-section.disabled .accordion-content .bs-count,
+		.accordion-section.disabled .accordion-content .compact-checkbox,
+		.accordion-section.disabled .accordion-content .compact-row {
+			opacity: 1;
+			pointer-events: auto;
+		}
+
+		.accordion-section.disabled .accordion-content #createZoneBtn {
+			opacity: 1;
+			pointer-events: auto;
+			background: #2a3444;
+			color: #ddd;
+		}
+
+		.accordion-section.disabled .accordion-content #createZoneBtn:hover {
+			background: #3a4454;
+		}
+
+		.accordion-section.disabled .accordion-content #createZoneBtn.active {
+			background: #4af;
+			color: #000;
+		}
+		
+		/* Стили для неактивного состояния раздела сотовой разметки */
+		.accordion-section.network-disabled .accordion-content .compact-row,
+		.accordion-section.network-disabled .accordion-content .compact-checkbox {
+			opacity: 0.5;
+			pointer-events: none;
+		}
+
+		/* Кнопка "Включить разметку" и счетчик ячеек остаются активными */
+		.accordion-section.network-disabled .accordion-content #buildToggleInside,
+		.accordion-section.network-disabled .accordion-content #cellCount {
+			opacity: 1;
+			pointer-events: auto;
+		}
+
+		.accordion-section.network-disabled .accordion-content #buildToggleInside:hover {
+			background: #3a4454;
+		}
+
+		.accordion-section.network-disabled .accordion-content #buildToggleInside.active {
+			background: #4af;
+			color: #000;
+		}
     </style>
 </head>
 <body>
@@ -774,6 +887,10 @@
 	<div class="accordion-section">
 		<div class="accordion-header" onclick="toggleAccordion('kml-import')">
 			<div style="display: flex; align-items: center; gap: 8px;">
+				<label class="toggle-switch" onclick="event.stopPropagation()">
+					<input type="checkbox" id="territoryToggle">
+					<span class="toggle-slider"></span>
+				</label>
 				<span>Планирование территории</span>
 			</div>
 			<span class="accordion-icon">▼</span>
@@ -794,11 +911,15 @@
 			</div>
 		</div>
 	</div>
-    
+
 	<!-- Секция Сотовая разметка -->
 	<div class="accordion-section">
 		<div class="accordion-header" onclick="toggleAccordion('network-build')">
 			<div style="display: flex; align-items: center; gap: 8px;">
+				<label class="toggle-switch" onclick="event.stopPropagation()">
+					<input type="checkbox" id="networkToggle">
+					<span class="toggle-slider"></span>
+				</label>
 				<span>Сотовая разметка</span>
 			</div>
 			<span class="accordion-icon">▼</span>
@@ -849,11 +970,15 @@
 			</div>
 		</div>
 	</div>
-    
+
 	<!-- Секция Базовые станции -->
 	<div class="accordion-section">
 		<div class="accordion-header" onclick="toggleAccordion('bs-install')">
 			<div style="display: flex; align-items: center; gap: 8px;">
+				<label class="toggle-switch" onclick="event.stopPropagation()">
+					<input type="checkbox" id="bsToggle">
+					<span class="toggle-slider"></span>
+				</label>
 				<span>Базовые станции</span>
 			</div>
 			<span class="accordion-icon">▼</span>
@@ -871,11 +996,15 @@
 			<div id="bsEmptyMessage" class="empty-section" style="display: none;"></div>
 		</div>
 	</div>
-	
+
 	<!-- Секция Аналитика -->
 	<div class="accordion-section">
 		<div class="accordion-header" onclick="toggleAccordion('analytics')">
 			<div style="display: flex; align-items: center; gap: 8px;">
+				<label class="toggle-switch" onclick="event.stopPropagation()">
+					<input type="checkbox" id="analyticsToggle">
+					<span class="toggle-slider"></span>
+				</label>
 				<span>Аналитика</span>
 			</div>
 			<span class="accordion-icon">▼</span>
@@ -1069,6 +1198,10 @@ function changeMap(event) {
 function toggleZoneMode(event) {
     if (event) event.stopPropagation();
     
+    // Получаем переключатель и секцию
+    const territoryToggle = document.getElementById('territoryToggle');
+    const territorySection = document.querySelector('.accordion-section:has(#territoryToggle)');
+    
     // Если режим зон включен - выключаем
     if (zoneModeEnabled) {
         cancelPolygon();
@@ -1089,6 +1222,8 @@ function toggleZoneMode(event) {
         
         canvas.style.pointerEvents = 'none';
         updateCursor();
+        
+        // НЕ выключаем переключатель
         return;
     }
     
@@ -1114,6 +1249,45 @@ function toggleZoneMode(event) {
     }
     
     updateCursor();
+    
+    // Включаем переключатель
+    if (territoryToggle) {
+        territoryToggle.checked = true;
+        
+        // Принудительно показываем все существующие зоны
+        showAllZones();
+        
+        // Активируем список зон (убираем disabled класс)
+        if (territorySection) {
+            territorySection.classList.remove('disabled');
+        }
+    }
+}
+
+// Скрыть все зоны на карте
+function hideAllZones() {
+    zones.forEach(zone => {
+        if (zone.layer && leafletMap) {
+            leafletMap.removeLayer(zone.layer);
+        }
+        if (zone.vertexMarkers) {
+            zone.vertexMarkers.forEach(marker => {
+                if (leafletMap) leafletMap.removeLayer(marker);
+            });
+        }
+        if (zone.midVertexMarkers) {
+            zone.midVertexMarkers.forEach(marker => {
+                if (leafletMap) leafletMap.removeLayer(marker);
+            });
+        }
+    });
+}
+
+// Показать все зоны на карте
+function showAllZones() {
+    zones.forEach(zone => {
+        drawZone(zone);
+    });
 }
 
 // Получить следующий доступный номер объекта
@@ -2420,55 +2594,84 @@ function updateCellCount() {
 // Функция переключения сотовой разметки
 function toggleBuild(event) {
     if (event) event.stopPropagation();
-    
-    // Просто переключаем состояние, не трогая другие режимы
+
+    const networkToggle = document.getElementById('networkToggle');
+
     buildEnabled = !buildEnabled;
     const btn = document.getElementById('buildToggleInside');
-    
+
     if (buildEnabled) {
         btn.textContent = 'Отмена';
         btn.classList.add('active');
         btn.style.background = '#4af';
         btn.style.color = '#000';
-        // Убираем inline-стили при наведении
         btn.onmouseover = null;
         btn.onmouseout = null;
+
+        if (networkToggle) {
+            networkToggle.checked = true;
+            setNetworkSectionState(true);
+        }
+
+        // Если сетка пустая — ставим первую ячейку в центр экрана
+        if (activeHexes.size === 0) {
+            const center = getScreenCenterLatLng();
+            gridCenterLat = center.lat;
+            gridCenterLng = center.lng;
+
+            activeHexes.set("0,0", { q: 0, r: 0 });
+        }
+
+        // Самое важное — принудительно обновляем possibleHexes и рисуем
+        forceUpdatePossibleHexesAndDraw();
+        markMapAsChanged();
     } else {
         btn.textContent = 'Включить разметку';
         btn.classList.remove('active');
         btn.style.background = '#2a3444';
         btn.style.color = '#ddd';
-        // Возвращаем эффекты при наведении для неактивного состояния
         btn.onmouseover = function() { this.style.background = '#3a4454'; };
         btn.onmouseout = function() { this.style.background = '#2a3444'; };
+
+        // При выключении можно очистить possibleHexes, если хотите
+        // possibleHexes.clear();
+
+        draw();
     }
-    
-    // Обновляем курсор
+
     updateCursor();
     canvas.style.pointerEvents = (buildEnabled || moveGridEnabled) ? 'auto' : 'none';
-    
-    // Если включаем разметку и нет центра сетки - создаем первую ячейку
-    if (buildEnabled && ((leafletMap && gridCenterLat === null && gridCenterLng === null) || (!leafletMap && gridCenterLat === null))) {
-        if (leafletMap) {
-            const center = leafletMap.getCenter();
-            gridCenterLat = center.lat;
-            gridCenterLng = center.lng;
-        } else {
-            gridCenterLat = 0;
-            gridCenterLng = 0;
-        }
-        activeHexes.set("0,0", { q: 0, r: 0 });
-        updatePossibleHexes();
-        markMapAsChanged();
-        updateCellCount();
-    } else if (!buildEnabled) {
-        possibleHexes.clear();
-    } else if (buildEnabled && activeHexes.size > 0) {
-        updatePossibleHexes();
-    }
-    
+
     updateCellCount();
-    draw();
+}
+
+// Скрыть всю сотовую разметку
+function hideCellularGrid() {
+    // Очищаем канвас (разметка рисуется на канвасе)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// Показать сотовую разметку
+function showCellularGrid() {
+    draw(); // Перерисовываем канвас
+}
+
+// Управление состоянием элементов раздела сотовой разметки
+function setNetworkSectionState(enabled) {
+    const networkSection = document.querySelector('.accordion-section:has(#networkToggle)');
+    if (!networkSection) return;
+    
+    if (enabled) {
+        networkSection.classList.remove('network-disabled');
+    } else {
+        networkSection.classList.add('network-disabled');
+    }
+}
+
+// Проверка, включена ли видимость сотовой разметки
+function isCellularGridVisible() {
+    const networkToggle = document.getElementById('networkToggle');
+    return networkToggle ? networkToggle.checked : true; // по умолчанию true если переключатель не найден
 }
 
 // Основная функция переключения режима БС
@@ -3315,7 +3518,12 @@ function resize() {
         document.body.classList.remove('bs-cursor');
     }
     
-    draw();
+    // Перерисовываем только если видимость включена
+    if (isCellularGridVisible()) {
+        draw();
+    } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
 }
 
 function parseNum(str, fallback = 0) {
@@ -4128,40 +4336,27 @@ function drawCircle(ctx, centerX, centerY, radius, color = 'rgba(244,68,68,0.5)'
 }
 
 function drawPreviewHex() {
-    if (buildEnabled || activeHexes.size > 0) return;
-    
-    const gridCenterPx = getGridCenterInPixels();
+    // Предпросмотр всегда в геометрическом центре canvas
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
     const radiusPx = getRadiusInPixels();
-    const rotationCenter = getRotationCenter();
-    
-    let centerX = gridCenterPx.x;
-    let centerY = gridCenterPx.y;
-    
-    if (rotation !== 0) {
-        const rotationCenterX = gridCenterPx.x + rotationCenter.x;
-        const rotationCenterY = gridCenterPx.y + rotationCenter.y;
-        const rotated = rotatePointAroundCenter(centerX, centerY, rotationCenterX, rotationCenterY, rotation);
-        centerX = rotated.x;
-        centerY = rotated.y;
-    }
-    
+
+    ctx.globalAlpha = 0.35; // чуть прозрачнее, чтобы было понятно — это предпросмотр
+
     if (showHex) {
-        ctx.globalAlpha = 0.3;
         drawHexagon(ctx, centerX, centerY, radiusPx, '#4af', 2, rotation * Math.PI / 180);
-        ctx.globalAlpha = 1.0;
     }
-    
+
     if (showCenters) {
-        ctx.globalAlpha = 0.3;
-        drawCenter(ctx, centerX, centerY, 3, '#f44');
-        ctx.globalAlpha = 1.0;
+        drawCenter(ctx, centerX, centerY, 4, '#f44');
     }
-    
+
     if (showCircles) {
-        ctx.globalAlpha = 0.3;
-        drawCircle(ctx, centerX, centerY, radiusPx, 'rgba(244,68,68,0.3)');
-        ctx.globalAlpha = 1.0;
+        drawCircle(ctx, centerX, centerY, radiusPx, 'rgba(68, 170, 255, 0.4)');
     }
+
+    ctx.globalAlpha = 1.0;
 }
 
 function drawGrid() {
@@ -4191,18 +4386,73 @@ function drawGrid() {
     }
 }
 
+function getScreenCenterLatLng() {
+    if (!leafletMap) {
+        return { lat: 0, lng: 0 };
+    }
+    const centerPx = {
+        x: canvas.width / 2,
+        y: canvas.height / 2
+    };
+    return leafletMap.containerPointToLatLng(centerPx);
+}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     updateCellCount();
-    
-    if ((!leafletMap && bgMode !== 'image') || (activeHexes.size === 0 && !buildEnabled && !moveGridEnabled && !bsModeEnabled)) {
-        if (!leafletMap && bgMode !== 'image') return;
+
+    const isVisible = isCellularGridVisible();
+    if (!isVisible) {
+        return;
+    }
+
+    if (activeHexes.size === 0) {
         drawPreviewHex();
         return;
     }
-    
-    if (!buildEnabled && activeHexes.size === 0) drawPreviewHex();
-    if (activeHexes.size > 0 || buildEnabled) drawGrid();
+
+    // Возможные (серые) ячейки — рисуем всегда, когда режим включён
+    if (buildEnabled) {
+        for (const hex of possibleHexes.values()) {
+            const screenPos = getHexScreenPosition(hex.q, hex.r);
+            if (showHex) {
+                drawHexagon(ctx, screenPos.x, screenPos.y, screenPos.radius, '#888', 1.5, rotation * Math.PI / 180);
+            }
+            if (showCenters) {
+                drawCenter(ctx, screenPos.x, screenPos.y, 3, '#888');
+            }
+            if (showCircles) {
+                drawCircle(ctx, screenPos.x, screenPos.y, screenPos.radius, 'rgba(136,136,136,0.5)');
+            }
+        }
+    }
+
+    // Активные (синие) ячейки
+    for (const hex of activeHexes.values()) {
+        const screenPos = getHexScreenPosition(hex.q, hex.r);
+        if (showHex) {
+            drawHexagon(ctx, screenPos.x, screenPos.y, screenPos.radius, '#4af', 2, rotation * Math.PI / 180);
+            if (showCenters) drawCenter(ctx, screenPos.x, screenPos.y, 4, '#f44');
+        } else if (showCenters) {
+            drawCenter(ctx, screenPos.x, screenPos.y, 4, '#f44');
+        }
+        if (showCircles) {
+            drawCircle(ctx, screenPos.x, screenPos.y, screenPos.radius, 'rgba(244,68,68,0.5)');
+        }
+    }
+}
+
+function forceUpdatePossibleHexesAndDraw() {
+    if (!buildEnabled) {
+        draw();
+        return;
+    }
+
+    // Принудительно пересчитываем возможные ячейки на основе текущих активных
+    updatePossibleHexes();
+
+    // И сразу рисуем
+    draw();
 }
 
 // Функция сброса
@@ -4316,42 +4566,44 @@ function updateCursor() {
 // Обработчики событий canvas
 canvas.addEventListener('click', function(e) {
     if (!buildEnabled && !moveGridEnabled && !bsModeEnabled && !objectModeEnabled) return;
-    
+
     const rect = canvas.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-    
+
+    // Режим создания объектов
     if (objectModeEnabled && leafletMap) {
         const latLng = leafletMap.containerPointToLatLng([clickX, clickY]);
         createTempObjectMarker(latLng.lat, latLng.lng);
         currentObjectData = { lat: latLng.lat, lng: latLng.lng, temp: true };
-        
+
         const nextNumber = getNextObjectNumber();
         const defaultName = `Объект ${nextNumber}`;
-        
+
         document.getElementById('objectName').value = defaultName;
         document.getElementById('objectName').placeholder = defaultName;
         document.getElementById('objectComment').value = '';
         document.getElementById('deviceCount').value = 0;
         document.getElementById('meterPointCount').value = 0;
-        
+
         positionObjectDialogNearMarker(clickX, clickY);
         showObjectDialog(false);
         return;
     }
-    
+
     if (!buildEnabled && !moveGridEnabled && !bsModeEnabled) return;
-    
+
     currentClickPosition = { x: clickX, y: clickY };
-    
+
+    // Режим создания базовых станций
     if (bsModeEnabled && leafletMap) {
         const latLng = leafletMap.containerPointToLatLng([clickX, clickY]);
         createTempMarker(latLng.lat, latLng.lng);
         currentMarkerData = { lat: latLng.lat, lng: latLng.lng, temp: true };
-        
+
         const nextNumber = getNextBSNumber();
         const defaultName = `Базовая станция ${nextNumber}`;
-        
+
         document.getElementById('markerName').value = defaultName;
         document.getElementById('markerName').placeholder = defaultName;
         document.getElementById('markerShowCircle').checked = false;
@@ -4359,13 +4611,17 @@ canvas.addEventListener('click', function(e) {
         document.getElementById('markerCircleText').value = CONFIG.DEFAULT_BS_RADIUS;
         document.getElementById('markerCircleControls').style.display = 'none';
         removePreviewCircle();
-        
+
         positionDialogNearMarker(clickX, clickY);
         showMarkerDialog(false);
         return;
     }
-    
+
+    // Режим редактирования сотовой разметки
     if (buildEnabled) {
+        // ────────────────────────────────────────────────────────
+        // 1. Проверяем клик по уже активной (синей) ячейке → удаление
+        // ────────────────────────────────────────────────────────
         let clickedActiveHex = null;
         for (const hex of activeHexes.values()) {
             const screenPos = getHexScreenPosition(hex.q, hex.r);
@@ -4374,17 +4630,52 @@ canvas.addEventListener('click', function(e) {
                 break;
             }
         }
-        
+
         if (clickedActiveHex) {
             const key = `${clickedActiveHex.q},${clickedActiveHex.r}`;
             activeHexes.delete(key);
-            updatePossibleHexes();
-            draw();
+
+            // Принудительно обновляем возможные ячейки и перерисовываем
+            forceUpdatePossibleHexesAndDraw();
+
             updateCellCount();
             markMapAsChanged();
+
+            // Если удалили последнюю ячейку → выключаем режим + показываем предпросмотр в центре
+            if (activeHexes.size === 0) {
+                buildEnabled = false;
+
+                const btn = document.getElementById('buildToggleInside');
+                if (btn) {
+                    btn.textContent = 'Включить разметку';
+                    btn.classList.remove('active');
+                    btn.style.background = '#2a3444';
+                    btn.style.color = '#ddd';
+                    btn.onmouseover = function() { this.style.background = '#3a4454'; };
+                    btn.onmouseout = function() { this.style.background = '#2a3444'; };
+                }
+
+                possibleHexes.clear();
+                updateCursor();
+                canvas.style.pointerEvents = 'none';
+
+                // Сбрасываем центр сетки на текущий центр экрана
+                if (leafletMap) {
+                    const center = leafletMap.getCenter();
+                    gridCenterLat = center.lat;
+                    gridCenterLng = center.lng;
+                }
+
+                draw();           // ← здесь должен появиться предпросмотр по центру
+                updateCellCount();
+            }
+
             return;
         }
-        
+
+        // ────────────────────────────────────────────────────────
+        // 2. Проверяем клик по возможной (серой) ячейке → добавление
+        // ────────────────────────────────────────────────────────
         let clickedPossibleHex = null;
         for (const hex of possibleHexes.values()) {
             const screenPos = getHexScreenPosition(hex.q, hex.r);
@@ -4393,12 +4684,14 @@ canvas.addEventListener('click', function(e) {
                 break;
             }
         }
-        
+
         if (clickedPossibleHex) {
             const key = `${clickedPossibleHex.q},${clickedPossibleHex.r}`;
             activeHexes.set(key, { q: clickedPossibleHex.q, r: clickedPossibleHex.r });
-            updatePossibleHexes();
-            draw();
+
+            // Принудительно обновляем и перерисовываем
+            forceUpdatePossibleHexesAndDraw();
+
             updateCellCount();
             markMapAsChanged();
         }
@@ -4485,9 +4778,20 @@ document.getElementById('moveGrid').onchange = function() {
     draw();
 };
 
-document.getElementById('showHex').onchange = function() { showHex = this.checked; draw(); };
-document.getElementById('showCenters').onchange = function() { showCenters = this.checked; draw(); };
-document.getElementById('showCircles').onchange = function() { showCircles = this.checked; draw(); };
+document.getElementById('showHex').onchange = function() {
+    showHex = this.checked;
+    forceUpdatePossibleHexesAndDraw();
+};
+
+document.getElementById('showCenters').onchange = function() {
+    showCenters = this.checked;
+    forceUpdatePossibleHexesAndDraw();
+};
+
+document.getElementById('showCircles').onchange = function() {
+    showCircles = this.checked;
+    forceUpdatePossibleHexesAndDraw();
+};
 
 document.getElementById('markerShowCircle').onchange = function() {
     document.getElementById('markerCircleControls').style.display = this.checked ? 'block' : 'none';
@@ -4602,6 +4906,8 @@ window.onload = () => {
     document.getElementById('rotText').value = '0';
     document.getElementById('moveGrid').checked = false;
     
+	setNetworkSectionState(false);
+	
     // Инициализация элементов управления БС
     document.getElementById('markerCircleSlider').min = CONFIG.MIN_BS_RADIUS;
     document.getElementById('markerCircleSlider').max = CONFIG.MAX_BS_RADIUS;
@@ -4655,6 +4961,96 @@ window.onload = () => {
     
     // Обновление счетчика ячеек
     updateCellCount();
+    
+    // Обработчик для переключателя территории
+    const territoryToggle = document.getElementById('territoryToggle');
+    const territorySection = document.querySelector('.accordion-section:has(#territoryToggle)');
+    if (territoryToggle && territorySection) {
+        territoryToggle.addEventListener('change', function(e) {
+            if (this.checked) {
+                // Включили - показываем все зоны и активируем раздел
+                territorySection.classList.remove('disabled');
+                showAllZones();
+            } else {
+                // Выключили - скрываем все зоны и деактивируем раздел
+                
+                // Если был активен режим построения зоны - отменяем его
+                if (zoneModeEnabled) {
+                    cancelPolygon();
+                    zoneModeEnabled = false;
+                    currentZoneColor = null;
+                    
+                    // Сбрасываем кнопку создания зоны
+                    const zoneBtn = document.getElementById('createZoneBtn');
+                    if (zoneBtn) {
+                        zoneBtn.textContent = 'Создать зону';
+                        zoneBtn.classList.remove('active');
+                        zoneBtn.style.background = '#2a3444';
+                        zoneBtn.style.color = '#ddd';
+                    }
+                    
+                    // Включаем управление картой обратно
+                    if (leafletMap) {
+                        leafletMap.dragging.enable();
+                        leafletMap.off('click', onMapClickForZone);
+                        leafletMap.off('mousemove', onMapMouseMoveForZone);
+                    }
+                    
+                    canvas.style.pointerEvents = 'none';
+                    updateCursor();
+                }
+                
+                // Деактивируем раздел
+                territorySection.classList.add('disabled');
+                
+                // Скрываем все зоны
+                hideAllZones();
+                
+                // Если была выбрана какая-то зона, сбрасываем выделение
+                if (selectedZoneId) {
+                    selectedZoneId = null;
+                    updateZoneList();
+                }
+            }
+        });
+    }
+    
+    // Обработчик для переключателя сотовой разметки
+	const networkToggle = document.getElementById('networkToggle');
+	if (networkToggle) {
+		// Устанавливаем начальное состояние (выключено)
+		setNetworkSectionState(false);
+		
+		networkToggle.addEventListener('change', function(e) {
+			if (this.checked) {
+				// Включили - показываем разметку и активируем элементы
+				setNetworkSectionState(true);
+				showCellularGrid();
+			} else {
+				// Выключили - скрываем разметку и деактивируем элементы
+				setNetworkSectionState(false);
+				hideCellularGrid();
+				
+				// Если режим разметки был включен - выключаем его
+				if (buildEnabled) {
+					buildEnabled = false;
+					const buildBtn = document.getElementById('buildToggleInside');
+					if (buildBtn) {
+						buildBtn.textContent = 'Включить разметку';
+						buildBtn.classList.remove('active');
+						buildBtn.style.background = '#2a3444';
+						buildBtn.style.color = '#ddd';
+						buildBtn.onmouseover = function() { this.style.background = '#3a4454'; };
+						buildBtn.onmouseout = function() { this.style.background = '#2a3444'; };
+					}
+					possibleHexes.clear();
+					updateCursor();
+					canvas.style.pointerEvents = 'none';
+					draw();
+				}
+			}
+		});
+	}
 };
 
 // Обработчик клавиши Escape
