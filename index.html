@@ -821,6 +821,25 @@
 			background: #4af;
 			color: #000;
 		}
+		
+		/* Стили для подсказки */
+		#bsCircleTooltip {
+			animation: tooltipFadeIn 0.2s ease;
+			transition: opacity 0.2s;
+		}
+		
+		@keyframes tooltipFadeIn {
+			from { opacity: 0; transform: translateY(-5px); }
+			to { opacity: 1; transform: translateY(0); }
+		}
+		
+		/* Анимация для иконки при наведении */
+		div[style*="cursor: help"]:hover span {
+			background: #4af !important;
+			color: white !important;
+			transform: scale(1.1);
+			transition: all 0.2s;
+		}
     </style>
 </head>
 <body>
@@ -926,22 +945,23 @@
 		</div>
 		<div class="accordion-content" id="network-build-content">
 			<button id="buildToggleInside" onclick="toggleBuild(event)" style="width: 100%; margin-top: 10px; margin-bottom: 8px;">
-				Включить разметку
+				Редактировать разметку
 			</button>
+			
 			<div class="compact-row">
 				<label>Радиус, м (10-5000)</label>
-				<div class="range-group">
-					<input type="range" id="radiusSlider" min="10" max="5000" value="750" step="10">
+				<div style="display: flex; align-items: center; gap: 8px;">
+					<input type="range" id="radiusSlider" min="10" max="5000" value="750" step="10" style="flex: 1;">
+					<input type="text" id="radiusText" class="number-input" value="750" style="width: 60px; text-align: center;">
 				</div>
-				<input type="text" id="radiusText" class="number-input" value="750" style="width: 100%;">
 			</div>
 			
 			<div class="compact-row">
 				<label>Вращение, ° (-180-180)</label>
-				<div class="range-group">
-					<input type="range" id="rotSlider" min="-180" max="180" value="0" step="1">
+				<div style="display: flex; align-items: center; gap: 8px;">
+					<input type="range" id="rotSlider" min="-180" max="180" value="0" step="1" style="flex: 1;">
+					<input type="text" id="rotText" class="number-input" value="0" style="width: 60px; text-align: center;">
 				</div>
-				<input type="text" id="rotText" class="number-input" value="0" style="width: 100%;">
 			</div>
 			
 			<div class="compact-checkbox">
@@ -989,6 +1009,32 @@
 				Создать базовую станцию
 			</button>
 			
+			<!-- Настройки для БС (всегда видны) -->
+			<div style="margin-top: 16px; margin-bottom: 8px;">
+				<div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+					<div class="compact-checkbox" style="margin: 0;">
+						<input type="checkbox" id="globalShowCircle">
+						<label for="globalShowCircle">Показывать радиус</label>
+					</div>
+					
+					<!-- Иконка с подсказкой -->
+					<div style="position: relative; display: inline-block; z-index: 100;" 
+						 onmouseover="showBSCircleTooltip(event)" 
+						 onmouseout="hideBSCircleTooltip()">
+						<span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: #3a4454; color: #aaa; border-radius: 50%; font-size: 12px; font-weight: bold; cursor: help;">?</span>
+					</div>
+				</div>
+				
+				<!-- Элементы управления радиусом (всегда видны) -->
+				<div id="globalCircleControls" style="margin-top: 8px;">
+					<label>Радиус, м (10-15000)</label>
+					<div style="display: flex; align-items: center; gap: 8px;">
+						<input type="range" id="globalCircleSlider" min="10" max="15000" value="500" step="10" style="flex: 1;">
+						<input type="text" id="globalCircleText" class="number-input" value="500" style="width: 60px; text-align: center;">
+					</div>
+				</div>
+			</div>
+			
 			<div id="bsCount" class="bs-count">Базовых станций: 0</div>
 			
 			<div id="bsList" class="bs-list" style="display: none;"></div>
@@ -996,7 +1042,15 @@
 			<div id="bsEmptyMessage" class="empty-section" style="display: none;"></div>
 		</div>
 	</div>
-
+	
+	<!-- Отдельный div для подсказки (поверх всех элементов) -->
+	<div id="bsCircleTooltip" style="position: fixed; display: none; background: #1e2636; border: 1px solid #4af; border-radius: 6px; padding: 12px 15px; color: #ddd; font-size: 0.9em; box-shadow: 0 6px 16px rgba(0,0,0,0.6); z-index: 10000; max-width: 320px; pointer-events: none; line-height: 1.5; backdrop-filter: blur(4px);">
+		<div style="color: #ddd;">
+			Показать радиусы всех базовых станций, у которых <span style="color: #ff4444; font-weight: 500;">выключено</span> отображение радиуса в их индивидуальных настройках.
+		</div>
+		<div style="position: absolute; top: -6px; left: 20px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 8px solid #4af;"></div>
+	</div>
+	
 	<!-- Секция Аналитика -->
 	<div class="accordion-section">
 		<div class="accordion-header" onclick="toggleAccordion('analytics')">
@@ -1020,14 +1074,66 @@
 				Импортировать объекты
 			</button>
 			
-			<div id="objectCount" class="bs-count" style="text-align: center; margin-bottom: 12px;">
+			<!-- Заголовок по центру с подсказкой -->
+			<div style="position: relative; margin-top: 16px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #3a4454; display: flex; align-items: center; justify-content: center; gap: 8px;">
+				<span style="color: #4af; font-size: 0.9em; font-weight: 500;">Замещающие данные</span>
+				
+				<!-- Иконка с подсказкой -->
+				<div style="position: relative; display: inline-block; z-index: 100;" 
+					 onmouseover="showAnalyticsTooltip(event)" 
+					 onmouseout="hideAnalyticsTooltip()">
+					<span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: #3a4454; color: #aaa; border-radius: 50%; font-size: 12px; font-weight: bold; cursor: help;">?</span>
+				</div>
+			</div>
+			
+			<!-- Поля для приборов и точек учета -->
+			<div style="display: flex; align-items: center; margin-top: 8px; gap: 8px;">
+				<div style="flex: 1;">
+					<label for="analyticsDeviceCount" style="margin:0; color: #bbb; font-size: 0.85em;">Количество приборов учета</label>
+				</div>
+				<input type="number" id="analyticsDeviceCount" min="0" value="0" class="number-input" style="width: 60px; text-align: center;" step="1" 
+					   onblur="if(this.value==='') this.value=0">
+			</div>
+			
+			<div style="display: flex; align-items: center; margin-top: 8px; gap: 8px;">
+				<div style="flex: 1;">
+					<label for="analyticsMeterPointCount" style="margin:0; color: #bbb; font-size: 0.85em;">Количество точек учета</label>
+				</div>
+				<input type="number" id="analyticsMeterPointCount" min="0" value="0" class="number-input" style="width: 60px; text-align: center;" step="1"
+					   onblur="if(this.value==='') this.value=0">
+			</div>
+			
+			<div id="objectCount" class="bs-count" style="text-align: center; margin: 16px 0 12px;">
 				Количество объектов: 0
 			</div>
 			
 			<div id="objectList" class="bs-list" style="display: none; max-height: 200px;"></div>
 		</div>
 	</div>
-
+	
+	<!-- Отдельный div для подсказки аналитики (поверх всех элементов) -->
+	<div id="analyticsTooltip" style="position: fixed; display: none; background: #1e2636; border: 1px solid #4af; border-radius: 6px; padding: 12px 15px; color: #ddd; font-size: 0.9em; box-shadow: 0 6px 16px rgba(0,0,0,0.6); z-index: 10000; max-width: 300px; pointer-events: none; line-height: 1.5; backdrop-filter: blur(4px);">
+		<div style="color: #ddd;">
+			Эти значения используются для объектов, у которых не заполнены собственные параметры приборов и точек учета.
+		</div>
+		<div style="position: absolute; top: -6px; left: 20px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 8px solid #4af;"></div>
+	</div>
+	
+	<!-- Диалог редактирования зоны -->
+	<div id="zoneDialog" class="marker-dialog">
+		<label for="zoneName">Наименование</label>
+		<input type="text" id="zoneName" placeholder="Введите название зоны">
+		
+		<label for="zoneComment" style="margin-top:8px;">Комментарий</label>
+		<textarea id="zoneComment" rows="3" placeholder="Введите комментарий"></textarea>
+		
+		<div class="dialog-buttons">
+			<button onclick="saveZone()">Сохранить</button>
+			<button onclick="cancelZone()">Отмена</button>
+			<button id="deleteZoneBtn" class="delete-btn" onclick="deleteZoneFromDialog()" style="display:none;">Удалить</button>
+		</div>
+	</div>
+	
 	<!-- Диалог добавления/редактирования маркера БС -->
 	<div id="markerDialog" class="marker-dialog">
 		<label for="markerName">Наименование</label>
@@ -1041,12 +1147,12 @@
 			<label for="markerShowCircle">Показывать радиус</label>
 		</div>
 		
-		<div id="markerCircleControls" style="margin-top:8px; display:none;">
+		<div id="markerCircleControls" style="margin-top:8px;">
 			<label>Радиус, м (10-15000)</label>
-			<div class="range-group">
-				<input type="range" id="markerCircleSlider" min="10" max="15000" value="500" step="10">
+			<div style="display: flex; align-items: center; gap: 8px;">
+				<input type="range" id="markerCircleSlider" min="10" max="15000" value="500" step="10" style="flex: 1;">
+				<input type="text" id="markerCircleText" class="number-input" value="500" style="width: 60px; text-align: center;">
 			</div>
-			<input type="text" id="markerCircleText" class="number-input" value="500" style="width: 100%;">
 		</div>
 		
 		<div class="dialog-buttons">
@@ -1069,14 +1175,16 @@
 			<div style="flex: 1;">
 				<label for="deviceCount" style="margin:0;">Количество приборов учета</label>
 			</div>
-			<input type="number" id="deviceCount" min="0" value="0" class="number-input" style="width: 60px;" step="1">
+			<input type="number" id="deviceCount" min="0" value="0" class="number-input" style="width: 60px; text-align: center;" step="1"
+				   onblur="if(this.value==='') this.value=0">
 		</div>
 		
 		<div style="display: flex; align-items: center; margin-top: 8px; gap: 8px;">
 			<div style="flex: 1;">
 				<label for="meterPointCount" style="margin:0;">Количество точек учета</label>
 			</div>
-			<input type="number" id="meterPointCount" min="0" value="0" class="number-input" style="width: 60px;" step="1">
+			<input type="number" id="meterPointCount" min="0" value="0" class="number-input" style="width: 60px; text-align: center;" step="1"
+				   onblur="if(this.value==='') this.value=0">
 		</div>
 		
 		<div class="dialog-buttons" style="margin-top: 16px;">
@@ -1126,6 +1234,10 @@ let selectedObjectId = null;
 let isDraggingObject = false;
 let draggedObjectId = null;
 let originalObjectValues = null;
+
+// Переменные для редактирования зоны
+let editingZoneId = null;
+let originalZoneValues = null;
 
 // Переменные для произвольных зон
 let zoneModeEnabled = false;
@@ -1192,6 +1304,28 @@ function changeMap(event) {
     const currentIndex = mapTypes.indexOf(bgMode);
     const nextIndex = (currentIndex + 1) % mapTypes.length;
     selectMapType(mapTypes[nextIndex]);
+}
+
+// Показать подсказку для радиуса БС
+function showBSCircleTooltip(event) {
+    const tooltip = document.getElementById('bsCircleTooltip');
+    if (!tooltip) return;
+    
+    // Позиционируем рядом с иконкой
+    const icon = event.currentTarget;
+    const rect = icon.getBoundingClientRect();
+    
+    tooltip.style.display = 'block';
+    tooltip.style.left = (rect.left + 10) + 'px';
+    tooltip.style.top = (rect.bottom + 10) + 'px';
+}
+
+// Скрыть подсказку
+function hideBSCircleTooltip() {
+    const tooltip = document.getElementById('bsCircleTooltip');
+    if (tooltip) {
+        tooltip.style.display = 'none';
+    }
 }
 
 // Функция переключения режима создания зон
@@ -1977,7 +2111,7 @@ function drawZone(zone) {
         popupContent.appendChild(commentDiv);
     }
     
-    const buttonsDiv = document.createElement('div');
+	const buttonsDiv = document.createElement('div');
     buttonsDiv.className = 'popup-buttons';
     buttonsDiv.innerHTML = `
         <button onclick="editZone(${zone.id})">Редактировать</button>
@@ -1985,7 +2119,9 @@ function drawZone(zone) {
     `;
     popupContent.appendChild(buttonsDiv);
     
-    zone.layer.bindPopup(popupContent);
+    zone.layer.bindPopup(popupContent, {
+        autoPan: false  // ОТКЛЮЧАЕМ автоматическое центрирование при открытии попапа
+    });
     
     // ПРИ ОТКРЫТИИ ПОПАПА - ПОКАЗЫВАЕМ ВЕРШИНЫ
     zone.layer.on('popupopen', function() {
@@ -2020,7 +2156,7 @@ function drawZone(zone) {
         
         selectedZoneId = zone.id;
         
-        // Открываем попап
+        // Открываем попап без автоматического центрирования
         zone.layer.openPopup();
         
         // Показываем вершины
@@ -2406,10 +2542,12 @@ function deleteVertex(zoneId, vertexIndex) {
     markMapAsChanged();
 }
 
-// Удаление зоны по ID
+// Удаление зоны по ID (из попапа)
 function deleteZoneById(zoneId) {
-    deleteZone(zoneId);
-    if (leafletMap) leafletMap.closePopup();
+    deleteZone(zoneId); // Просто вызываем deleteZone без подтверждения
+    if (leafletMap) {
+        leafletMap.closePopup();
+    }
 }
 
 // Обновление списка зон
@@ -2496,8 +2634,9 @@ function selectZone(zoneId) {
     
     const zone = zones.find(z => z.id === zoneId);
     if (zone && leafletMap) {
+        // Центрируем карту на зоне (для клика по списку)
         const bounds = L.latLngBounds(zone.points);
-        leafletMap.fitBounds(bounds);
+        leafletMap.fitBounds(bounds, { padding: [50, 50] }); // Добавляем отступы
         
         if (zone.layer) {
             zone.layer.openPopup();
@@ -2514,16 +2653,108 @@ function editZone(zoneId) {
     const zone = zones.find(z => z.id === zoneId);
     if (!zone) return;
     
-    const newName = prompt('Введите название зоны:', zone.name);
-    if (newName !== null && newName.trim() !== '') {
-        zone.name = newName.trim();
-        if (zone.layer) {
-            zone.layer.closePopup();
-            drawZone(zone);
-        }
-        updateZoneList();
-        markMapAsChanged();
+    editingZoneId = zoneId;
+    
+    // Сохраняем оригинальные значения
+    originalZoneValues = {
+        name: zone.name,
+        comment: zone.comment || ''
+    };
+    
+    document.getElementById('zoneName').value = zone.name || '';
+    document.getElementById('zoneComment').value = zone.comment || '';
+    
+    // Показываем кнопку удаления
+    document.getElementById('deleteZoneBtn').style.display = 'block';
+    
+    // Позиционируем диалог рядом с зоной
+    if (zone.layer && leafletMap) {
+        const bounds = zone.layer.getBounds();
+        const center = bounds.getCenter();
+        const point = leafletMap.latLngToContainerPoint(center);
+        
+        const rect = canvas.getBoundingClientRect();
+        const dialog = document.getElementById('zoneDialog');
+        dialog.style.left = (rect.left + point.x + 20) + 'px';
+        dialog.style.top = (rect.top + point.y) + 'px';
+    } else {
+        const dialog = document.getElementById('zoneDialog');
+        dialog.style.left = '50%';
+        dialog.style.top = '20%';
+        dialog.style.transform = 'translate(-50%, 0)';
     }
+    
+    document.getElementById('zoneDialog').classList.add('active');
+    document.getElementById('zoneName').focus();
+}
+
+// Сохранить изменения зоны
+function saveZone() {
+    if (!editingZoneId) return;
+    
+    const zone = zones.find(z => z.id === editingZoneId);
+    if (!zone) return;
+    
+    const nameInput = document.getElementById('zoneName');
+    let newName = nameInput.value.trim();
+    const newComment = document.getElementById('zoneComment').value.trim();
+    
+    // Если имя пустое - генерируем следующее доступное
+    if (!newName) {
+        const zoneNumber = getNextZoneNumber();
+        newName = `Зона ${zoneNumber}`;
+    }
+    
+    // Сохраняем изменения
+    zone.name = newName;
+    zone.comment = newComment;
+    
+    // Обновляем попап на карте
+    if (zone.layer) {
+        zone.layer.closePopup();
+        drawZone(zone);
+    }
+    
+    // Обновляем список зон
+    updateZoneList();
+    markMapAsChanged();
+    
+    // Закрываем диалог без восстановления
+    document.getElementById('zoneDialog').classList.remove('active');
+    editingZoneId = null;
+    originalZoneValues = null;
+}
+
+// Отмена редактирования зоны
+function cancelZone() {
+    // Восстанавливаем оригинальные значения, если были изменения
+    if (editingZoneId && originalZoneValues) {
+        const zone = zones.find(z => z.id === editingZoneId);
+        if (zone) {
+            zone.name = originalZoneValues.name;
+            zone.comment = originalZoneValues.comment;
+            
+            if (zone.layer) {
+                zone.layer.closePopup();
+                drawZone(zone);
+            }
+            updateZoneList();
+        }
+    }
+    
+    // Сбрасываем переменные и закрываем диалог
+    editingZoneId = null;
+    originalZoneValues = null;
+    document.getElementById('zoneDialog').classList.remove('active');
+}
+
+// Удаление зоны из диалога
+function deleteZoneFromDialog() {
+    if (!editingZoneId) return;
+    
+    // Удаляем зону без подтверждения
+    deleteZone(editingZoneId);
+    cancelZone();
 }
 
 // Удаление зоны
@@ -2601,7 +2832,7 @@ function toggleBuild(event) {
     const btn = document.getElementById('buildToggleInside');
 
     if (buildEnabled) {
-        btn.textContent = 'Отмена';
+        btn.textContent = 'Завершить редактирование';
         btn.classList.add('active');
         btn.style.background = '#4af';
         btn.style.color = '#000';
@@ -2622,19 +2853,16 @@ function toggleBuild(event) {
             activeHexes.set("0,0", { q: 0, r: 0 });
         }
 
-        // Самое важное — принудительно обновляем possibleHexes и рисуем
+        // Принудительно обновляем possibleHexes и рисуем
         forceUpdatePossibleHexesAndDraw();
         markMapAsChanged();
     } else {
-        btn.textContent = 'Включить разметку';
+        btn.textContent = 'Редактировать разметку';
         btn.classList.remove('active');
         btn.style.background = '#2a3444';
         btn.style.color = '#ddd';
         btn.onmouseover = function() { this.style.background = '#3a4454'; };
         btn.onmouseout = function() { this.style.background = '#2a3444'; };
-
-        // При выключении можно очистить possibleHexes, если хотите
-        // possibleHexes.clear();
 
         draw();
     }
@@ -4252,12 +4480,13 @@ function initBackground() {
     mapDiv.innerHTML = '';
     
     leafletMap = L.map('map', {
-        zoomControl: false,
-        attributionControl: true,
-        zoomAnimation: false,
-        fadeAnimation: false,
-        dragging: true
-    });
+		zoomControl: false,
+		attributionControl: true,
+		zoomAnimation: false,
+		fadeAnimation: false,
+		dragging: true,
+		doubleClickZoom: false  // Отключаем изменение масштаба при двойном клике
+	});
     
     let baseLayer;
     if (bgMode === 'osm') {
@@ -4352,8 +4581,9 @@ function drawPreviewHex() {
         drawCenter(ctx, centerX, centerY, 4, '#f44');
     }
 
+    // Отображаем радиус, если включена опция "Радиусы" - красным цветом
     if (showCircles) {
-        drawCircle(ctx, centerX, centerY, radiusPx, 'rgba(68, 170, 255, 0.4)');
+        drawCircle(ctx, centerX, centerY, radiusPx, 'rgba(244, 68, 68, 0.5)'); // Красный цвет
     }
 
     ctx.globalAlpha = 1.0;
@@ -4406,6 +4636,7 @@ function draw() {
         return;
     }
 
+    // Всегда показываем предпросмотр, если нет активных ячеек
     if (activeHexes.size === 0) {
         drawPreviewHex();
         return;
@@ -4561,6 +4792,28 @@ function updateCursor() {
         canvas.style.cursor = 'default';
         document.body.classList.remove('bs-cursor');
     }
+}
+
+// Показать подсказку для аналитики
+function showAnalyticsTooltip(event) {
+	const tooltip = document.getElementById('analyticsTooltip');
+	if (!tooltip) return;
+	
+	// Позиционируем рядом с иконкой
+	const icon = event.currentTarget;
+	const rect = icon.getBoundingClientRect();
+	
+	tooltip.style.display = 'block';
+	tooltip.style.left = (rect.left + 10) + 'px';
+	tooltip.style.top = (rect.bottom + 10) + 'px';
+}
+
+// Скрыть подсказку аналитики
+function hideAnalyticsTooltip() {
+	const tooltip = document.getElementById('analyticsTooltip');
+	if (tooltip) {
+		tooltip.style.display = 'none';
+	}
 }
 
 // Обработчики событий canvas
@@ -5014,6 +5267,21 @@ window.onload = () => {
             }
         });
     }
+	
+	// Обработчики для диалога редактирования зоны
+    document.getElementById('zoneName').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveZone();
+        }
+    });
+    
+    document.getElementById('zoneComment').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            e.preventDefault();
+            saveZone();
+        }
+    });
     
     // Обработчик для переключателя сотовой разметки
 	const networkToggle = document.getElementById('networkToggle');
@@ -5048,6 +5316,17 @@ window.onload = () => {
 					canvas.style.pointerEvents = 'none';
 					draw();
 				}
+				
+				// ДОБАВЛЕНО: Выключаем режим перемещения разметки
+				if (moveGridEnabled) {
+					moveGridEnabled = false;
+					document.getElementById('moveGrid').checked = false;
+					if (leafletMap) {
+						leafletMap.dragging.enable();
+						leafletMap.scrollWheelZoom.enable();
+					}
+					updateCursor();
+				}
 			}
 		});
 	}
@@ -5056,7 +5335,26 @@ window.onload = () => {
 // Обработчик клавиши Escape
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        // Отмена режима зон
+        // Приоритет 1: Закрываем открытые диалоги
+        const markerDialog = document.getElementById('markerDialog');
+        if (markerDialog.classList.contains('active')) {
+            cancelMarker();
+            return;
+        }
+        
+        const objectDialog = document.getElementById('objectDialog');
+        if (objectDialog.classList.contains('active')) {
+            cancelObject();
+            return;
+        }
+        
+        const zoneDialog = document.getElementById('zoneDialog');
+        if (zoneDialog.classList.contains('active')) {
+            cancelZone();
+            return;
+        }
+        
+        // Приоритет 2: Отмена режима создания зон
         if (zoneModeEnabled) {
             e.preventDefault();
             
@@ -5079,12 +5377,95 @@ document.addEventListener('keydown', function(e) {
             
             canvas.style.pointerEvents = 'none';
             updateCursor();
+            return;
         }
         
-        // Отмена редактирования маркера
-        const markerDialog = document.getElementById('markerDialog');
-        if (markerDialog.classList.contains('active')) {
-            cancelMarker();
+        // Приоритет 3: Отмена режима создания БС
+        if (bsModeEnabled) {
+            e.preventDefault();
+            
+            bsModeEnabled = false;
+            const createBsBtn = document.getElementById('createBsBtn');
+            if (createBsBtn) {
+                createBsBtn.textContent = 'Создать базовую станцию';
+                createBsBtn.classList.remove('active');
+                createBsBtn.style.background = '#2a3444';
+                createBsBtn.style.color = '#ddd';
+                createBsBtn.style.border = 'none';
+                createBsBtn.onmouseover = function() { this.style.background = '#3a4454'; };
+                createBsBtn.onmouseout = function() { this.style.background = '#2a3444'; };
+            }
+            
+            removeTempMarker();
+            removePreviewCircle();
+            
+            if (leafletMap) {
+                leafletMap.dragging.enable();
+            }
+            
+            canvas.style.pointerEvents = 'none';
+            document.body.classList.remove('bs-cursor');
+            updateCursor();
+            return;
+        }
+        
+        // Приоритет 4: Отмена режима создания объектов
+        if (objectModeEnabled) {
+            e.preventDefault();
+            
+            objectModeEnabled = false;
+            const btn = document.getElementById('createObjectBtn');
+            btn.textContent = 'Создать объект';
+            btn.classList.remove('active');
+            btn.style.background = '#2a3444';
+            btn.style.color = '#ddd';
+            btn.style.border = 'none';
+            btn.onmouseover = function() { this.style.background = '#3a4454'; };
+            btn.onmouseout = function() { this.style.background = '#2a3444'; };
+            
+            removeTempObjectMarker();
+            
+            if (leafletMap && !moveGridEnabled && !buildEnabled && !bsModeEnabled) {
+                leafletMap.dragging.enable();
+                leafletMap.scrollWheelZoom.enable();
+            }
+            
+            canvas.style.pointerEvents = 'none';
+            document.body.classList.remove('bs-cursor');
+            updateCursor();
+            return;
+        }
+        
+        // Приоритет 5: Отмена режима сотовой разметки
+        if (buildEnabled) {
+            e.preventDefault();
+            
+            buildEnabled = false;
+            const buildBtn = document.getElementById('buildToggleInside');
+            if (buildBtn) {
+                buildBtn.textContent = 'Редактировать разметку';
+                buildBtn.classList.remove('active');
+                buildBtn.style.background = '#2a3444';
+                buildBtn.style.color = '#ddd';
+                buildBtn.onmouseover = function() { this.style.background = '#3a4454'; };
+                buildBtn.onmouseout = function() { this.style.background = '#2a3444'; };
+            }
+            
+            possibleHexes.clear();
+            
+            // Выключаем режим перемещения разметки, если был включен
+            if (moveGridEnabled) {
+                moveGridEnabled = false;
+                document.getElementById('moveGrid').checked = false;
+                if (leafletMap) {
+                    leafletMap.dragging.enable();
+                }
+            }
+            
+            canvas.style.pointerEvents = 'none';
+            updateCursor();
+            draw();
+            return;
         }
     }
 });
