@@ -1234,6 +1234,8 @@ let selectedObjectId = null;
 let isDraggingObject = false;
 let draggedObjectId = null;
 let originalObjectValues = null;
+let globalShowCircle = false;
+let globalCircleRadius = CONFIG.DEFAULT_BS_RADIUS;
 
 // Переменные для редактирования зоны
 let editingZoneId = null;
@@ -2310,6 +2312,7 @@ function showZoneVertices(zone) {
             
             const currentZone = zones.find(z => z.id === marker.zoneId);
             if (currentZone) markMapAsChanged();
+			redrawAllBSCirclesWithGlobalOverride();
         });
         
         zone.vertexMarkers.push(marker);
@@ -4050,6 +4053,46 @@ function updateMarkerCircle(markerData) {
     updateMarkerPopup(markerData);
 }
 
+// Перерисовываем все круги БС, применяя глобальный радиус только к тем,
+// у кого индивидуальная галочка ВЫКЛЮЧЕНА (showCircle === false)
+function redrawAllBSCirclesWithGlobalOverride() {
+    leafletMarkers.forEach(lm => {
+        const bs = bsMarkers.find(b => b.id === lm.id);
+        if (!bs) return;
+
+        // Удаляем старый круг, если был
+        if (lm.circle) {
+            leafletMap.removeLayer(lm.circle);
+            lm.circle = null;
+        }
+
+        // Решаем, показывать ли круг и какой радиус использовать
+        let shouldShow = false;
+        let effectiveRadius = 0;
+
+        if (bs.showCircle) {
+            // Индивидуально включено → используем индивидуальный радиус
+            shouldShow = true;
+            effectiveRadius = bs.circleRadius || CONFIG.DEFAULT_BS_RADIUS;
+        } else if (globalShowCircle) {
+            // Индивидуально выключено, но глобально включено → используем глобальный радиус
+            shouldShow = true;
+            effectiveRadius = globalCircleRadius;
+        }
+
+        if (shouldShow && effectiveRadius > 0) {
+            lm.circle = L.circle([bs.lat, bs.lng], {
+                radius: effectiveRadius,
+                color: '#ff4444',
+                fillColor: '#ff4444',
+                fillOpacity: 0.1,
+                weight: 2,
+                dashArray: '5, 5'
+            }).addTo(leafletMap);
+        }
+    });
+}
+
 function updateMarkerPopup(markerData) {
     if (!markerData.marker) return;
     
@@ -4146,6 +4189,7 @@ function deleteMarkerById(markerId) {
     updateBsList();
     markMapAsChanged();
     updateControlWindowHeight();
+	redrawAllBSCirclesWithGlobalOverride();
 }
 
 function deleteMarker() {
@@ -4271,6 +4315,7 @@ function saveMarker() {
     }
     
     updateControlWindowHeight();
+	redrawAllBSCirclesWithGlobalOverride();
 }
 
 // Отменить добавление/редактирование маркера
@@ -4523,6 +4568,7 @@ function initBackground() {
     
     updateBsList();
     draw();
+	redrawAllBSCirclesWithGlobalOverride();
 }
 
 function updateControlWindowHeight() {
@@ -4764,6 +4810,68 @@ function reset() {
     draw();
 }
 
+// Применяем глобальное включение радиуса ко всем БС, у которых он был выключен
+function applyGlobalShowCircleToAllBS() {
+    if (!globalShowCircle) return;  // выключили глобально → не трогаем индивидуальные настройки
+
+    let anyChanged = false;
+
+    bsMarkers.forEach(bs => {
+        if (!bs.showCircle) {
+            bs.showCircle = true;
+            bs.circleRadius = globalCircleRadius;
+            anyChanged = true;
+        }
+    });
+
+    // синхронизируем leaflet-маркеры
+    leafletMarkers.forEach(lm => {
+        const bs = bsMarkers.find(b => b.id === lm.id);
+        if (bs && (lm.showCircle !== bs.showCircle || lm.circleRadius !== bs.circleRadius)) {
+            lm.showCircle = bs.showCircle;
+            lm.circleRadius = bs.circleRadius;
+            updateMarkerCircle(lm);
+            anyChanged = true;
+        }
+    });
+
+    if (anyChanged) {
+        updateBsList();
+        markMapAsChanged();
+        draw();  // на всякий случай, хотя круги Leaflet сами обновятся
+    }
+}
+
+
+// Применяем изменение глобального радиуса только к тем БС, у которых радиус уже показывается
+function applyGlobalRadiusToVisibleBS() {
+    if (!globalShowCircle) return;
+
+    let anyChanged = false;
+
+    bsMarkers.forEach(bs => {
+        if (bs.showCircle && bs.circleRadius !== globalCircleRadius) {
+            bs.circleRadius = globalCircleRadius;
+            anyChanged = true;
+        }
+    });
+
+    leafletMarkers.forEach(lm => {
+        const bs = bsMarkers.find(b => b.id === lm.id);
+        if (bs && bs.showCircle && lm.circleRadius !== globalCircleRadius) {
+            lm.circleRadius = globalCircleRadius;
+            if (lm.circle) {
+                lm.circle.setRadius(globalCircleRadius);
+            }
+            anyChanged = true;
+        }
+    });
+
+    if (anyChanged) {
+        markMapAsChanged();
+    }
+}
+
 // Обновление курсора
 function updateCursor() {
     canvas.style.pointerEvents = 'none';
@@ -4850,25 +4958,43 @@ canvas.addEventListener('click', function(e) {
 
     // Режим создания базовых станций
     if (bsModeEnabled && leafletMap) {
-        const latLng = leafletMap.containerPointToLatLng([clickX, clickY]);
-        createTempMarker(latLng.lat, latLng.lng);
-        currentMarkerData = { lat: latLng.lat, lng: latLng.lng, temp: true };
+		const latLng = leafletMap.containerPointToLatLng([clickX, clickY]);
+		createTempMarker(latLng.lat, latLng.lng);
 
-        const nextNumber = getNextBSNumber();
-        const defaultName = `Базовая станция ${nextNumber}`;
+		// Временный маркер всегда без галочки и с дефолтным радиусом в диалоге
+		currentMarkerData = {
+			lat: latLng.lat,
+			lng: latLng.lng,
+			temp: true,
+			showCircle: false,
+			circleRadius: CONFIG.DEFAULT_BS_RADIUS
+		};
 
-        document.getElementById('markerName').value = defaultName;
-        document.getElementById('markerName').placeholder = defaultName;
-        document.getElementById('markerShowCircle').checked = false;
-        document.getElementById('markerCircleSlider').value = CONFIG.DEFAULT_BS_RADIUS;
-        document.getElementById('markerCircleText').value = CONFIG.DEFAULT_BS_RADIUS;
-        document.getElementById('markerCircleControls').style.display = 'none';
-        removePreviewCircle();
+		// Круг под курсором уже отображается через mousemove, если глобально включено
+		// Но на всякий случай фиксируем позицию после клика
+		if (globalShowCircle && previewCircle) {
+			previewCircle.setLatLng(latLng);
+			previewCircle.setRadius(globalCircleRadius);
+		}
 
-        positionDialogNearMarker(clickX, clickY);
-        showMarkerDialog(false);
-        return;
-    }
+		const nextNumber = getNextBSNumber();
+		const defaultName = `Базовая станция ${nextNumber}`;
+		document.getElementById('markerName').value = defaultName;
+		document.getElementById('markerName').placeholder = defaultName;
+		document.getElementById('markerComment').value = '';
+
+		document.getElementById('markerShowCircle').checked = false;
+		document.getElementById('markerCircleSlider').value = CONFIG.DEFAULT_BS_RADIUS;
+		document.getElementById('markerCircleText').value = CONFIG.DEFAULT_BS_RADIUS;
+		document.getElementById('markerCircleControls').style.display = 'none';
+
+		positionDialogNearMarker(clickX, clickY);
+		showMarkerDialog(false);
+
+		// Круг остаётся на месте клика до тех пор, пока диалог открыт
+		// После сохранения или отмены — removePreviewCircle() вызывается автоматически
+		return;
+	}
 
     // Режим редактирования сотовой разметки
     if (buildEnabled) {
@@ -5143,34 +5269,66 @@ document.addEventListener('click', function(e) {
 
 window.onload = () => {
     resize();
-    
-    // Инициализация элементов управления
+
+    // Инициализация элементов управления сеткой
     document.getElementById('radiusSlider').min = CONFIG.MIN_RADIUS;
     document.getElementById('radiusSlider').max = CONFIG.MAX_RADIUS;
     document.getElementById('radiusSlider').value = CONFIG.DEFAULT_RADIUS;
     document.getElementById('radiusSlider').step = 10;
-    
+
     document.getElementById('rotSlider').min = -180;
     document.getElementById('rotSlider').max = 180;
     document.getElementById('rotSlider').value = 0;
     document.getElementById('rotSlider').step = 1;
-    
+
     document.getElementById('radiusText').value = CONFIG.DEFAULT_RADIUS.toString();
     document.getElementById('rotText').value = '0';
     document.getElementById('moveGrid').checked = false;
-    
-	setNetworkSectionState(false);
-	
+
+    setNetworkSectionState(false);
+
     // Инициализация элементов управления БС
     document.getElementById('markerCircleSlider').min = CONFIG.MIN_BS_RADIUS;
     document.getElementById('markerCircleSlider').max = CONFIG.MAX_BS_RADIUS;
     document.getElementById('markerCircleSlider').value = CONFIG.DEFAULT_BS_RADIUS;
     document.getElementById('markerCircleSlider').step = 10;
     document.getElementById('markerCircleText').value = CONFIG.DEFAULT_BS_RADIUS.toString();
-    
+
+    // Инициализация глобальных настроек радиуса БС
+    globalShowCircle = document.getElementById('globalShowCircle').checked;
+    globalCircleRadius = parseInt(document.getElementById('globalCircleText').value) || CONFIG.DEFAULT_BS_RADIUS;
+
+    // Обработчики глобального переключателя и радиуса
+	document.getElementById('globalShowCircle').onchange = function() {
+		globalShowCircle = this.checked;
+		redrawAllBSCirclesWithGlobalOverride();
+	};
+
+    document.getElementById('globalCircleSlider').oninput = function() {
+		document.getElementById('globalCircleText').value = this.value;
+		globalCircleRadius = parseInt(this.value) || CONFIG.DEFAULT_BS_RADIUS;
+		redrawAllBSCirclesWithGlobalOverride();
+	};
+
+    document.getElementById('globalCircleText').onblur = function() {
+		let val = parseInt(this.value) || CONFIG.DEFAULT_BS_RADIUS;
+		val = Math.max(CONFIG.MIN_BS_RADIUS, Math.min(CONFIG.MAX_BS_RADIUS, val));
+		this.value = val;
+		document.getElementById('globalCircleSlider').value = val;
+		globalCircleRadius = val;
+		redrawAllBSCirclesWithGlobalOverride();
+	};
+	
+	document.getElementById('globalCircleText').onkeydown = function(e) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			this.blur();
+		}
+	};
+
     // Инициализация кнопки в разделе Файл
     updateFileToggleButton();
-    
+
     // Инициализация радиокнопок в разделе Карта
     const mapOptions = document.querySelectorAll('.map-option');
     mapOptions.forEach(option => {
@@ -5191,49 +5349,42 @@ window.onload = () => {
             }
         }
     });
-    
+
     // Инициализация счетчика зон
     document.getElementById('zoneCount').textContent = 'Количество зон: 0';
-    
-    // Убеждаемся, что bgMode установлен
+
     if (!bgMode || bgMode === '') bgMode = 'osm';
-    
+
     // Инициализация карты
     initBackground();
-    
-    // Инициализация высоты окна настроек
+
+    // Инициализация высоты панели настроек
     updateControlWindowHeight();
-    
-    // Добавляем обработчики для кнопок файлового меню
+
+    // Обработчики кнопок файлового меню
     document.querySelector('.file-btn-open').addEventListener('click', () => alert('Функция "Открыть" в разработке'));
     document.querySelector('.file-btn-save').addEventListener('click', () => alert('Функция "Сохранить" в разработке'));
     document.querySelector('.file-btn-save-image').addEventListener('click', () => alert('Функция "Сохранить изображение" в разработке'));
-    
-    // Инициализация списка объектов в аналитике
+
+    // Инициализация списка объектов
     updateObjectList();
-    
-    // Обновление счетчика ячеек
+
+    // Обновление счётчика ячеек
     updateCellCount();
-    
-    // Обработчик для переключателя территории
+
+    // Обработчик переключателя территории
     const territoryToggle = document.getElementById('territoryToggle');
     const territorySection = document.querySelector('.accordion-section:has(#territoryToggle)');
     if (territoryToggle && territorySection) {
         territoryToggle.addEventListener('change', function(e) {
             if (this.checked) {
-                // Включили - показываем все зоны и активируем раздел
                 territorySection.classList.remove('disabled');
                 showAllZones();
             } else {
-                // Выключили - скрываем все зоны и деактивируем раздел
-                
-                // Если был активен режим построения зоны - отменяем его
                 if (zoneModeEnabled) {
                     cancelPolygon();
                     zoneModeEnabled = false;
                     currentZoneColor = null;
-                    
-                    // Сбрасываем кнопку создания зоны
                     const zoneBtn = document.getElementById('createZoneBtn');
                     if (zoneBtn) {
                         zoneBtn.textContent = 'Создать зону';
@@ -5241,25 +5392,16 @@ window.onload = () => {
                         zoneBtn.style.background = '#2a3444';
                         zoneBtn.style.color = '#ddd';
                     }
-                    
-                    // Включаем управление картой обратно
                     if (leafletMap) {
                         leafletMap.dragging.enable();
                         leafletMap.off('click', onMapClickForZone);
                         leafletMap.off('mousemove', onMapMouseMoveForZone);
                     }
-                    
                     canvas.style.pointerEvents = 'none';
                     updateCursor();
                 }
-                
-                // Деактивируем раздел
                 territorySection.classList.add('disabled');
-                
-                // Скрываем все зоны
                 hideAllZones();
-                
-                // Если была выбрана какая-то зона, сбрасываем выделение
                 if (selectedZoneId) {
                     selectedZoneId = null;
                     updateZoneList();
@@ -5267,69 +5409,90 @@ window.onload = () => {
             }
         });
     }
-	
-	// Обработчики для диалога редактирования зоны
+
+    // Enter в полях редактирования зоны
     document.getElementById('zoneName').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             saveZone();
         }
     });
-    
+
     document.getElementById('zoneComment').addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && e.ctrlKey) {
             e.preventDefault();
             saveZone();
         }
     });
-    
-    // Обработчик для переключателя сотовой разметки
-	const networkToggle = document.getElementById('networkToggle');
-	if (networkToggle) {
-		// Устанавливаем начальное состояние (выключено)
-		setNetworkSectionState(false);
-		
-		networkToggle.addEventListener('change', function(e) {
-			if (this.checked) {
-				// Включили - показываем разметку и активируем элементы
-				setNetworkSectionState(true);
-				showCellularGrid();
+
+    // Переключатель сотовой разметки
+    const networkToggle = document.getElementById('networkToggle');
+    if (networkToggle) {
+        setNetworkSectionState(false);
+        networkToggle.addEventListener('change', function(e) {
+            if (this.checked) {
+                setNetworkSectionState(true);
+                showCellularGrid();
+            } else {
+                setNetworkSectionState(false);
+                hideCellularGrid();
+                if (buildEnabled) {
+                    buildEnabled = false;
+                    const buildBtn = document.getElementById('buildToggleInside');
+                    if (buildBtn) {
+                        buildBtn.textContent = 'Редактировать разметку';
+                        buildBtn.classList.remove('active');
+                        buildBtn.style.background = '#2a3444';
+                        buildBtn.style.color = '#ddd';
+                        buildBtn.onmouseover = function() { this.style.background = '#3a4454'; };
+                        buildBtn.onmouseout = function() { this.style.background = '#2a3444'; };
+                    }
+                    possibleHexes.clear();
+                    updateCursor();
+                    canvas.style.pointerEvents = 'none';
+                    draw();
+                }
+                if (moveGridEnabled) {
+                    moveGridEnabled = false;
+                    document.getElementById('moveGrid').checked = false;
+                    if (leafletMap) {
+                        leafletMap.dragging.enable();
+                        leafletMap.scrollWheelZoom.enable();
+                    }
+                    updateCursor();
+                }
+            }
+        });
+    }
+	
+	// Временно показываем круг под курсором в режиме создания БС, если глобально включено
+	leafletMap.on('mousemove', function(e) {
+		if (!bsModeEnabled) {
+			removePreviewCircle();
+			return;
+		}
+
+		const latlng = e.latlng;
+
+		if (globalShowCircle) {
+			if (!previewCircle) {
+				previewCircle = L.circle(latlng, {
+					radius: globalCircleRadius,
+					color: '#ff8888',           // чуть светлее, чтобы отличать от сохранённых
+					fillColor: '#ff8888',
+					fillOpacity: 0.15,
+					weight: 2,
+					dashArray: '5, 5'
+				}).addTo(leafletMap);
 			} else {
-				// Выключили - скрываем разметку и деактивируем элементы
-				setNetworkSectionState(false);
-				hideCellularGrid();
-				
-				// Если режим разметки был включен - выключаем его
-				if (buildEnabled) {
-					buildEnabled = false;
-					const buildBtn = document.getElementById('buildToggleInside');
-					if (buildBtn) {
-						buildBtn.textContent = 'Включить разметку';
-						buildBtn.classList.remove('active');
-						buildBtn.style.background = '#2a3444';
-						buildBtn.style.color = '#ddd';
-						buildBtn.onmouseover = function() { this.style.background = '#3a4454'; };
-						buildBtn.onmouseout = function() { this.style.background = '#2a3444'; };
-					}
-					possibleHexes.clear();
-					updateCursor();
-					canvas.style.pointerEvents = 'none';
-					draw();
-				}
-				
-				// ДОБАВЛЕНО: Выключаем режим перемещения разметки
-				if (moveGridEnabled) {
-					moveGridEnabled = false;
-					document.getElementById('moveGrid').checked = false;
-					if (leafletMap) {
-						leafletMap.dragging.enable();
-						leafletMap.scrollWheelZoom.enable();
-					}
-					updateCursor();
-				}
+				previewCircle.setLatLng(latlng);
+				previewCircle.setRadius(globalCircleRadius);
 			}
-		});
-	}
+		} else {
+			removePreviewCircle();
+		}
+	});
+	
 };
 
 // Обработчик клавиши Escape
