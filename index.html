@@ -5468,7 +5468,10 @@ window.onload = () => {
 	// Временно показываем круг под курсором в режиме создания БС, если глобально включено
 	leafletMap.on('mousemove', function(e) {
 		if (!bsModeEnabled) {
-			removePreviewCircle();
+			// НЕ удаляем круг, если редактируем существующую БС
+			if (!editingMarkerId) {
+				removePreviewCircle();
+			}
 			return;
 		}
 
