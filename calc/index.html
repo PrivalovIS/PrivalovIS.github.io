@@ -7,103 +7,132 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%233b82f6'/%3E%3Ctext x='50' y='68' font-size='64' text-anchor='middle' fill='white'%3E🔢%3C/text%3E%3C/svg%3E">
     <style>
         :root {
-            --bg: #fafafa;
-            --card: #ffffff;
-            --text: #1f2937;
-            --text2: #4b5563;
-            --border: #e5e7eb;
-            --accent: #3b82f6;
-            --success: #10b981;
+            --bg-start:    #f0f9ff;
+            --bg-end:      #e0f2fe;
+            --card:        #ffffff;
+            --text:        #0f172a;
+            --text2:       #475569;
+            --border:      #cbd5e1;
+            --accent:      #3b82f6;
+            --accent-dark: #2563eb;
+            --success:     #10b981;
+            --error:       #ef4444;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: var(--bg);
+            background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
             color: var(--text);
             min-height: 100vh;
             padding: 16px;
-            line-height: 1.4;
+            line-height: 1.42;
         }
 
         .container {
-            max-width: 760px;
+            max-width: 780px;
             margin: 0 auto;
             background: var(--card);
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(59,130,246,0.08);
             overflow: hidden;
         }
 
         header {
-            padding: 20px 24px 16px;
+            padding: 24px 28px 18px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 70%, #1e40af 100%);
+            color: white;
             text-align: center;
-            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 70%, rgba(255,255,255,0.18) 0%, transparent 60%);
+            pointer-events: none;
         }
 
         h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
+            font-size: 1.65rem;
+            font-weight: 700;
             letter-spacing: -0.02em;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
 
         .hint {
-            margin-top: 6px;
-            font-size: 0.875rem;
-            color: var(--text2);
+            margin-top: 8px;
+            font-size: 0.9rem;
+            opacity: 0.94;
         }
 
         main {
-            padding: 20px 24px;
+            padding: 24px;
         }
 
         .input-group {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
 
         label {
-            font-size: 0.95rem;
-            font-weight: 500;
+            font-size: 1rem;
+            font-weight: 600;
             display: block;
             margin-bottom: 8px;
+            color: #1e293b;
         }
 
         input {
             width: 100%;
-            font-size: 1.5rem;
-            padding: 12px 16px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
+            font-size: 1.6rem;
+            padding: 14px 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 12px;
             font-variant-numeric: tabular-nums;
-            transition: border-color 0.15s;
+            transition: all 0.18s;
         }
 
         input:focus {
             border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(59,130,246,0.18);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
         }
 
         input.error {
-            border-color: #ef4444;
+            border-color: var(--error);
+            box-shadow: 0 0 0 4px rgba(239,68,68,0.15);
         }
 
         .results {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
         }
 
         .card {
-            padding: 14px 16px;
+            padding: 14px 18px;           /* уменьшил сверху/снизу */
             border: 1px solid var(--border);
-            border-radius: 12px;
-            background: white;
+            border-radius: 14px;
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(59,130,246,0.04), transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .card.copied::before {
+            opacity: 1;
+            background: linear-gradient(90deg, transparent, rgba(16,185,129,0.08), transparent);
         }
 
         .header-row {
@@ -112,75 +141,90 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 12px;
-            margin-bottom: 8px;
+            margin: 0 0 8px 0;           /* убрал лишний нижний отступ */
         }
 
         .model {
-            font-size: 1.05rem;
-            font-weight: 600;
+            font-size: 1.1rem;
+            font-weight: 700;
         }
+
+        .model.mercury       { color: #1d4ed8; }
+        .model.spodes        { color: #7c3aed; }
+        .model.iprom         { color: #c2410c; }
+        .model.fobos         { color: #b45309; }
+        .model.mirtek        { color: #059669; }
+        .model.energomera    { color: #047857; }
 
         .controls {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
         .value {
-            font-family: ui-monospace, 'SF Mono', monospace;
-            font-size: 1.35rem;
-            font-weight: 600;
-            min-width: 80px;
+            font-family: ui-monospace, monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            min-width: 88px;
             text-align: center;
-            background: #f8fafc;
-            padding: 6px 12px;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
+            background: #f1f5f9;
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
         }
 
         .btn-copy {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 8px 14px;
-            font-size: 0.9rem;
-            font-weight: 500;
+            background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 9px 16px;
+            font-size: 0.92rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.13s;
+            transition: all 0.16s;
             white-space: nowrap;
+            color: #374151;
         }
 
         .btn-copy:hover {
-            background: #f3f4f6;
+            background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
 
         .btn-copy.copied {
-            background: var(--success);
+            background: linear-gradient(135deg, var(--success), #059669);
             color: white;
-            border-color: var(--success);
+            border-color: #059669;
+            box-shadow: 0 2px 10px rgba(16,185,129,0.3);
         }
 
         .rule {
-            font-size: 0.875rem;
+            font-size: 0.88rem;
             color: var(--text2);
+            line-height: 1.45;
+            margin-top: 4px;              /* небольшой отступ сверху для воздуха */
         }
 
         footer {
-            padding: 16px 24px;
+            padding: 18px 24px;
             text-align: center;
-            font-size: 0.8rem;
-            color: #9ca3af;
-            border-top: 1px solid var(--border);
+            font-size: 0.82rem;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
         }
 
         @media (max-width: 480px) {
             body { padding: 12px; }
-            main { padding: 16px 20px; }
+            main { padding: 18px 20px; }
             .header-row { flex-direction: column; align-items: stretch; }
             .controls { width: 100%; justify-content: space-between; }
             .value, .btn-copy { flex: 1; text-align: center; }
-            input { font-size: 1.35rem; padding: 11px 14px; }
+            input { font-size: 1.4rem; padding: 12px 16px; }
         }
     </style>
 </head>
@@ -189,81 +233,83 @@
 <div class="container">
     <header>
         <h1>Связные номера</h1>
-        <div class="hint">Работает без интернета — сохраните страницу</div>
+        <div class="hint">Работает оффлайн — сохраните страницу (Ctrl+S)</div>
     </header>
 
     <main>
         <div class="input-group">
-            <label for="sn">Серийный номер</label>
+            <label for="sn">Серийный номер прибора</label>
             <input id="sn" type="text" inputmode="numeric" autofocus placeholder="000000000000">
-            <div class="hint" style="margin-top:6px; font-size:0.8rem;">Результат обновляется автоматически</div>
+            <div class="hint" style="margin-top:8px; font-size:0.82rem; color:#64748b;">
+                Результат появляется мгновенно
+            </div>
         </div>
 
         <div class="results" id="results">
             <div class="card">
                 <div class="header-row">
-                    <div class="model">Меркурий</div>
+                    <div class="model mercury">Меркурий</div>
                     <div class="controls">
                         <span class="value" id="mercury">—</span>
                         <button class="btn-copy" data-model="mercury">Копировать</button>
                     </div>
                 </div>
-                <div class="rule">Три последние цифры. Если > 239 — две последние. 00 → 1</div>
+                <div class="rule">Три последние цифры. Если > 240 → две последние. 00 → 1</div>
             </div>
 
             <div class="card">
                 <div class="header-row">
-                    <div class="model">Меркурий СПОДЭС</div>
+                    <div class="model spodes">Меркурий СПОДЭС</div>
                     <div class="controls">
                         <span class="value" id="mercury-spodes">—</span>
                         <button class="btn-copy" data-model="mercury-spodes">Копировать</button>
                     </div>
                 </div>
-                <div class="rule">Три последние цифры. Если > 124 — две последние. Если < 18 — +10 до ≥ 18</div>
+                <div class="rule">Три последние. Если > 124 → две последние. Если < 18 → +10 до ≥ 18</div>
             </div>
 
             <div class="card">
                 <div class="header-row">
-                    <div class="model">i.prom</div>
+                    <div class="model iprom">i.prom</div>
                     <div class="controls">
                         <span class="value" id="iprom">—</span>
                         <button class="btn-copy" data-model="iprom">Копировать</button>
                     </div>
                 </div>
-                <div class="rule">Последние 4 цифры номера + 16</div>
+                <div class="rule">Последние 4 цифры + 16</div>
             </div>
 
             <div class="card">
                 <div class="header-row">
-                    <div class="model">Фобос</div>
+                    <div class="model fobos">Фобос</div>
                     <div class="controls">
                         <span class="value" id="fobos">—</span>
                         <button class="btn-copy" data-model="fobos">Копировать</button>
                     </div>
                 </div>
-                <div class="rule">Серийный номер + 16, затем остаток от деления на 16365</div>
+                <div class="rule">Номер + 16 → остаток от деления на 16365</div>
             </div>
 
             <div class="card">
                 <div class="header-row">
-                    <div class="model">Миртек</div>
+                    <div class="model mirtek">Миртек</div>
                     <div class="controls">
                         <span class="value" id="mirtek">—</span>
                         <button class="btn-copy" data-model="mirtek">Копировать</button>
                     </div>
                 </div>
-                <div class="rule">Последние 5 цифр серийного номера</div>
+                <div class="rule">Последние 5 цифр номера</div>
             </div>
 
             <div class="card">
                 <div class="header-row">
-                    <div class="model">Энергомера</div>
+                    <div class="model energomera">Энергомера</div>
                     <div class="controls">
                         <span class="value" id="energomera">—</span>
                         <button class="btn-copy" data-model="energomera">Копировать</button>
                     </div>
                 </div>
-                <div class="rule">Последние 5 цифр серийного номера</div>
+                <div class="rule">Последние 5 цифр номера</div>
             </div>
         </div>
     </main>
@@ -274,6 +320,7 @@
 </div>
 
 <script>
+// скрипт без изменений (тот же, что в предыдущем сообщении)
 (function(){
     const input = document.getElementById('sn');
 
@@ -290,7 +337,7 @@
         if (!Number.isInteger(n) || n < 0) return null;
         let a = n % 1000;
         let b = n % 100;
-        return a > 239 ? norm(b) : norm(a);
+        return a > 240 ? norm(b) : norm(a);
     }
 
     function calcSpodes(n){
@@ -326,6 +373,7 @@
 
         if (!v) {
             document.querySelectorAll('.value').forEach(el=>el.textContent='—');
+            document.querySelectorAll('.card').forEach(c=>c.classList.remove('copied'));
             return;
         }
 
@@ -350,6 +398,9 @@
             b.classList.remove('copied');
             b.textContent = 'Копировать';
         });
+        setTimeout(() => {
+            document.querySelectorAll('.card').forEach(c=>c.classList.remove('copied'));
+        }, 2200);
     }
 
     document.querySelectorAll('.btn-copy').forEach(btn=>{
@@ -367,7 +418,7 @@
                 resetBtns();
                 btn.classList.add('copied');
                 btn.textContent = 'Скопировано ✓';
-                setTimeout(resetBtns, 2200);
+                btn.closest('.card').classList.add('copied');
             }).catch(()=>alert('Не удалось скопировать'));
         });
     });
