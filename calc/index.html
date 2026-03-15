@@ -3,24 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Связные номера</title>
+    <title>Расчет связных номеров</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%233b82f6'/%3E%3Ctext x='50' y='68' font-size='64' text-anchor='middle' fill='white'%3E🔢%3C/text%3E%3C/svg%3E">
     <style>
         :root {
-            --bg-start:    #f0f9ff;
-            --bg-end:      #e0f2fe;
-            --card:        #ffffff;
-            --text:        #0f172a;
-            --text2:       #475569;
-            --border:      #cbd5e1;
-            --accent:      #3b82f6;
-            --accent-dark: #2563eb;
-            --success:     #10b981;
-            --error:       #ef4444;
+            --bg-start: #f0f9ff;
+            --bg-end: #e0f2fe;
+            --card: #ffffff;
+            --text: #0f172a;
+            --text2: #475569;
+            --border: #cbd5e1;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
-
         body {
             font-family: system-ui, -apple-system, sans-serif;
             background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
@@ -29,24 +27,21 @@
             padding: 16px;
             line-height: 1.42;
         }
-
         .container {
-            max-width: 780px;
+            max-width: 820px;
             margin: 0 auto;
             background: var(--card);
             border-radius: 20px;
             box-shadow: 0 8px 32px rgba(59,130,246,0.08);
             overflow: hidden;
         }
-
         header {
-            padding: 24px 28px 18px;
+            padding: 24px 28px 16px;
             background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 70%, #1e40af 100%);
             color: white;
             text-align: center;
             position: relative;
         }
-
         header::after {
             content: '';
             position: absolute;
@@ -54,28 +49,49 @@
             background: radial-gradient(circle at 30% 70%, rgba(255,255,255,0.18) 0%, transparent 60%);
             pointer-events: none;
         }
-
         h1 {
             font-size: 1.65rem;
             font-weight: 700;
             letter-spacing: -0.02em;
             text-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
-
         .hint {
             margin-top: 8px;
             font-size: 0.9rem;
             opacity: 0.94;
         }
-
+        .tabs {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .tab {
+            flex: 1;
+            padding: 16px;
+            text-align: center;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.15s;
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: #f8fafc;
+        }
         main {
             padding: 24px;
         }
-
+        .mode {
+            display: none;
+        }
+        .mode.active {
+            display: block;
+        }
         .input-group {
             margin-bottom: 28px;
         }
-
         label {
             font-size: 1rem;
             font-weight: 600;
@@ -83,8 +99,7 @@
             margin-bottom: 8px;
             color: #1e293b;
         }
-
-        input {
+        input, select, textarea {
             width: 100%;
             font-size: 1.6rem;
             padding: 14px 18px;
@@ -93,34 +108,45 @@
             font-variant-numeric: tabular-nums;
             transition: all 0.18s;
         }
-
-        input:focus {
+        input:focus, select:focus, textarea:focus {
             border-color: var(--accent);
             box-shadow: 0 0 0 4px rgba(59,130,246,0.18);
             outline: none;
         }
-
         input.error {
             border-color: var(--error);
             box-shadow: 0 0 0 4px rgba(239,68,68,0.15);
         }
-
+        .alert {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin: 24px 0 16px 0;          /* ← увеличен отступ сверху */
+            font-size: 0.95rem;
+            line-height: 1.45;
+        }
+        .alert.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .alert.warning {
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
         .results {
             display: flex;
             flex-direction: column;
             gap: 14px;
         }
-
         .card {
-            padding: 14px 18px;           /* уменьшил сверху/снизу */
+            padding: 14px 18px;
             border: 1px solid var(--border);
             border-radius: 14px;
             background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-            transition: all 0.2s;
             position: relative;
             overflow: hidden;
         }
-
         .card::before {
             content: '';
             position: absolute;
@@ -129,40 +155,34 @@
             opacity: 0;
             transition: opacity 0.4s;
         }
-
         .card.copied::before {
             opacity: 1;
             background: linear-gradient(90deg, transparent, rgba(16,185,129,0.08), transparent);
         }
-
         .header-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 12px;
-            margin: 0 0 8px 0;           /* убрал лишний нижний отступ */
+            margin: 0 0 8px 0;
         }
-
         .model {
             font-size: 1.1rem;
             font-weight: 700;
         }
-
-        .model.mercury       { color: #1d4ed8; }
-        .model.spodes        { color: #7c3aed; }
-        .model.iprom         { color: #c2410c; }
-        .model.fobos         { color: #b45309; }
-        .model.mirtek        { color: #059669; }
-        .model.energomera    { color: #047857; }
-
+        .model.mercury    { color: #1d4ed8; }
+        .model.spodes     { color: #7c3aed; }
+        .model.iprom      { color: #c2410c; }
+        .model.fobos      { color: #b45309; }
+        .model.mirtek     { color: #059669; }
+        .model.energomera { color: #047857; }
         .controls {
             display: flex;
             align-items: center;
             gap: 12px;
             flex-wrap: wrap;
         }
-
         .value {
             font-family: ui-monospace, monospace;
             font-size: 1.4rem;
@@ -175,7 +195,6 @@
             border: 1px solid #e2e8f0;
             color: #1e293b;
         }
-
         .btn-copy {
             background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
             border: 1px solid #d1d5db;
@@ -188,27 +207,114 @@
             white-space: nowrap;
             color: #374151;
         }
-
         .btn-copy:hover {
             background: linear-gradient(135deg, #e5e7eb, #d1d5db);
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
-
         .btn-copy.copied {
             background: linear-gradient(135deg, var(--success), #059669);
             color: white;
             border-color: #059669;
             box-shadow: 0 2px 10px rgba(16,185,129,0.3);
         }
-
         .rule {
             font-size: 0.88rem;
             color: var(--text2);
             line-height: 1.45;
-            margin-top: 4px;              /* небольшой отступ сверху для воздуха */
+            margin-top: 4px;
         }
-
+        /* Массовый режим */
+        textarea {
+            min-height: 180px;
+            font-family: monospace;
+            resize: vertical;
+            line-height: 1.5;
+        }
+        .mass-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .btn-mass {
+            flex: 1;
+            padding: 14px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-mass.calc {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+        .btn-mass.clear {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        .mass-result {
+            margin-top: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            max-height: 420px;
+            overflow-y: auto;
+            display: none;
+        }
+        .mass-result.show {
+            display: block;
+        }
+        .result-line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #e2e8f0;
+            font-family: monospace;
+            font-size: 1.05rem;
+            transition: background-color 0.2s;
+        }
+        .result-line.dup-sn {
+            background: #fee2e2;
+            border-color: #fecaca;
+        }
+        .result-line.dup-linked {
+            background: #fef3c7;
+            border-color: #fde68a;
+        }
+        .result-line:last-child { margin-bottom: 0; }
+        .sn { color: #64748b; width: 140px; flex-shrink: 0; }
+        .arrow { color: #94a3b8; margin: 0 12px; flex-shrink: 0; }
+        .linked { font-weight: 700; color: #1e293b; min-width: 80px; flex-shrink: 0; }
+        .copy-line {
+            background: #f1f5f9;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .mass-footer {
+            margin-top: 16px;
+            text-align: center;
+        }
+        .btn-all {
+            padding: 12px 28px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1.05rem;
+        }
         footer {
             padding: 18px 24px;
             text-align: center;
@@ -217,99 +323,134 @@
             border-top: 1px solid #e2e8f0;
             background: #f8fafc;
         }
-
         @media (max-width: 480px) {
             body { padding: 12px; }
             main { padding: 18px 20px; }
-            .header-row { flex-direction: column; align-items: stretch; }
-            .controls { width: 100%; justify-content: space-between; }
-            .value, .btn-copy { flex: 1; text-align: center; }
-            input { font-size: 1.4rem; padding: 12px 16px; }
+            .tabs { flex-direction: column; }
+            .tab { padding: 14px; }
+            .mass-controls { flex-direction: column; }
+            .btn-mass { width: 100%; }
+            .result-line { flex-wrap: wrap; gap: 8px; padding: 12px; }
+            .sn { width: auto; }
         }
     </style>
 </head>
 <body>
-
 <div class="container">
     <header>
-        <h1>Связные номера</h1>
+        <h1>Расчет связных номеров</h1>
         <div class="hint">Работает оффлайн — сохраните страницу (Ctrl+S)</div>
     </header>
 
+    <div class="tabs">
+        <div class="tab active" data-mode="single">Одиночный расчёт</div>
+        <div class="tab" data-mode="mass">Массовый расчёт</div>
+    </div>
+
     <main>
-        <div class="input-group">
-            <label for="sn">Серийный номер прибора</label>
-            <input id="sn" type="text" inputmode="numeric" autofocus placeholder="000000000000">
-            <div class="hint" style="margin-top:8px; font-size:0.82rem; color:#64748b;">
-                Результат появляется мгновенно
+        <!-- ОДИНОЧНЫЙ РАСЧЁТ -->
+        <div class="mode active" id="mode-single">
+            <div class="input-group">
+                <label for="sn">Серийный номер прибора учета</label>
+                <input id="sn" type="text" inputmode="numeric" maxlength="14" autofocus placeholder="000000000000">
+                <div class="hint" style="margin-top:8px; font-size:0.82rem; color:#64748b;">
+                    Результат появляется мгновенно
+                </div>
+            </div>
+            <div class="results" id="results">
+                <div class="card">
+                    <div class="header-row">
+                        <div class="model mercury">Меркурий</div>
+                        <div class="controls">
+                            <span class="value" id="mercury">—</span>
+                            <button class="btn-copy" data-model="mercury">Копировать</button>
+                        </div>
+                    </div>
+                    <div class="rule">Три последние цифры. Если > 239 → две последние. 00 → 1</div>
+                </div>
+                <div class="card">
+                    <div class="header-row">
+                        <div class="model spodes">Меркурий СПОДЭС</div>
+                        <div class="controls">
+                            <span class="value" id="mercury-spodes">—</span>
+                            <button class="btn-copy" data-model="mercury-spodes">Копировать</button>
+                        </div>
+                    </div>
+                    <div class="rule">Три последние цифры. Если > 124 → две последние. Если ≤ 16 → +10 до ≥ 17</div>
+                </div>
+                <div class="card">
+                    <div class="header-row">
+                        <div class="model iprom">i.prom</div>
+                        <div class="controls">
+                            <span class="value" id="iprom">—</span>
+                            <button class="btn-copy" data-model="iprom">Копировать</button>
+                        </div>
+                    </div>
+                    <div class="rule">Последние 4 цифры + 16</div>
+                </div>
+                <div class="card">
+                    <div class="header-row">
+                        <div class="model fobos">Фобос</div>
+                        <div class="controls">
+                            <span class="value" id="fobos">—</span>
+                            <button class="btn-copy" data-model="fobos">Копировать</button>
+                        </div>
+                    </div>
+                    <div class="rule">Номер + 16 → остаток от деления на 16365</div>
+                </div>
+                <div class="card">
+                    <div class="header-row">
+                        <div class="model mirtek">Миртек</div>
+                        <div class="controls">
+                            <span class="value" id="mirtek">—</span>
+                            <button class="btn-copy" data-model="mirtek">Копировать</button>
+                        </div>
+                    </div>
+                    <div class="rule">Последние 5 цифр номера (0 → 1)</div>
+                </div>
+                <div class="card">
+                    <div class="header-row">
+                        <div class="model energomera">Энергомера</div>
+                        <div class="controls">
+                            <span class="value" id="energomera">—</span>
+                            <button class="btn-copy" data-model="energomera">Копировать</button>
+                        </div>
+                    </div>
+                    <div class="rule">Последние 5 цифр номера (0 → 1)</div>
+                </div>
             </div>
         </div>
 
-        <div class="results" id="results">
-            <div class="card">
-                <div class="header-row">
-                    <div class="model mercury">Меркурий</div>
-                    <div class="controls">
-                        <span class="value" id="mercury">—</span>
-                        <button class="btn-copy" data-model="mercury">Копировать</button>
-                    </div>
-                </div>
-                <div class="rule">Три последние цифры. Если > 240 → две последние. 00 → 1</div>
+        <!-- МАССОВЫЙ РАСЧЁТ -->
+        <div class="mode" id="mode-mass">
+            <div class="input-group">
+                <label for="model-select">Выберите модель</label>
+                <select id="model-select">
+                    <option value="mercury">Меркурий</option>
+                    <option value="mercury-spodes">Меркурий СПОДЭС</option>
+                    <option value="iprom">i.prom</option>
+                    <option value="fobos">Фобос</option>
+                    <option value="mirtek">Миртек</option>
+                    <option value="energomera">Энергомера</option>
+                </select>
             </div>
 
-            <div class="card">
-                <div class="header-row">
-                    <div class="model spodes">Меркурий СПОДЭС</div>
-                    <div class="controls">
-                        <span class="value" id="mercury-spodes">—</span>
-                        <button class="btn-copy" data-model="mercury-spodes">Копировать</button>
-                    </div>
-                </div>
-                <div class="rule">Три последние. Если > 124 → две последние. Если < 18 → +10 до ≥ 18</div>
+            <div class="input-group">
+                <label for="mass-input">Серийные номера (по одному в строке)</label>
+                <textarea id="mass-input" placeholder="000123456789&#10;987654321000&#10;..."></textarea>
             </div>
 
-            <div class="card">
-                <div class="header-row">
-                    <div class="model iprom">i.prom</div>
-                    <div class="controls">
-                        <span class="value" id="iprom">—</span>
-                        <button class="btn-copy" data-model="iprom">Копировать</button>
-                    </div>
-                </div>
-                <div class="rule">Последние 4 цифры + 16</div>
+            <div class="mass-controls">
+                <button class="btn-mass calc" id="btn-calc-mass">Рассчитать</button>
+                <button class="btn-mass clear" id="btn-clear-mass">Очистить</button>
             </div>
 
-            <div class="card">
-                <div class="header-row">
-                    <div class="model fobos">Фобос</div>
-                    <div class="controls">
-                        <span class="value" id="fobos">—</span>
-                        <button class="btn-copy" data-model="fobos">Копировать</button>
-                    </div>
-                </div>
-                <div class="rule">Номер + 16 → остаток от деления на 16365</div>
-            </div>
+            <div id="mass-alerts"></div>
 
-            <div class="card">
-                <div class="header-row">
-                    <div class="model mirtek">Миртек</div>
-                    <div class="controls">
-                        <span class="value" id="mirtek">—</span>
-                        <button class="btn-copy" data-model="mirtek">Копировать</button>
-                    </div>
-                </div>
-                <div class="rule">Последние 5 цифр номера</div>
-            </div>
+            <div class="mass-result" id="mass-result"></div>
 
-            <div class="card">
-                <div class="header-row">
-                    <div class="model energomera">Энергомера</div>
-                    <div class="controls">
-                        <span class="value" id="energomera">—</span>
-                        <button class="btn-copy" data-model="energomera">Копировать</button>
-                    </div>
-                </div>
-                <div class="rule">Последние 5 цифр номера</div>
+            <div class="mass-footer" id="mass-footer" style="display:none;">
+                <button class="btn-all" id="btn-copy-all">📋 Скопировать все результаты</button>
             </div>
         </div>
     </main>
@@ -320,111 +461,246 @@
 </div>
 
 <script>
-// скрипт без изменений (тот же, что в предыдущем сообщении)
-(function(){
-    const input = document.getElementById('sn');
+(function () {
+    // Переключение вкладок
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.mode').forEach(m => m.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(`mode-${tab.dataset.mode}`).classList.add('active');
+        });
+    });
 
-    function norm(v){ return v === 0 ? 1 : v; }
+    // ──────────────────────────────────────────────
+    // Общие функции
+    // ──────────────────────────────────────────────
+    function norm(v) { return v === 0 ? 1 : v; }
 
-    function add10Until18orMore(v){
-        if (v >= 18) return v;
-        while (v < 18) v += 10;
+    function add10Until17orMore(v) {
+        while (v < 17) v += 10;
         return v;
     }
 
-    function calcMercury(n){
-        n = Number(n);
-        if (!Number.isInteger(n) || n < 0) return null;
-        let a = n % 1000;
-        let b = n % 100;
-        return a > 240 ? norm(b) : norm(a);
-    }
+    const calculators = {
+        mercury: n => {
+            const a = n % 1000;
+            const b = n % 100;
+            return norm(a > 239 ? b : a);
+        },
+        'mercury-spodes': n => {
+            const a = n % 1000;
+            const b = n % 100;
+            const base = a > 124 ? b : a;
+            return add10Until17orMore(base);
+        },
+        iprom: n => norm((n % 10000) + 16),
+        fobos: n => {
+            const res = (n + 16) % 16365;
+            return res === 0 ? 16365 : res;
+        },
+        mirtek: n => norm(n % 100000),
+        energomera: n => norm(n % 100000)
+    };
 
-    function calcSpodes(n){
-        n = Number(n);
-        if (!Number.isInteger(n) || n < 0) return null;
-        let a = n % 1000;
-        let b = n % 100;
-        let base = a > 124 ? b : a;
-        return add10Until18orMore(base);
-    }
+    // ──────────────────────────────────────────────
+    // Одиночный режим
+    // ──────────────────────────────────────────────
+    const singleInput = document.getElementById('sn');
 
-    function last4Plus16(n){
-        n = Number(n);
-        if (!Number.isInteger(n) || n < 0) return null;
-        return (n % 10000) + 16;
-    }
-
-    function fobos(n){
-        n = Number(n);
-        if (!Number.isInteger(n) || n < 0) return null;
-        return (n + 16) % 16365;
-    }
-
-    function last5(n){
-        n = Number(n);
-        if (!Number.isInteger(n) || n < 0) return null;
-        return n % 100000;
-    }
-
-    function update(){
-        let v = input.value.trim();
-        input.classList.remove('error');
+    function updateSingle() {
+        const v = singleInput.value.trim();
+        singleInput.classList.remove('error');
 
         if (!v) {
-            document.querySelectorAll('.value').forEach(el=>el.textContent='—');
-            document.querySelectorAll('.card').forEach(c=>c.classList.remove('copied'));
+            document.querySelectorAll('#mode-single .value').forEach(el => el.textContent = '—');
             return;
         }
 
         if (!/^\d+$/.test(v)) {
-            input.classList.add('error');
-            document.querySelectorAll('.value').forEach(el=>el.textContent='❗');
+            singleInput.classList.add('error');
+            document.querySelectorAll('#mode-single .value').forEach(el => el.textContent = '❗');
             return;
         }
 
-        let num = parseInt(v,10);
-
-        document.getElementById('mercury').textContent       = calcMercury(num)       ?? '—';
-        document.getElementById('mercury-spodes').textContent = calcSpodes(num)     ?? '—';
-        document.getElementById('iprom').textContent         = last4Plus16(num)     ?? '—';
-        document.getElementById('fobos').textContent         = fobos(num)           ?? '—';
-        document.getElementById('mirtek').textContent        = last5(num)           ?? '—';
-        document.getElementById('energomera').textContent    = last5(num)           ?? '—';
+        const num = parseInt(v, 10);
+        Object.keys(calculators).forEach(key => {
+            const res = calculators[key](num);
+            const el = document.getElementById(key);
+            if (el) el.textContent = res;
+        });
     }
 
-    function resetBtns(){
-        document.querySelectorAll('.btn-copy').forEach(b=>{
+    function resetSingleCopyButtons() {
+        document.querySelectorAll('#mode-single .btn-copy').forEach(b => {
             b.classList.remove('copied');
             b.textContent = 'Копировать';
         });
-        setTimeout(() => {
-            document.querySelectorAll('.card').forEach(c=>c.classList.remove('copied'));
-        }, 2200);
+        document.querySelectorAll('#mode-single .card').forEach(c => c.classList.remove('copied'));
     }
 
-    document.querySelectorAll('.btn-copy').forEach(btn=>{
-        btn.addEventListener('click',()=>{
-            let model = btn.dataset.model;
-            let valEl = document.getElementById(model);
-            let text = valEl?.textContent?.trim();
+    document.querySelectorAll('#mode-single .btn-copy').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const model = btn.dataset.model;
+            const text = document.getElementById(model)?.textContent?.trim();
+            if (!text || text === '—' || text === '❗') return alert('Нет значения для копирования');
 
-            if (!text || text==='—' || text==='❗') {
-                alert('Нет значения для копирования');
-                return;
-            }
-
-            navigator.clipboard.writeText(text).then(()=>{
-                resetBtns();
+            navigator.clipboard.writeText(text).then(() => {
+                resetSingleCopyButtons();
                 btn.classList.add('copied');
                 btn.textContent = 'Скопировано ✓';
                 btn.closest('.card').classList.add('copied');
-            }).catch(()=>alert('Не удалось скопировать'));
+                setTimeout(resetSingleCopyButtons, 2200);
+            }).catch(() => alert('Не удалось скопировать'));
         });
     });
 
-    input.addEventListener('input',()=>{ update(); resetBtns(); });
-    update();
+    singleInput.addEventListener('input', () => {
+        updateSingle();
+        resetSingleCopyButtons();
+    });
+
+    updateSingle();
+
+    // ──────────────────────────────────────────────
+    // Массовый режим
+    // ──────────────────────────────────────────────
+    const select = document.getElementById('model-select');
+    const textarea = document.getElementById('mass-input');
+    const btnCalc = document.getElementById('btn-calc-mass');
+    const btnClear = document.getElementById('btn-clear-mass');
+    const resultDiv = document.getElementById('mass-result');
+    const alertsDiv = document.getElementById('mass-alerts');
+    const footerDiv = document.getElementById('mass-footer');
+    const btnCopyAll = document.getElementById('btn-copy-all');
+
+    function showAlerts(dupSN, dupLinked) {
+        alertsDiv.innerHTML = '';
+        if (dupSN.length) {
+            const div = document.createElement('div');
+            div.className = 'alert error';
+            div.innerHTML = `<strong>Повторяющиеся серийные номера (${dupSN.length}):</strong><br>` +
+                            dupSN.map(([sn, cnt]) => `${sn} ×${cnt}`).join(', ');
+            alertsDiv.appendChild(div);
+        }
+        if (dupLinked.length) {
+            const div = document.createElement('div');
+            div.className = 'alert warning';
+            div.innerHTML = `<strong>Одинаковые связные номера (${dupLinked.length}):</strong><br>` +
+                            dupLinked.map(([ln, cnt, sns]) => `${ln} ×${cnt} (${sns.join(', ')})`).join('<br>');
+            alertsDiv.appendChild(div);
+        }
+    }
+
+    function calculateMass(modelKey, snList) {
+        const calc = calculators[modelKey];
+        if (!calc) return [];
+
+        return snList.map(sn => {
+            const trimmed = sn.trim();
+            const num = parseInt(trimmed, 10);
+            if (isNaN(num) || num < 0) return { sn: trimmed, linked: '❌' };
+            return { sn: trimmed, linked: String(calc(num)) };
+        });
+    }
+
+    function getDuplicates(results) {
+        const snCount = new Map();
+        results.forEach(r => snCount.set(r.sn, (snCount.get(r.sn) || 0) + 1));
+        const dupSN = Array.from(snCount.entries()).filter(([, c]) => c > 1);
+
+        const linkedMap = new Map();
+        results.forEach(r => {
+            if (r.linked !== '❌') {
+                if (!linkedMap.has(r.linked)) linkedMap.set(r.linked, []);
+                linkedMap.get(r.linked).push(r.sn);
+            }
+        });
+        const dupLinked = Array.from(linkedMap.entries())
+            .filter(([, sns]) => sns.length > 1)
+            .map(([ln, sns]) => [ln, sns.length, sns]);
+
+        return { dupSN: new Set(dupSN.map(([sn]) => sn)), dupLinked: new Set(dupLinked.map(([ln]) => ln)) };
+    }
+
+    function renderMassResults(items, dupSN, dupLinked) {
+        resultDiv.innerHTML = '';
+        if (!items.length) return;
+
+        items.forEach(item => {
+            const line = document.createElement('div');
+            line.className = 'result-line';
+
+            if (dupSN.has(item.sn)) {
+                line.classList.add('dup-sn');
+            } else if (dupLinked.has(item.linked)) {
+                line.classList.add('dup-linked');
+            }
+
+            line.innerHTML = `
+                <span class="sn">${item.sn}</span>
+                <span class="arrow">→</span>
+                <span class="linked">${item.linked}</span>
+                <button class="copy-line">копировать</button>
+            `;
+
+            line.querySelector('.copy-line').addEventListener('click', () => {
+                navigator.clipboard.writeText(item.linked).then(() => {
+                    const btn = line.querySelector('.copy-line');
+                    const orig = btn.textContent;
+                    btn.textContent = '✓';
+                    setTimeout(() => btn.textContent = orig, 1400);
+                });
+            });
+
+            resultDiv.appendChild(line);
+        });
+
+        resultDiv.classList.add('show');
+        footerDiv.style.display = 'block';
+    }
+
+    btnCalc.addEventListener('click', () => {
+        const modelKey = select.value;
+        if (!modelKey) return alert('Выберите модель');
+
+        const lines = textarea.value.split(/\n/).map(s => s.trim()).filter(Boolean);
+        if (!lines.length) return alert('Вставьте хотя бы один номер');
+
+        const results = calculateMass(modelKey, lines);
+        const { dupSN, dupLinked } = getDuplicates(results);
+
+        showAlerts(
+            Array.from(dupSN).map(sn => [sn, results.filter(r => r.sn === sn).length]),
+            Array.from(dupLinked).map(ln => [ln, results.filter(r => r.linked === ln).length, results.filter(r => r.linked === ln).map(r => r.sn)])
+        );
+
+        renderMassResults(results, dupSN, dupLinked);
+    });
+
+    btnClear.addEventListener('click', () => {
+        textarea.value = '';
+        resultDiv.innerHTML = '';
+        resultDiv.classList.remove('show');
+        footerDiv.style.display = 'none';
+        alertsDiv.innerHTML = '';
+    });
+
+    btnCopyAll.addEventListener('click', () => {
+        const lines = Array.from(resultDiv.querySelectorAll('.result-line'));
+        if (!lines.length) return;
+
+        const text = lines.map(line => {
+            const sn = line.querySelector('.sn').textContent;
+            const linked = line.querySelector('.linked').textContent;
+            return `${sn} → ${linked}`;
+        }).join('\n');
+
+        navigator.clipboard.writeText(text).then(() => {
+            btnCopyAll.textContent = '✅ Скопировано!';
+            setTimeout(() => btnCopyAll.textContent = '📋 Скопировать все результаты', 2200);
+        }).catch(() => alert('Не удалось скопировать'));
+    });
 })();
 </script>
 </body>
