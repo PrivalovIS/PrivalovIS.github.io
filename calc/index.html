@@ -450,7 +450,7 @@
             <div class="mass-result" id="mass-result"></div>
 
             <div class="mass-footer" id="mass-footer" style="display:none;">
-                <button class="btn-all" id="btn-copy-all">📋 Скопировать все результаты</button>
+                <button class="btn-all" id="btn-copy-all">Скопировать все результаты</button>
             </div>
         </div>
     </main>
@@ -641,7 +641,7 @@
                 <span class="sn">${item.sn}</span>
                 <span class="arrow">→</span>
                 <span class="linked">${item.linked}</span>
-                <button class="copy-line">копировать</button>
+                <button class="copy-line">Копировать</button>
             `;
 
             line.querySelector('.copy-line').addEventListener('click', () => {
@@ -698,7 +698,7 @@
 
         navigator.clipboard.writeText(text).then(() => {
             btnCopyAll.textContent = '✅ Скопировано!';
-            setTimeout(() => btnCopyAll.textContent = '📋 Скопировать все результаты', 2200);
+            setTimeout(() => btnCopyAll.textContent = 'Скопировать все результаты', 2200);
         }).catch(() => alert('Не удалось скопировать'));
     });
 })();
