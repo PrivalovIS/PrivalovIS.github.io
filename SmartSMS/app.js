@@ -79,6 +79,9 @@ function openDatabase() {
 }
 
 function transaction(storeNames, mode = "readonly") {
+  if (!state.db) {
+    throw new Error("База данных еще не инициализирована");
+  }
   return state.db.transaction(storeNames, mode);
 }
 
@@ -143,6 +146,9 @@ async function loadDatabaseState() {
 }
 
 async function saveSettings() {
+  if (!state.db) {
+    return;
+  }
   await idbPut("settings", {
     key: "app",
     activeChatId: state.activeChatId,
@@ -152,6 +158,9 @@ async function saveSettings() {
 }
 
 async function saveChat(chat) {
+  if (!state.db) {
+    return;
+  }
   await idbPut("chats", {
     ...chat,
     updatedAt: new Date(chat.updatedAt).toISOString(),
@@ -163,6 +172,9 @@ async function saveChat(chat) {
 }
 
 async function saveContact(contact) {
+  if (!state.db) {
+    return;
+  }
   await idbPut("contacts", contact);
 }
 
@@ -778,7 +790,11 @@ async function connectModem() {
 
   const baudRate = Number.parseInt(dom.baudRate.value, 10);
   state.baudRate = dom.baudRate.value;
-  await saveSettings();
+  try {
+    await saveSettings();
+  } catch (error) {
+    logLine("error", `Не удалось сохранить настройки: ${error.message}`);
+  }
 
   state.port = await navigator.serial.requestPort();
   await state.port.open({ baudRate, bufferSize: 4096 });
@@ -848,6 +864,9 @@ async function handleSaveContact() {
 }
 
 async function exportDatabase() {
+  if (!state.db) {
+    throw new Error("База данных недоступна");
+  }
   const payload = {
     exportedAt: new Date().toISOString(),
     contacts: [...state.contacts.values()],
@@ -877,6 +896,9 @@ async function exportDatabase() {
 }
 
 async function importDatabase(file) {
+  if (!state.db) {
+    throw new Error("База данных недоступна");
+  }
   const text = await file.text();
   const parsed = JSON.parse(text);
 
@@ -1019,8 +1041,13 @@ window.addEventListener("beforeunload", () => {
 });
 
 async function bootstrap() {
-  state.db = await openDatabase();
-  await loadDatabaseState();
+  try {
+    state.db = await openDatabase();
+    await loadDatabaseState();
+  } catch (error) {
+    state.db = null;
+    logLine("error", `IndexedDB недоступна, приложение работает без сохранения: ${error.message}`);
+  }
   initializeUi();
 
   if (!supportsWebSerial()) {
