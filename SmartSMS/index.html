@@ -1,1138 +1,130 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SmartSMS — реальный GSM модем</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    :root {
-      --bg: #f1f5f9;
-      --sidebar-bg: #ffffff;
-      --chat-bg: #ffffff;
-      --accent: #2563eb;
-      --accent-light: #dbeafe;
-      --text: #0f172a;
-      --text-light: #475569;
-      --border: #e2e8f0;
-      --success: #10b981;
-      --danger: #ef4444;
-      --warning: #f59e0b;
-    }
-
-    body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      overflow: hidden;
-    }
-
-    .layout {
-      display: flex;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* ===== SIDEBAR ===== */
-    .sidebar {
-      width: 380px;
-      background: var(--sidebar-bg);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .sidebar-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
-      background: #fafcff;
-    }
-
-    .connection-dot {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 500;
-      font-size: 0.9rem;
-    }
-
-    .dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #94a3b8;
-      box-shadow: 0 0 0 1px white, 0 0 0 2px rgba(0,0,0,0.1);
-    }
-
-    .dot.connected { background: var(--success); }
-    .dot.disconnected { background: #94a3b8; }
-    .dot.warning { background: var(--warning); }
-
-    .app-brand {
-      font-weight: 600;
-      color: var(--accent);
-      background: var(--accent-light);
-      padding: 4px 12px;
-      border-radius: 40px;
-      font-size: 0.85rem;
-    }
-
-    .nav-tabs {
-      display: flex;
-      border-bottom: 1px solid var(--border);
-      background: white;
-    }
-
-    .nav-tab {
-      flex: 1;
-      background: transparent;
-      border: none;
-      padding: 14px 0;
-      font-weight: 600;
-      font-size: 0.95rem;
-      color: var(--text-light);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-    }
-
-    .nav-tab:hover {
-      color: var(--accent);
-      background: #f8fafc;
-    }
-
-    .nav-tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-      background: white;
-    }
-
-    .panel {
-      flex: 1;
-      display: none;
-      flex-direction: column;
-      overflow-y: auto;
-    }
-
-    .panel.active {
-      display: flex;
-    }
-
-    /* ===== ЧАТЫ ===== */
-    .chats-header {
-      padding: 18px 16px 12px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .chats-header h3 {
-      font-size: 1.2rem;
-      font-weight: 600;
-    }
-
-    .new-chat-btn {
-      background: var(--accent);
-      color: white;
-      border: none;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      font-size: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 4px 8px rgba(37,99,235,0.2);
-    }
-
-    .new-chat-btn:hover {
-      background: #1d4ed8;
-    }
-
-    .new-chat-panel {
-      background: white;
-      border-bottom: 1px solid var(--border);
-      padding: 14px 18px;
-      display: none;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .new-chat-panel.visible {
-      display: flex;
-    }
-
-    .phone-input-row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .phone-input-row input {
-      flex: 1;
-      padding: 12px 16px;
-      border: 1px solid var(--border);
-      border-radius: 30px;
-      font-size: 1rem;
-      outline: none;
-    }
-
-    .phone-input-row input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-light);
-    }
-
-    .phone-input-row button {
-      background: var(--accent);
-      color: white;
-      border: none;
-      border-radius: 30px;
-      padding: 0 24px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .chat-list {
-      flex: 1;
-      padding: 12px;
-      overflow-y: auto;
-    }
-
-    .chat-item {
-      padding: 14px 16px;
-      border-radius: 14px;
-      background: #f9f9fc;
-      margin-bottom: 6px;
-      border-left: 3px solid transparent;
-      cursor: pointer;
-    }
-
-    .chat-item:hover {
-      background: #f1f5f9;
-    }
-
-    .chat-item.active-chat {
-      background: var(--accent-light);
-      border-left-color: var(--accent);
-    }
-
-    .chat-item .number {
-      font-weight: 600;
-      font-size: 1.05rem;
-    }
-
-    .chat-item .preview {
-      font-size: 0.85rem;
-      color: var(--text-light);
-      margin-top: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .unread-badge {
-      background: var(--accent);
-      color: white;
-      border-radius: 20px;
-      padding: 2px 8px;
-      font-size: 0.7rem;
-      margin-left: 8px;
-    }
-
-    /* ===== НАСТРОЙКИ ===== */
-    .settings-wrapper {
-      padding: 24px;
-    }
-
-    .settings-title {
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin-bottom: 24px;
-    }
-
-    .btn {
-      padding: 12px 18px;
-      border: none;
-      border-radius: 40px;
-      font-weight: 500;
-      cursor: pointer;
-      background: #eef2f6;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-      width: 100%;
-      margin-bottom: 16px;
-    }
-
-    .btn-secondary {
-      background: #e5e7eb;
-      color: var(--text);
-    }
-
-    .status-bar {
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      margin: 16px 0;
-      font-weight: 500;
-    }
-
-    .status-connected {
-      background: #ecfdf5;
-      color: #065f46;
-    }
-
-    .status-disconnected {
-      background: #fef2f2;
-      color: #991b1b;
-    }
-
-    .baud-selector {
-      margin: 20px 0;
-    }
-
-    .baud-selector select {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      margin-top: 8px;
-    }
-
-    /* ===== MAIN ===== */
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: var(--chat-bg);
-    }
-
-    .main-header {
-      height: 68px;
-      border-bottom: 1px solid var(--border);
-      padding: 0 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: white;
-    }
-
-    .current-chat-title {
-      font-size: 1.2rem;
-      font-weight: 600;
-    }
-
-    .chat-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .icon-btn {
-      background: transparent;
-      border: none;
-      font-size: 1.3rem;
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-    }
-
-    .icon-btn:hover {
-      background: #f1f5f9;
-    }
-
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 28px;
-      background: #f9f9fe;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .message {
-      max-width: 70%;
-      padding: 12px 16px;
-      border-radius: 20px;
-      word-wrap: break-word;
-    }
-
-    .message.incoming {
-      align-self: flex-start;
-      background: white;
-      border: 1px solid var(--border);
-      border-bottom-left-radius: 4px;
-    }
-
-    .message.outgoing {
-      align-self: flex-end;
-      background: var(--accent);
-      color: white;
-      border-bottom-right-radius: 4px;
-    }
-
-    .message-time {
-      font-size: 0.7rem;
-      opacity: 0.7;
-      margin-top: 4px;
-      text-align: right;
-    }
-
-    .empty-chat {
-      color: var(--text-light);
-      text-align: center;
-      margin-top: 40px;
-      font-style: italic;
-    }
-
-    .input-zone {
-      padding: 16px 24px;
-      border-top: 1px solid var(--border);
-      background: white;
-    }
-
-    .input-wrapper {
-      display: flex;
-      align-items: center;
-      background: #f1f5f9;
-      border-radius: 40px;
-      padding: 4px 4px 4px 18px;
-    }
-
-    .message-field {
-      flex: 1;
-      border: none;
-      background: transparent;
-      padding: 12px 0;
-      font-size: 1rem;
-      resize: none;
-      outline: none;
-    }
-
-    .send-btn {
-      width: 46px;
-      height: 46px;
-      background: var(--accent);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      font-size: 1.4rem;
-      cursor: pointer;
-      margin-left: 8px;
-    }
-
-    .send-btn:disabled {
-      background: #cbd5e1;
-      cursor: not-allowed;
-    }
-
-    /* Лог */
-    .log-section {
-      border-top: 1px solid var(--border);
-      background: #0b1120;
-      color: #cbd5e1;
-    }
-
-    .log-toggle {
-      padding: 12px 24px;
-      background: #1e293b;
-      display: flex;
-      justify-content: space-between;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-
-    .log-body {
-      padding: 16px 24px;
-      max-height: 200px;
-      overflow-y: auto;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      display: none;
-    }
-
-    .log-body.visible {
-      display: block;
-    }
-
-    .log-line {
-      margin: 2px 0;
-    }
-
-    .error-text {
-      color: var(--danger);
-    }
-  </style>
-</head>
-<body>
-<div class="layout">
-
-  <!-- Левая панель -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <div class="connection-dot">
-        <span class="dot disconnected" id="statusDot"></span>
-        <span class="connection-text" id="statusTextSidebar">Не в сети</span>
-      </div>
-      <div class="app-brand">SmartSMS</div>
-    </div>
-
-    <div class="nav-tabs">
-      <button class="nav-tab" data-view="contacts">Контакты</button>
-      <button class="nav-tab active" data-view="chats">Чаты</button>
-      <button class="nav-tab" data-view="settings">Настройки</button>
-      <button class="nav-tab" data-view="search">Поиск</button>
-    </div>
-
-    <!-- Панель ЧАТЫ -->
-    <div class="panel active" id="panel-chats">
-      <div class="chats-header">
-        <h3>Чаты</h3>
-        <button class="new-chat-btn" id="newChatBtn">➕</button>
-      </div>
-
-      <div class="new-chat-panel" id="newChatPanel">
-        <div class="phone-input-row">
-          <input type="tel" id="phoneNumber" placeholder="Номер телефона" />
-          <button id="startChatBtn">Создать</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GSM SMS Messenger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Web Serial + GSM Modem</p>
+          <h1>SMS Messenger</h1>
         </div>
-      </div>
-
-      <div class="chat-list" id="chatList"></div>
-    </div>
-
-    <!-- Панель НАСТРОЙКИ (полная реализация из исходного кода) -->
-    <div class="panel" id="panel-settings">
-      <div class="settings-wrapper">
-        <div class="settings-title">Настройки GSM-модема</div>
-
-        <button class="btn btn-primary" id="btnConnect">🔌 Подключиться к модему</button>
-
-        <div style="display:flex; gap:12px; margin-bottom:24px;">
-          <button class="btn btn-secondary" id="btnDisconnect" disabled>🔌 Отключиться</button>
-          <button class="btn btn-secondary" id="btnTestNetwork" disabled>📶 Проверить сеть</button>
+        <div class="topbar-actions">
+          <label class="baud-select">
+            <span>Скорость</span>
+            <select id="baudRate">
+              <option value="9600">9600</option>
+              <option value="19200">19200</option>
+              <option value="38400">38400</option>
+              <option value="57600">57600</option>
+              <option value="115200" selected>115200</option>
+            </select>
+          </label>
+          <button id="connectBtn" class="primary-btn">Подключить модем</button>
+          <button id="disconnectBtn" class="ghost-btn" disabled>Отключить</button>
         </div>
+      </header>
 
-        <div class="baud-selector">
-          <label>Скорость (auto-baud по умолчанию):</label>
-          <select id="baudRate">
-            <option value="115200">115200 бод</option>
-            <option value="57600">57600 бод</option>
-            <option value="38400">38400 бод</option>
-            <option value="19200">19200 бод</option>
-            <option value="9600">9600 бод</option>
-          </select>
-        </div>
-
-        <div id="connectionStatus" class="status-bar status-disconnected">
-          Статус: не подключено
-        </div>
-
-        <div id="networkStatus" style="font-size:14px; color:var(--text-light); line-height:1.5;">
-          Сеть: —
-        </div>
-      </div>
-    </div>
-
-    <!-- Панели заглушки -->
-    <div class="panel" id="panel-contacts"><div class="placeholder">Контакты</div></div>
-    <div class="panel" id="panel-search"><div class="placeholder">Поиск</div></div>
-  </aside>
-
-  <!-- Правая часть (основной чат) -->
-  <main class="main">
-    <header class="main-header">
-      <span class="current-chat-title" id="currentChatTitle">Выберите чат</span>
-      <div class="chat-actions">
-        <button class="icon-btn" id="clearChatBtn" title="Очистить историю">🗑️</button>
-      </div>
-    </header>
-
-    <div class="messages" id="messages"></div>
-
-    <div class="input-zone">
-      <div class="input-wrapper">
-        <textarea class="message-field" id="messageInput" placeholder="Введите SMS..." rows="1" disabled></textarea>
-        <button class="send-btn" id="sendBtn" disabled>➤</button>
-      </div>
-    </div>
-
-    <!-- Лог AT команд -->
-    <div class="log-section">
-      <div class="log-toggle" id="logToggle">
-        <span>Лог AT-команд</span>
-        <span id="logToggleLabel">показать ▼</span>
-      </div>
-      <div class="log-body" id="logBody">
-        <div id="log"></div>
-      </div>
-    </div>
-  </main>
-
-</div>
-
-<script>
-  (function() {
-    // ========== Переменные для работы с модемом ==========
-    let port = null;
-    let reader = null;
-    let writer = null;
-    let connected = false;
-    let readingActive = false;
-
-    // Элементы
-    const statusDot = document.getElementById('statusDot');
-    const statusTextSidebar = document.getElementById('statusTextSidebar');
-    const connectionStatus = document.getElementById('connectionStatus');
-    const networkStatus = document.getElementById('networkStatus');
-    const logDiv = document.getElementById('log');
-    const btnConnect = document.getElementById('btnConnect');
-    const btnDisconnect = document.getElementById('btnDisconnect');
-    const btnTestNetwork = document.getElementById('btnTestNetwork');
-    const baudSelect = document.getElementById('baudRate');
-
-    // Элементы чатов
-    const chatListEl = document.getElementById('chatList');
-    const messagesEl = document.getElementById('messages');
-    const currentChatTitle = document.getElementById('currentChatTitle');
-    const messageInput = document.getElementById('messageInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const clearChatBtn = document.getElementById('clearChatBtn');
-
-    // Данные
-    let chats = [];
-    let currentChatId = null;
-    let messages = {};
-
-    // ========== Утилиты ==========
-    function log(text, isError = false) {
-      const t = new Date().toLocaleTimeString('ru-RU', { hour12: false });
-      const className = isError ? 'error-text' : '';
-      logDiv.innerHTML += `<div class="log-line ${className}">[${t}] ${text}</div>`;
-      logDiv.scrollTop = logDiv.scrollHeight;
-    }
-
-    function setConnectionStatus(connectedState) {
-      connected = connectedState;
-      const className = connectedState ? 'connected' : 'disconnected';
-      statusDot.className = `dot ${className}`;
-      statusTextSidebar.textContent = connectedState ? 'Подключено' : 'Не в сети';
-      
-      connectionStatus.textContent = connectedState ? 'Статус: подключено' : 'Статус: не подключено';
-      connectionStatus.className = `status-bar status-${className}`;
-
-      btnConnect.disabled = connectedState;
-      btnDisconnect.disabled = !connectedState;
-      btnTestNetwork.disabled = !connectedState;
-
-      if (!connectedState) {
-        messageInput.disabled = true;
-        sendBtn.disabled = true;
-      } else {
-        if (currentChatId) {
-          messageInput.disabled = false;
-          sendBtn.disabled = false;
-        }
-      }
-    }
-
-    // ========== AT команды ==========
-    async function sendATCommand(cmd, timeout = 3000) {
-      if (!writer) return null;
-
-      try {
-        await writer.write(new TextEncoder().encode(cmd + '\r\n'));
-        log(`→ ${cmd}`);
-
-        return new Promise(resolve => {
-          let buffer = '';
-          const timeoutId = setTimeout(() => resolve(buffer), timeout);
-
-          async function readResponse() {
-            try {
-              while (reader) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                
-                buffer += new TextDecoder().decode(value);
-                // Ищем OK или ERROR
-                if (buffer.includes('OK\r\n') || buffer.includes('ERROR\r\n')) {
-                  clearTimeout(timeoutId);
-                  const lines = buffer.trim().split('\r\n');
-                  lines.forEach(line => {
-                    if (line.trim()) log(`← ${line.trim()}`);
-                  });
-                  resolve(buffer);
-                  return;
-                }
-              }
-            } catch (e) {
-              clearTimeout(timeoutId);
-              resolve(buffer);
-            }
-          }
-          readResponse();
-        });
-      } catch (e) {
-        log(`! Ошибка: ${e.message}`, true);
-        return null;
-      }
-    }
-
-    async function initializeModem() {
-      log('Инициализация модема...');
-      await sendATCommand('ATE0'); // Эхо выключить
-      await sendATCommand('AT+CMGF=1'); // Текстовый режим SMS
-      await sendATCommand('AT+CNMI=2,1,0,0,0'); // URC для новых SMS
-      log('Модем готов');
-    }
-
-    async function checkNetwork() {
-      if (!connected) return;
-
-      networkStatus.textContent = 'Проверка сети...';
-
-      const creg = await sendATCommand('AT+CREG?');
-      if (creg) {
-        const match = creg.match(/\+CREG: \d+,(\d+)/);
-        if (match) {
-          const status = parseInt(match[1]);
-          let statusText = '';
-          if (status === 1) statusText = 'зарегистрирован (домашняя сеть)';
-          else if (status === 5) statusText = 'зарегистрирован (роуминг)';
-          else if (status === 2) statusText = 'поиск сети...';
-          else statusText = 'не зарегистрирован';
-          
-          networkStatus.textContent = `Сеть: ${statusText}`;
-        }
-      }
-
-      const csq = await sendATCommand('AT+CSQ');
-      if (csq) {
-        const match = csq.match(/\+CSQ: (\d+),/);
-        if (match) {
-          const rssi = parseInt(match[1]);
-          let signalText = '';
-          if (rssi === 99) signalText = 'нет сигнала';
-          else signalText = `${Math.round(rssi/31*100)}% (${rssi}/31)`;
-          
-          networkStatus.textContent += ` | Сигнал: ${signalText}`;
-        }
-      }
-    }
-
-    // ========== Отправка SMS ==========
-    async function sendSMS(phone, text) {
-      if (!connected || !writer) {
-        log('Модем не подключен', true);
-        return false;
-      }
-
-      try {
-        log(`📤 Отправка SMS на ${phone}: "${text}"`);
-        
-        await sendATCommand(`AT+CMGS="${phone}"`, 1000);
-        // Отправляем текст и Ctrl+Z (0x1A)
-        await writer.write(new TextEncoder().encode(text + '\x1A'));
-        
-        // Ждём ответ +CMGS: 
-        let response = '';
-        const timeout = 10000;
-        const start = Date.now();
-        
-        while (Date.now() - start < timeout) {
-          if (!reader) break;
-          const { value, done } = await reader.read();
-          if (done) break;
-          
-          response += new TextDecoder().decode(value);
-          if (response.includes('+CMGS:')) {
-            log(`✓ SMS отправлено успешно`);
-            return true;
-          }
-          if (response.includes('ERROR')) {
-            log(`✗ Ошибка отправки SMS`, true);
-            return false;
-          }
-        }
-        
-        log(`✗ Таймаут отправки SMS`, true);
-        return false;
-      } catch (e) {
-        log(`✗ Ошибка: ${e.message}`, true);
-        return false;
-      }
-    }
-
-    // ========== Чтение входящих SMS ==========
-    async function startReadingSMS() {
-      if (readingActive || !reader) return;
-      readingActive = true;
-
-      try {
-        while (reader && connected) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          
-          const data = new TextDecoder().decode(value);
-          const lines = data.split('\r\n');
-          
-          for (const line of lines) {
-            if (!line.trim()) continue;
-            
-            log(`📨 URC: ${line.trim()}`);
-            
-            // Обработка +CMTI: новые SMS
-            const cmtiMatch = line.match(/\+CMTI:\s*"([^"]+)",(\d+)/);
-            if (cmtiMatch) {
-              const storage = cmtiMatch[1];
-              const index = cmtiMatch[2];
-              log(`Новое SMS в ${storage}, индекс ${index}`);
-              
-              // Читаем SMS
-              const smsData = await sendATCommand(`AT+CMGR=${index}`);
-              if (smsData) {
-                parseAndAddIncomingSMS(smsData);
-                // Удаляем после прочтения
-                await sendATCommand(`AT+CMGD=${index}`);
-              }
-            }
-          }
-        }
-      } catch (e) {
-        log(`Ошибка чтения: ${e.message}`, true);
-      } finally {
-        readingActive = false;
-      }
-    }
-
-    function parseAndAddIncomingSMS(smsData) {
-      // Парсим +CMGR: "REC UNREAD","+79161234567",,"24/03/16,12:30:45+04"
-      const lines = smsData.split('\r\n');
-      let phone = null;
-      let text = null;
-      
-      for (const line of lines) {
-        const headerMatch = line.match(/\+CMGR:\s*"[^"]*","([^"]+)"/);
-        if (headerMatch) {
-          phone = headerMatch[1].replace(/\D/g, '');
-          if (phone.length > 10) phone = '+' + phone;
-        } else if (line && !line.startsWith('+CMGR:') && !line.startsWith('OK') && !line.startsWith('ERROR')) {
-          text = line.trim();
-        }
-      }
-      
-      if (phone && text) {
-        addIncomingMessage(phone, text);
-      }
-    }
-
-    // ========== Управление чатами ==========
-    function addIncomingMessage(phone, text) {
-      // Ищем существующий чат
-      let chat = chats.find(c => c.phone.replace(/\D/g, '') === phone.replace(/\D/g, ''));
-      
-      if (!chat) {
-        // Создаём новый чат
-        chat = {
-          id: Date.now().toString(),
-          phone: phone,
-          lastMessage: text,
-          unread: 1
-        };
-        chats.unshift(chat);
-        messages[chat.id] = [];
-      } else {
-        chat.lastMessage = text;
-        if (currentChatId !== chat.id) {
-          chat.unread = (chat.unread || 0) + 1;
-        }
-      }
-
-      // Добавляем сообщение
-      if (!messages[chat.id]) messages[chat.id] = [];
-      
-      const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-      messages[chat.id].push({
-        text: text,
-        time: time,
-        type: 'incoming'
-      });
-
-      // Если это текущий чат, показываем
-      if (currentChatId === chat.id) {
-        renderMessages(chat.id);
-      }
-
-      renderChatList();
-      log(`📥 Новое SMS от ${phone}`);
-    }
-
-    function renderChatList() {
-      if (!chatListEl) return;
-
-      if (chats.length === 0) {
-        chatListEl.innerHTML = '<div class="placeholder">Нет чатов. Создайте новый.</div>';
-        return;
-      }
-
-      chatListEl.innerHTML = chats.map(chat => {
-        const activeClass = currentChatId === chat.id ? 'active-chat' : '';
-        const unreadBadge = chat.unread > 0 ? `<span class="unread-badge">${chat.unread}</span>` : '';
-        return `
-          <div class="chat-item ${activeClass}" data-chat-id="${chat.id}">
-            <div class="number">${chat.phone} ${unreadBadge}</div>
-            <div class="preview">${chat.lastMessage || 'Нет сообщений'}</div>
+      <main class="workspace">
+        <aside class="sidebar">
+          <div class="sidebar-card compose-card">
+            <label for="newChatNumber">Новый чат</label>
+            <div class="compose-row">
+              <input
+                id="newChatNumber"
+                type="tel"
+                placeholder="+79991234567"
+                autocomplete="off"
+              />
+              <button id="createChatBtn" class="primary-btn">Открыть</button>
+            </div>
           </div>
-        `;
-      }).join('');
 
-      document.querySelectorAll('.chat-item').forEach(item => {
-        item.addEventListener('click', () => {
-          const chatId = item.dataset.chatId;
-          switchToChat(chatId);
-        });
-      });
-    }
+          <div class="sidebar-card chats-card">
+            <div class="section-title">
+              <h2>Чаты</h2>
+              <span id="chatCount">0</span>
+            </div>
+            <div id="chatList" class="chat-list empty-state">
+              <p>Пока нет диалогов. Подключите модем и создайте чат.</p>
+            </div>
+          </div>
+        </aside>
 
-    function switchToChat(chatId) {
-      currentChatId = chatId;
-      const chat = chats.find(c => c.id === chatId);
-      if (!chat) return;
+        <section class="chat-panel">
+          <div class="chat-header">
+            <div>
+              <p class="eyebrow">Активный диалог</p>
+              <h2 id="activeChatTitle">Выберите чат</h2>
+            </div>
+            <div class="chat-header-actions">
+              <button id="refreshInboxBtn" class="ghost-btn" disabled>Обновить входящие</button>
+            </div>
+          </div>
 
-      currentChatTitle.textContent = chat.phone;
-      chat.unread = 0;
+          <div id="messageList" class="message-list empty-state">
+            <p>Здесь будут сообщения выбранного диалога.</p>
+          </div>
 
-      renderMessages(chatId);
-      renderChatList();
+          <form id="composerForm" class="composer">
+            <textarea
+              id="messageInput"
+              rows="3"
+              placeholder="Введите SMS. Поддерживаются кириллица и латиница."
+              disabled
+            ></textarea>
+            <div class="composer-actions">
+              <div class="composer-hint">Отправка идет через AT-команды в UCS2.</div>
+              <button id="sendBtn" type="submit" class="primary-btn" disabled>
+                Отправить SMS
+              </button>
+            </div>
+          </form>
+        </section>
+      </main>
 
-      if (connected) {
-        messageInput.disabled = false;
-        sendBtn.disabled = false;
-        messageInput.focus();
-      }
-    }
+      <section class="log-panel">
+        <div class="section-title">
+          <h2>Лог модема</h2>
+          <button id="clearLogBtn" class="ghost-btn">Очистить</button>
+        </div>
+        <div id="logOutput" class="log-output"></div>
+      </section>
+    </div>
 
-    function renderMessages(chatId) {
-      const chatMessages = messages[chatId] || [];
-      messagesEl.innerHTML = '';
+    <template id="chatItemTemplate">
+      <button class="chat-item" type="button">
+        <div class="chat-item-main">
+          <strong class="chat-item-title"></strong>
+          <span class="chat-item-preview"></span>
+        </div>
+        <div class="chat-item-meta">
+          <span class="chat-item-time"></span>
+          <span class="chat-item-badge hidden">0</span>
+        </div>
+      </button>
+    </template>
 
-      if (chatMessages.length === 0) {
-        messagesEl.innerHTML = '<div class="empty-chat">Нет сообщений</div>';
-        return;
-      }
+    <template id="messageTemplate">
+      <article class="message-bubble">
+        <div class="message-meta">
+          <span class="message-direction"></span>
+          <time class="message-time"></time>
+        </div>
+        <p class="message-text"></p>
+      </article>
+    </template>
 
-      chatMessages.forEach(msg => {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `message ${msg.type}`;
-        msgDiv.innerHTML = `
-          <div>${msg.text}</div>
-          <div class="message-time">${msg.time}</div>
-        `;
-        messagesEl.appendChild(msgDiv);
-      });
-
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function createNewChat(phone) {
-      const id = Date.now().toString();
-      const newChat = {
-        id,
-        phone,
-        lastMessage: 'Новый чат',
-        unread: 0
-      };
-
-      chats.unshift(newChat);
-      messages[id] = [];
-
-      renderChatList();
-      switchToChat(id);
-    }
-
-    // ========== Подключение к модему ==========
-    const speeds = [115200, 57600, 38400, 19200, 9600];
-
-    async function autoBaudConnect() {
-      for (let speed of speeds) {
-        log(`Попытка подключения на ${speed} бод...`);
-
-        try {
-          await port.open({ 
-            baudRate: speed, 
-            dataBits: 8, 
-            stopBits: 1, 
-            parity: 'none',
-            flowControl: 'none'
-          });
-
-          writer = port.writable.getWriter();
-          reader = port.readable.getReader();
-
-          const reply = await sendATCommand('AT', 1000);
-          if (reply && reply.includes('OK')) {
-            log(`✓ Успешно на ${speed} бод`);
-            return true;
-          }
-
-          writer.releaseLock();
-          reader.releaseLock();
-          await port.close();
-        } catch (e) {
-          log(`  × ${e.message}`);
-        }
-      }
-      return false;
-    }
-
-    btnConnect.onclick = async () => {
-      try {
-        port = await navigator.serial.requestPort();
-        log('Порт выбран');
-
-        const ok = await autoBaudConnect();
-
-        if (ok) {
-          setConnectionStatus(true);
-          await initializeModem();
-          await checkNetwork();
-          startReadingSMS(); // Запускаем постоянное чтение
-        } else {
-          log('✗ Не удалось подключиться', true);
-        }
-      } catch (e) {
-        log(`✗ Ошибка: ${e.message}`, true);
-      }
-    };
-
-    btnDisconnect.onclick = async () => {
-      readingActive = false;
-      
-      if (reader) {
-        reader.releaseLock();
-        reader = null;
-      }
-      if (writer) {
-        writer.releaseLock();
-        writer = null;
-      }
-      if (port) {
-        await port.close();
-        port = null;
-      }
-
-      setConnectionStatus(false);
-      log('Отключено от модема');
-      networkStatus.textContent = 'Сеть: —';
-    };
-
-    btnTestNetwork.onclick = checkNetwork;
-
-    // ========== Обработчики интерфейса ==========
-    document.getElementById('newChatBtn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      document.getElementById('newChatPanel').classList.toggle('visible');
-    });
-
-    document.getElementById('startChatBtn').addEventListener('click', () => {
-      const phone = document.getElementById('phoneNumber').value.trim();
-      if (!phone) {
-        alert('Введите номер');
-        return;
-      }
-      createNewChat(phone);
-      document.getElementById('newChatPanel').classList.remove('visible');
-      document.getElementById('phoneNumber').value = '';
-    });
-
-    sendBtn.addEventListener('click', async () => {
-      const text = messageInput.value.trim();
-      if (!text || !currentChatId || !connected) return;
-
-      const chat = chats.find(c => c.id === currentChatId);
-      if (!chat) return;
-
-      // Отправляем SMS
-      const success = await sendSMS(chat.phone, text);
-
-      if (success) {
-        // Добавляем в историю
-        const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        if (!messages[currentChatId]) messages[currentChatId] = [];
-        
-        messages[currentChatId].push({
-          text: text,
-          time: time,
-          type: 'outgoing'
-        });
-
-        chat.lastMessage = text;
-        renderMessages(currentChatId);
-        renderChatList();
-        messageInput.value = '';
-      }
-    });
-
-    messageInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendBtn.click();
-      }
-    });
-
-    clearChatBtn.addEventListener('click', () => {
-      if (!currentChatId) return;
-      if (confirm('Очистить историю?')) {
-        messages[currentChatId] = [];
-        renderMessages(currentChatId);
-      }
-    });
-
-    // Лог
-    document.getElementById('logToggle').addEventListener('click', () => {
-      const body = document.getElementById('logBody');
-      const label = document.getElementById('logToggleLabel');
-      body.classList.toggle('visible');
-      label.textContent = body.classList.contains('visible') ? 'скрыть ▲' : 'показать ▼';
-    });
-
-    // Навигация по вкладкам
-    document.querySelectorAll('[data-view]').forEach(el => {
-      el.addEventListener('click', () => {
-        document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-        el.classList.add('active');
-
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-        document.getElementById(`panel-${el.dataset.view}`).classList.add('active');
-      });
-    });
-
-    // Закрытие панели нового чата
-    document.addEventListener('click', (e) => {
-      const panel = document.getElementById('newChatPanel');
-      const btn = document.getElementById('newChatBtn');
-      if (!panel.contains(e.target) && !btn.contains(e.target)) {
-        panel.classList.remove('visible');
-      }
-    });
-
-    // Инициализация
-    setConnectionStatus(false);
-  })();
-</script>
-</body>
+    <script type="module" src="./app.js"></script>
+  </body>
 </html>
