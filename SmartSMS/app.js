@@ -1,11 +1,10 @@
-const STORAGE_KEY = "smartsms-state-v1";
+const DB_NAME = "smartsms-db";
+const DB_VERSION = 1;
 
 const dom = {
   searchInput: document.querySelector("#searchInput"),
   tabButtons: [...document.querySelectorAll(".tab-btn")],
   tabPanels: [...document.querySelectorAll(".tab-panel")],
-  chatCount: document.querySelector("#chatCount"),
-  contactCount: document.querySelector("#contactCount"),
   chatList: document.querySelector("#chatList"),
   contactList: document.querySelector("#contactList"),
   createChatBtn: document.querySelector("#createChatBtn"),
@@ -14,11 +13,11 @@ const dom = {
   contactPhoneInput: document.querySelector("#contactPhoneInput"),
   saveContactBtn: document.querySelector("#saveContactBtn"),
   baudRate: document.querySelector("#baudRate"),
-  storageSelect: document.querySelector("#storageSelect"),
-  autoSyncCheckbox: document.querySelector("#autoSyncCheckbox"),
   connectBtn: document.querySelector("#connectBtn"),
   disconnectBtn: document.querySelector("#disconnectBtn"),
-  refreshInboxBtn: document.querySelector("#refreshInboxBtn"),
+  exportDbBtn: document.querySelector("#exportDbBtn"),
+  importDbBtn: document.querySelector("#importDbBtn"),
+  importDbInput: document.querySelector("#importDbInput"),
   modemStatus: document.querySelector("#modemStatus"),
   activeChatTitle: document.querySelector("#activeChatTitle"),
   activeChatMeta: document.querySelector("#activeChatMeta"),
@@ -50,56 +49,121 @@ const state = {
   activeChatId: null,
   modemReady: false,
   isSending: false,
-  storage: "SM",
+  baudRate: "115200",
+  logVisible: true,
   autoSync: true,
   knownIndexes: new Set(),
-  logVisible: true,
+  db: null,
 };
 
-function loadPersistedState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return;
-    }
+function openDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    const parsed = JSON.parse(raw);
-    for (const contact of parsed.contacts ?? []) {
-      state.contacts.set(contact.phone, contact);
-    }
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains("contacts")) {
+        db.createObjectStore("contacts", { keyPath: "phone" });
+      }
+      if (!db.objectStoreNames.contains("chats")) {
+        db.createObjectStore("chats", { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains("settings")) {
+        db.createObjectStore("settings", { keyPath: "key" });
+      }
+    };
 
-    for (const chat of parsed.chats ?? []) {
-      state.chats.set(chat.id, {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function transaction(storeNames, mode = "readonly") {
+  return state.db.transaction(storeNames, mode);
+}
+
+function idbGetAll(storeName) {
+  return new Promise((resolve, reject) => {
+    const request = transaction([storeName]).objectStore(storeName).getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function idbPut(storeName, value) {
+  return new Promise((resolve, reject) => {
+    const request = transaction([storeName], "readwrite").objectStore(storeName).put(value);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function idbClear(storeName) {
+  return new Promise((resolve, reject) => {
+    const request = transaction([storeName], "readwrite").objectStore(storeName).clear();
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function loadDatabaseState() {
+  const [contacts, chats, settings] = await Promise.all([
+    idbGetAll("contacts"),
+    idbGetAll("chats"),
+    idbGetAll("settings"),
+  ]);
+
+  state.contacts = new Map(
+    contacts.map((contact) => [
+      contact.phone,
+      {
+        ...contact,
+      },
+    ])
+  );
+
+  state.chats = new Map(
+    chats.map((chat) => [
+      chat.id,
+      {
         ...chat,
         updatedAt: new Date(chat.updatedAt),
         messages: (chat.messages ?? []).map((message) => ({
           ...message,
           timestamp: new Date(message.timestamp),
         })),
-      });
-    }
+      },
+    ])
+  );
 
-    state.activeChatId = parsed.activeChatId ?? null;
-    state.storage = parsed.storage ?? "SM";
-    state.autoSync = parsed.autoSync ?? true;
-    state.logVisible = parsed.logVisible ?? true;
-  } catch {
-    // ignore malformed local state
-  }
+  const settingsRecord = settings.find((item) => item.key === "app");
+  state.activeChatId = settingsRecord?.activeChatId ?? null;
+  state.baudRate = settingsRecord?.baudRate ?? "115200";
+  state.logVisible = settingsRecord?.logVisible ?? true;
 }
 
-function persistState() {
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({
-      contacts: [...state.contacts.values()],
-      chats: [...state.chats.values()],
-      activeChatId: state.activeChatId,
-      storage: state.storage,
-      autoSync: state.autoSync,
-      logVisible: state.logVisible,
-    })
-  );
+async function saveSettings() {
+  await idbPut("settings", {
+    key: "app",
+    activeChatId: state.activeChatId,
+    baudRate: state.baudRate,
+    logVisible: state.logVisible,
+  });
+}
+
+async function saveChat(chat) {
+  await idbPut("chats", {
+    ...chat,
+    updatedAt: new Date(chat.updatedAt).toISOString(),
+    messages: chat.messages.map((message) => ({
+      ...message,
+      timestamp: new Date(message.timestamp).toISOString(),
+    })),
+  });
+}
+
+async function saveContact(contact) {
+  await idbPut("contacts", contact);
 }
 
 function normalizePhone(value) {
@@ -112,6 +176,11 @@ function digitsOnly(phone) {
 
 function displayName(phone) {
   return state.contacts.get(phone)?.name || phone || "Неизвестный номер";
+}
+
+function initials(phone) {
+  const label = displayName(phone).trim();
+  return label.slice(0, 1).toUpperCase() || "#";
 }
 
 function formatTime(date) {
@@ -147,7 +216,11 @@ function updateComposerState() {
   dom.messageInput.disabled = !ready;
   dom.sendBtn.disabled = !ready || state.isSending;
   dom.disconnectBtn.disabled = !state.port;
-  dom.refreshInboxBtn.disabled = !state.modemReady;
+}
+
+function applyLogVisibility() {
+  dom.logOutput.classList.toggle("hidden", !state.logVisible);
+  dom.toggleLogBtn.textContent = state.logVisible ? "Скрыть" : "Показать";
 }
 
 function switchTab(tab) {
@@ -180,7 +253,7 @@ function ensureChat(phone) {
   return state.chats.get(normalized);
 }
 
-function setActiveChat(phone) {
+async function setActiveChat(phone) {
   const chat = ensureChat(phone);
   if (!chat) {
     return;
@@ -188,13 +261,14 @@ function setActiveChat(phone) {
 
   state.activeChatId = chat.id;
   chat.unread = 0;
-  persistState();
+  await saveChat(chat);
+  await saveSettings();
   renderLists();
   renderMessages();
   updateComposerState();
 }
 
-function addMessage({ phone, text, direction, timestamp = new Date(), index = null, status = "" }) {
+async function addMessage({ phone, text, direction, timestamp = new Date(), index = null, status = "" }) {
   const chat = ensureChat(phone);
   if (!chat) {
     return;
@@ -230,9 +304,10 @@ function addMessage({ phone, text, direction, timestamp = new Date(), index = nu
 
   if (!state.activeChatId) {
     state.activeChatId = chat.id;
+    await saveSettings();
   }
 
-  persistState();
+  await saveChat(chat);
   renderLists();
   renderMessages();
 }
@@ -247,8 +322,6 @@ function renderChats() {
       return !query || name.includes(query) || chat.phone.includes(query) || lastText.includes(query);
     });
 
-  dom.chatCount.textContent = String(chats.length);
-
   if (!chats.length) {
     dom.chatList.className = "entity-list empty-state";
     dom.chatList.innerHTML = "<p>Подходящие чаты не найдены.</p>";
@@ -261,6 +334,7 @@ function renderChats() {
   for (const chat of chats) {
     const node = dom.chatItemTemplate.content.firstElementChild.cloneNode(true);
     node.classList.toggle("active", chat.id === state.activeChatId);
+    node.querySelector(".entity-avatar").textContent = initials(chat.phone);
     node.querySelector(".entity-title").textContent = displayName(chat.phone);
     node.querySelector(".entity-subtitle").textContent = chat.messages.at(-1)?.text || chat.phone;
     node.querySelector(".entity-time").textContent = formatTime(chat.updatedAt);
@@ -271,7 +345,9 @@ function renderChats() {
       badge.classList.remove("hidden");
     }
 
-    node.addEventListener("click", () => setActiveChat(chat.phone));
+    node.addEventListener("click", () => {
+      setActiveChat(chat.phone).catch((error) => logLine("error", error.message));
+    });
     dom.chatList.append(node);
   }
 }
@@ -281,8 +357,6 @@ function renderContacts() {
   const contacts = [...state.contacts.values()].filter((contact) => {
     return !query || contact.name.toLowerCase().includes(query) || contact.phone.includes(query);
   });
-
-  dom.contactCount.textContent = String(contacts.length);
 
   if (!contacts.length) {
     dom.contactList.className = "entity-list empty-state";
@@ -295,11 +369,12 @@ function renderContacts() {
 
   for (const contact of contacts) {
     const node = dom.contactItemTemplate.content.firstElementChild.cloneNode(true);
+    node.querySelector(".entity-avatar").textContent = initials(contact.phone);
     node.querySelector(".entity-title").textContent = contact.name;
     node.querySelector(".entity-subtitle").textContent = contact.phone;
     node.addEventListener("click", () => {
       ensureChat(contact.phone);
-      setActiveChat(contact.phone);
+      setActiveChat(contact.phone).catch((error) => logLine("error", error.message));
       switchTab("chats");
     });
     dom.contactList.append(node);
@@ -337,11 +412,6 @@ function renderMessages() {
 function renderLists() {
   renderChats();
   renderContacts();
-}
-
-function applyLogVisibility() {
-  dom.logOutput.classList.toggle("hidden", !state.logVisible);
-  dom.toggleLogBtn.textContent = state.logVisible ? "Скрыть" : "Показать";
 }
 
 function supportsWebSerial() {
@@ -624,7 +694,7 @@ async function sendSms(phone, text) {
 
     await writeRaw(`${pdu}\u001A`);
     await submitResult;
-    addMessage({
+    await addMessage({
       phone: normalizedPhone,
       text,
       direction: "outgoing",
@@ -645,19 +715,16 @@ async function sendSms(phone, text) {
 }
 
 async function configureModem() {
-  const storage = dom.storageSelect.value;
   await sendCommand("AT");
   await sendCommand("ATE0");
   await sendCommand("AT+CMGF=1");
   await sendCommand('AT+CSCS="UCS2"');
   await sendCommand("AT+CSMP=17,167,0,8");
-  await sendCommand(`AT+CPMS="${storage}","${storage}","${storage}"`);
+  await sendCommand('AT+CPMS="SM","SM","SM"');
   await sendCommand("AT+CNMI=2,1,0,0,0");
-  state.storage = storage;
   state.modemReady = true;
   setStatus("Модем подключен", true);
-  logLine("rx", "Модем инициализирован. Прием SMS работает в текстовом UCS2, отправка в PDU/UCS2.");
-  persistState();
+  logLine("rx", "Модем инициализирован. Автоприем входящих включен постоянно.");
   updateComposerState();
 }
 
@@ -673,7 +740,7 @@ async function readMessageByIndex(index) {
   }
 
   state.knownIndexes.add(index);
-  addMessage({
+  await addMessage({
     phone: parsed.phone,
     text: parsed.text,
     direction: "incoming",
@@ -691,7 +758,7 @@ async function refreshInbox() {
     if (entry.index !== null) {
       state.knownIndexes.add(entry.index);
     }
-    addMessage({
+    await addMessage({
       phone: entry.phone,
       text: entry.text,
       direction: entry.status.includes("STO") ? "outgoing" : "incoming",
@@ -710,6 +777,9 @@ async function connectModem() {
   }
 
   const baudRate = Number.parseInt(dom.baudRate.value, 10);
+  state.baudRate = dom.baudRate.value;
+  await saveSettings();
+
   state.port = await navigator.serial.requestPort();
   await state.port.open({ baudRate, bufferSize: 4096 });
 
@@ -760,7 +830,7 @@ async function disconnectModem() {
   }
 }
 
-function saveContact() {
+async function handleSaveContact() {
   const name = dom.contactNameInput.value.trim();
   const phone = normalizePhone(dom.contactPhoneInput.value);
 
@@ -769,16 +839,75 @@ function saveContact() {
     return;
   }
 
-  state.contacts.set(phone, { name, phone });
+  const contact = { name, phone };
+  state.contacts.set(phone, contact);
+  await saveContact(contact);
   dom.contactNameInput.value = "";
   dom.contactPhoneInput.value = "";
-  persistState();
   renderLists();
 }
 
+async function exportDatabase() {
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    contacts: [...state.contacts.values()],
+    chats: [...state.chats.values()].map((chat) => ({
+      ...chat,
+      updatedAt: new Date(chat.updatedAt).toISOString(),
+      messages: chat.messages.map((message) => ({
+        ...message,
+        timestamp: new Date(message.timestamp).toISOString(),
+      })),
+    })),
+    settings: {
+      activeChatId: state.activeChatId,
+      baudRate: state.baudRate,
+      logVisible: state.logVisible,
+    },
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `smartsms-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  logLine("rx", "Экспорт базы данных выполнен");
+}
+
+async function importDatabase(file) {
+  const text = await file.text();
+  const parsed = JSON.parse(text);
+
+  await Promise.all([idbClear("contacts"), idbClear("chats"), idbClear("settings")]);
+
+  for (const contact of parsed.contacts ?? []) {
+    await idbPut("contacts", contact);
+  }
+
+  for (const chat of parsed.chats ?? []) {
+    await idbPut("chats", chat);
+  }
+
+  await idbPut("settings", {
+    key: "app",
+    activeChatId: parsed.settings?.activeChatId ?? null,
+    baudRate: parsed.settings?.baudRate ?? "115200",
+    logVisible: parsed.settings?.logVisible ?? true,
+  });
+
+  await loadDatabaseState();
+  dom.baudRate.value = state.baudRate;
+  applyLogVisibility();
+  renderLists();
+  renderMessages();
+  updateComposerState();
+  logLine("rx", "Импорт базы данных завершен");
+}
+
 function initializeUi() {
-  dom.storageSelect.value = state.storage;
-  dom.autoSyncCheckbox.checked = state.autoSync;
+  dom.baudRate.value = state.baudRate;
   applyLogVisibility();
   renderLists();
   renderMessages();
@@ -801,16 +930,21 @@ dom.createChatBtn.addEventListener("click", () => {
     logLine("error", "Введите номер для открытия чата");
     return;
   }
+
   ensureChat(phone);
-  setActiveChat(phone);
+  saveChat(state.chats.get(phone))
+    .then(() => setActiveChat(phone))
+    .catch((error) => logLine("error", error.message));
   dom.newChatNumber.value = "";
 });
 
-dom.saveContactBtn.addEventListener("click", saveContact);
+dom.saveContactBtn.addEventListener("click", () => {
+  handleSaveContact().catch((error) => logLine("error", error.message));
+});
 
-dom.autoSyncCheckbox.addEventListener("change", () => {
-  state.autoSync = dom.autoSyncCheckbox.checked;
-  persistState();
+dom.baudRate.addEventListener("change", () => {
+  state.baudRate = dom.baudRate.value;
+  saveSettings().catch((error) => logLine("error", error.message));
 });
 
 dom.connectBtn.addEventListener("click", async () => {
@@ -826,20 +960,8 @@ dom.connectBtn.addEventListener("click", async () => {
   }
 });
 
-dom.disconnectBtn.addEventListener("click", async () => {
-  try {
-    await disconnectModem();
-  } catch (error) {
-    logLine("error", error.message);
-  }
-});
-
-dom.refreshInboxBtn.addEventListener("click", async () => {
-  try {
-    await refreshInbox();
-  } catch (error) {
-    logLine("error", error.message);
-  }
+dom.disconnectBtn.addEventListener("click", () => {
+  disconnectModem().catch((error) => logLine("error", error.message));
 });
 
 dom.composerForm.addEventListener("submit", async (event) => {
@@ -862,11 +984,32 @@ dom.composerForm.addEventListener("submit", async (event) => {
 dom.toggleLogBtn.addEventListener("click", () => {
   state.logVisible = !state.logVisible;
   applyLogVisibility();
-  persistState();
+  saveSettings().catch((error) => logLine("error", error.message));
 });
 
 dom.clearLogBtn.addEventListener("click", () => {
   dom.logOutput.innerHTML = "";
+});
+
+dom.exportDbBtn.addEventListener("click", () => {
+  exportDatabase().catch((error) => logLine("error", error.message));
+});
+
+dom.importDbBtn.addEventListener("click", () => {
+  dom.importDbInput.click();
+});
+
+dom.importDbInput.addEventListener("change", () => {
+  const file = dom.importDbInput.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  importDatabase(file)
+    .catch((error) => logLine("error", `Ошибка импорта: ${error.message}`))
+    .finally(() => {
+      dom.importDbInput.value = "";
+    });
 });
 
 window.addEventListener("beforeunload", () => {
@@ -875,11 +1018,18 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
-loadPersistedState();
-initializeUi();
+async function bootstrap() {
+  state.db = await openDatabase();
+  await loadDatabaseState();
+  initializeUi();
 
-if (!supportsWebSerial()) {
-  logLine("error", "Web Serial API недоступен. Откройте SmartSMS в Chromium-браузере через localhost или https.");
-} else {
-  logLine("rx", "SmartSMS готов. Подключите GSM-модем в настройках слева.");
+  if (!supportsWebSerial()) {
+    logLine("error", "Web Serial API недоступен. Откройте SmartSMS в Chromium-браузере через localhost или https.");
+  } else {
+    logLine("rx", "SmartSMS готов. Автоприем входящих включен всегда.");
+  }
 }
+
+bootstrap().catch((error) => {
+  logLine("error", `Ошибка запуска приложения: ${error.message}`);
+});
