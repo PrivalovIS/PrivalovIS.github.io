@@ -1,1 +1,177 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartSMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar panel">
+        <div>
+          <p class="eyebrow">SmartSMS</p>
+          <h1>Telegram-style SMS messenger</h1>
+        </div>
+        <div class="topbar-status">
+          <span class="status-label">Статус модема</span>
+          <div id="modemStatus" class="status-pill">Модем не подключен</div>
+        </div>
+      </header>
 
+      <div class="workspace">
+        <aside class="sidebar panel">
+          <div class="sidebar-header">
+            <div>
+              <h2>SmartSMS</h2>
+              <p class="subtle-text">Чаты, контакты и настройки</p>
+            </div>
+          </div>
+
+          <div class="sidebar-search">
+            <input id="searchInput" type="search" placeholder="Поиск" />
+          </div>
+
+          <div class="tab-buttons">
+            <button class="tab-btn active" type="button" data-tab="chats">Чаты</button>
+            <button class="tab-btn" type="button" data-tab="contacts">Контакты</button>
+            <button class="tab-btn" type="button" data-tab="settings">Настройки</button>
+          </div>
+
+          <section class="tab-panel active" data-panel="chats">
+            <div class="quick-create">
+              <input id="newChatNumber" type="tel" placeholder="+79991234567" autocomplete="off" />
+              <button id="createChatBtn" class="primary-btn compact-btn" type="button">Открыть</button>
+            </div>
+            <div id="chatList" class="entity-list empty-state">
+              <p>Подключите модем и откройте первый диалог.</p>
+            </div>
+          </section>
+
+          <section class="tab-panel" data-panel="contacts">
+            <div class="contact-form">
+              <input id="contactNameInput" type="text" placeholder="Имя" autocomplete="off" />
+              <input id="contactPhoneInput" type="tel" placeholder="+79991234567" autocomplete="off" />
+              <button id="saveContactBtn" class="primary-btn compact-btn" type="button">Сохранить</button>
+            </div>
+            <div id="contactList" class="entity-list empty-state">
+              <p>Контакты пока не добавлены.</p>
+            </div>
+          </section>
+
+          <section class="tab-panel settings-panel" data-panel="settings">
+            <div class="settings-grid">
+              <label class="input-group">
+                <span>Скорость порта</span>
+                <select id="baudRate">
+                  <option value="9600">9600</option>
+                  <option value="19200">19200</option>
+                  <option value="38400">38400</option>
+                  <option value="57600">57600</option>
+                  <option value="115200" selected>115200</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="settings-actions">
+              <button id="connectBtn" class="primary-btn" type="button">Подключить модем</button>
+              <button id="disconnectBtn" class="ghost-btn" type="button" disabled>Отключить</button>
+            </div>
+
+            <div class="db-tools">
+              <button id="exportDbBtn" class="ghost-btn" type="button">Экспорт БД</button>
+              <button id="importDbBtn" class="ghost-btn" type="button">Импорт БД</button>
+              <input id="importDbInput" type="file" accept="application/json" class="hidden" />
+            </div>
+          </section>
+        </aside>
+
+        <main class="conversation panel">
+          <header class="conversation-header">
+            <div>
+              <p class="eyebrow">Диалог</p>
+              <h2 id="activeChatTitle">Выберите чат</h2>
+              <p id="activeChatMeta" class="subtle-text">История сообщений появится здесь.</p>
+            </div>
+          </header>
+
+          <section id="messageList" class="message-list empty-state">
+            <p>Откройте чат слева, чтобы увидеть историю SMS.</p>
+          </section>
+
+          <form id="composerForm" class="composer">
+            <textarea
+              id="messageInput"
+              rows="4"
+              placeholder="Введите текст SMS"
+              disabled
+            ></textarea>
+            <div class="composer-actions">
+              <div class="composer-note">Кириллица и латиница отправляются в Unicode через PDU/UCS2.</div>
+              <button id="sendBtn" class="primary-btn" type="submit" disabled>Отправить</button>
+            </div>
+          </form>
+
+          <section class="inline-log">
+            <div class="section-header">
+              <h2>Лог модема</h2>
+              <div class="inline-actions">
+                <button id="toggleLogBtn" class="ghost-btn compact-btn" type="button">Скрыть</button>
+                <button id="clearLogBtn" class="ghost-btn compact-btn" type="button">Очистить</button>
+              </div>
+            </div>
+            <div id="logOutput" class="log-output"></div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <template id="chatItemTemplate">
+      <button class="entity-item" type="button">
+        <div class="entity-avatar"></div>
+        <div class="entity-main">
+          <div class="entity-row">
+            <strong class="entity-title"></strong>
+            <span class="entity-time"></span>
+          </div>
+          <div class="entity-row">
+            <span class="entity-subtitle"></span>
+            <span class="entity-badge hidden">0</span>
+          </div>
+        </div>
+      </button>
+    </template>
+
+    <template id="contactItemTemplate">
+      <button class="entity-item contact-item" type="button">
+        <div class="entity-avatar"></div>
+        <div class="entity-main">
+          <div class="entity-row">
+            <strong class="entity-title"></strong>
+          </div>
+          <div class="entity-row">
+            <span class="entity-subtitle"></span>
+          </div>
+        </div>
+      </button>
+    </template>
+
+    <template id="messageTemplate">
+      <article class="message-bubble">
+        <div class="message-meta">
+          <span class="message-direction"></span>
+          <time class="message-time"></time>
+        </div>
+        <p class="message-text"></p>
+      </article>
+    </template>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
