@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GSM SMS Messenger</title>
+    <title>SmartSMS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -14,103 +14,153 @@
   </head>
   <body>
     <div class="app-shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Web Serial + GSM Modem</p>
-          <h1>SMS Messenger</h1>
+      <aside class="sidebar">
+        <div class="brand-card panel">
+          <p class="eyebrow">SmartSMS</p>
+          <h1>SMS Hub</h1>
+          <p class="brand-copy">Web Serial мессенджер для GSM-модема с чатами, контактами и журналом модема.</p>
         </div>
-        <div class="topbar-actions">
-          <label class="baud-select">
-            <span>Скорость</span>
-            <select id="baudRate">
-              <option value="9600">9600</option>
-              <option value="19200">19200</option>
-              <option value="38400">38400</option>
-              <option value="57600">57600</option>
-              <option value="115200" selected>115200</option>
-            </select>
-          </label>
-          <button id="connectBtn" class="primary-btn">Подключить модем</button>
-          <button id="disconnectBtn" class="ghost-btn" disabled>Отключить</button>
-        </div>
-      </header>
 
-      <main class="workspace">
-        <aside class="sidebar">
-          <div class="sidebar-card compose-card">
-            <label for="newChatNumber">Новый чат</label>
-            <div class="compose-row">
-              <input
-                id="newChatNumber"
-                type="tel"
-                placeholder="+79991234567"
-                autocomplete="off"
-              />
-              <button id="createChatBtn" class="primary-btn">Открыть</button>
-            </div>
+        <div class="panel search-card">
+          <label class="field-label" for="searchInput">Поиск</label>
+          <input id="searchInput" type="search" placeholder="Номер, имя контакта или текст..." />
+        </div>
+
+        <div class="panel tabs-card">
+          <div class="tab-buttons">
+            <button class="tab-btn active" type="button" data-tab="chats">Чаты</button>
+            <button class="tab-btn" type="button" data-tab="contacts">Контакты</button>
+            <button class="tab-btn" type="button" data-tab="settings">Настройки</button>
           </div>
 
-          <div class="sidebar-card chats-card">
-            <div class="section-title">
+          <section class="tab-panel active" data-panel="chats">
+            <div class="section-header">
               <h2>Чаты</h2>
               <span id="chatCount">0</span>
             </div>
-            <div id="chatList" class="chat-list empty-state">
-              <p>Пока нет диалогов. Подключите модем и создайте чат.</p>
+            <div class="quick-create">
+              <input id="newChatNumber" type="tel" placeholder="+79991234567" autocomplete="off" />
+              <button id="createChatBtn" class="primary-btn" type="button">Открыть чат</button>
+            </div>
+            <div id="chatList" class="entity-list empty-state">
+              <p>Подключите модем и откройте первый диалог.</p>
+            </div>
+          </section>
+
+          <section class="tab-panel" data-panel="contacts">
+            <div class="section-header">
+              <h2>Контакты</h2>
+              <span id="contactCount">0</span>
+            </div>
+            <div class="contact-form">
+              <input id="contactNameInput" type="text" placeholder="Имя контакта" autocomplete="off" />
+              <input id="contactPhoneInput" type="tel" placeholder="+79991234567" autocomplete="off" />
+              <button id="saveContactBtn" class="primary-btn" type="button">Сохранить контакт</button>
+            </div>
+            <div id="contactList" class="entity-list empty-state">
+              <p>Контакты пока не добавлены.</p>
+            </div>
+          </section>
+
+          <section class="tab-panel" data-panel="settings">
+            <div class="section-header">
+              <h2>Настройки модема</h2>
+              <span>COM</span>
+            </div>
+            <div class="settings-grid">
+              <label class="input-group">
+                <span>Скорость порта</span>
+                <select id="baudRate">
+                  <option value="9600">9600</option>
+                  <option value="19200">19200</option>
+                  <option value="38400">38400</option>
+                  <option value="57600">57600</option>
+                  <option value="115200" selected>115200</option>
+                </select>
+              </label>
+              <label class="input-group">
+                <span>Хранилище SMS</span>
+                <select id="storageSelect">
+                  <option value="SM" selected>SIM (SM)</option>
+                  <option value="ME">Память модема (ME)</option>
+                  <option value="MT">Объединенная (MT)</option>
+                </select>
+              </label>
+              <label class="toggle-row">
+                <input id="autoSyncCheckbox" type="checkbox" checked />
+                <span>Автосинхронизация входящих</span>
+              </label>
+            </div>
+            <div class="settings-actions">
+              <button id="connectBtn" class="primary-btn" type="button">Подключить модем</button>
+              <button id="disconnectBtn" class="ghost-btn" type="button" disabled>Отключить</button>
+              <button id="refreshInboxBtn" class="ghost-btn" type="button" disabled>Обновить входящие</button>
+            </div>
+            <div class="status-card">
+              <p class="field-label">Статус</p>
+              <div id="modemStatus" class="status-pill">Модем не подключен</div>
+            </div>
+          </section>
+        </div>
+      </aside>
+
+      <main class="conversation panel">
+        <header class="conversation-header">
+          <div>
+            <p class="eyebrow">Активный диалог</p>
+            <h2 id="activeChatTitle">Выберите чат</h2>
+            <p id="activeChatMeta" class="subtle-text">История сообщений появится здесь.</p>
+          </div>
+        </header>
+
+        <section id="messageList" class="message-list empty-state">
+          <p>Откройте чат слева, чтобы увидеть историю SMS.</p>
+        </section>
+
+        <form id="composerForm" class="composer">
+          <textarea
+            id="messageInput"
+            rows="4"
+            placeholder="Введите текст SMS. Кириллица и латиница отправляются в Unicode."
+            disabled
+          ></textarea>
+          <div class="composer-actions">
+            <div class="composer-note">Отправка выполняется в PDU/UCS2 для лучшей совместимости с модемами.</div>
+            <button id="sendBtn" class="primary-btn" type="submit" disabled>Отправить</button>
+          </div>
+        </form>
+
+        <section class="inline-log">
+          <div class="section-header">
+            <h2>Лог модема</h2>
+            <div class="inline-actions">
+              <button id="toggleLogBtn" class="ghost-btn" type="button">Скрыть</button>
+              <button id="clearLogBtn" class="ghost-btn" type="button">Очистить</button>
             </div>
           </div>
-        </aside>
-
-        <section class="chat-panel">
-          <div class="chat-header">
-            <div>
-              <p class="eyebrow">Активный диалог</p>
-              <h2 id="activeChatTitle">Выберите чат</h2>
-            </div>
-            <div class="chat-header-actions">
-              <button id="refreshInboxBtn" class="ghost-btn" disabled>Обновить входящие</button>
-            </div>
-          </div>
-
-          <div id="messageList" class="message-list empty-state">
-            <p>Здесь будут сообщения выбранного диалога.</p>
-          </div>
-
-          <form id="composerForm" class="composer">
-            <textarea
-              id="messageInput"
-              rows="3"
-              placeholder="Введите SMS. Поддерживаются кириллица и латиница."
-              disabled
-            ></textarea>
-            <div class="composer-actions">
-              <div class="composer-hint">Отправка идет через AT-команды в UCS2.</div>
-              <button id="sendBtn" type="submit" class="primary-btn" disabled>
-                Отправить SMS
-              </button>
-            </div>
-          </form>
+          <div id="logOutput" class="log-output"></div>
         </section>
       </main>
-
-      <section class="log-panel">
-        <div class="section-title">
-          <h2>Лог модема</h2>
-          <button id="clearLogBtn" class="ghost-btn">Очистить</button>
-        </div>
-        <div id="logOutput" class="log-output"></div>
-      </section>
     </div>
 
     <template id="chatItemTemplate">
-      <button class="chat-item" type="button">
-        <div class="chat-item-main">
-          <strong class="chat-item-title"></strong>
-          <span class="chat-item-preview"></span>
+      <button class="entity-item" type="button">
+        <div class="entity-main">
+          <strong class="entity-title"></strong>
+          <span class="entity-subtitle"></span>
         </div>
-        <div class="chat-item-meta">
-          <span class="chat-item-time"></span>
-          <span class="chat-item-badge hidden">0</span>
+        <div class="entity-meta">
+          <span class="entity-time"></span>
+          <span class="entity-badge hidden">0</span>
+        </div>
+      </button>
+    </template>
+
+    <template id="contactItemTemplate">
+      <button class="entity-item contact-item" type="button">
+        <div class="entity-main">
+          <strong class="entity-title"></strong>
+          <span class="entity-subtitle"></span>
         </div>
       </button>
     </template>

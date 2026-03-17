@@ -1,24 +1,42 @@
+const STORAGE_KEY = "smartsms-state-v1";
+
 const dom = {
-  baudRate: document.querySelector("#baudRate"),
-  connectBtn: document.querySelector("#connectBtn"),
-  disconnectBtn: document.querySelector("#disconnectBtn"),
+  searchInput: document.querySelector("#searchInput"),
+  tabButtons: [...document.querySelectorAll(".tab-btn")],
+  tabPanels: [...document.querySelectorAll(".tab-panel")],
+  chatCount: document.querySelector("#chatCount"),
+  contactCount: document.querySelector("#contactCount"),
+  chatList: document.querySelector("#chatList"),
+  contactList: document.querySelector("#contactList"),
   createChatBtn: document.querySelector("#createChatBtn"),
   newChatNumber: document.querySelector("#newChatNumber"),
-  chatCount: document.querySelector("#chatCount"),
-  chatList: document.querySelector("#chatList"),
-  activeChatTitle: document.querySelector("#activeChatTitle"),
+  contactNameInput: document.querySelector("#contactNameInput"),
+  contactPhoneInput: document.querySelector("#contactPhoneInput"),
+  saveContactBtn: document.querySelector("#saveContactBtn"),
+  baudRate: document.querySelector("#baudRate"),
+  storageSelect: document.querySelector("#storageSelect"),
+  autoSyncCheckbox: document.querySelector("#autoSyncCheckbox"),
+  connectBtn: document.querySelector("#connectBtn"),
+  disconnectBtn: document.querySelector("#disconnectBtn"),
   refreshInboxBtn: document.querySelector("#refreshInboxBtn"),
+  modemStatus: document.querySelector("#modemStatus"),
+  activeChatTitle: document.querySelector("#activeChatTitle"),
+  activeChatMeta: document.querySelector("#activeChatMeta"),
   messageList: document.querySelector("#messageList"),
-  messageInput: document.querySelector("#messageInput"),
   composerForm: document.querySelector("#composerForm"),
+  messageInput: document.querySelector("#messageInput"),
   sendBtn: document.querySelector("#sendBtn"),
+  toggleLogBtn: document.querySelector("#toggleLogBtn"),
   clearLogBtn: document.querySelector("#clearLogBtn"),
   logOutput: document.querySelector("#logOutput"),
   chatItemTemplate: document.querySelector("#chatItemTemplate"),
+  contactItemTemplate: document.querySelector("#contactItemTemplate"),
   messageTemplate: document.querySelector("#messageTemplate"),
 };
 
 const state = {
+  currentTab: "chats",
+  searchQuery: "",
   port: null,
   reader: null,
   writer: null,
@@ -28,11 +46,82 @@ const state = {
   readBuffer: "",
   responseWaiter: null,
   chats: new Map(),
+  contacts: new Map(),
   activeChatId: null,
   modemReady: false,
   isSending: false,
+  storage: "SM",
+  autoSync: true,
   knownIndexes: new Set(),
+  logVisible: true,
 };
+
+function loadPersistedState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return;
+    }
+
+    const parsed = JSON.parse(raw);
+    for (const contact of parsed.contacts ?? []) {
+      state.contacts.set(contact.phone, contact);
+    }
+
+    for (const chat of parsed.chats ?? []) {
+      state.chats.set(chat.id, {
+        ...chat,
+        updatedAt: new Date(chat.updatedAt),
+        messages: (chat.messages ?? []).map((message) => ({
+          ...message,
+          timestamp: new Date(message.timestamp),
+        })),
+      });
+    }
+
+    state.activeChatId = parsed.activeChatId ?? null;
+    state.storage = parsed.storage ?? "SM";
+    state.autoSync = parsed.autoSync ?? true;
+    state.logVisible = parsed.logVisible ?? true;
+  } catch {
+    // ignore malformed local state
+  }
+}
+
+function persistState() {
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      contacts: [...state.contacts.values()],
+      chats: [...state.chats.values()],
+      activeChatId: state.activeChatId,
+      storage: state.storage,
+      autoSync: state.autoSync,
+      logVisible: state.logVisible,
+    })
+  );
+}
+
+function normalizePhone(value) {
+  return value.replace(/[^\d+]/g, "").trim();
+}
+
+function digitsOnly(phone) {
+  return phone.replace(/\D/g, "");
+}
+
+function displayName(phone) {
+  return state.contacts.get(phone)?.name || phone || "Неизвестный номер";
+}
+
+function formatTime(date) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(new Date(date));
+}
 
 function logLine(kind, message) {
   const row = document.createElement("div");
@@ -48,21 +137,28 @@ function logLine(kind, message) {
   dom.logOutput.prepend(row);
 }
 
-function normalizePhone(value) {
-  return value.replace(/[^\d+]/g, "").trim();
+function setStatus(text, connected = false) {
+  dom.modemStatus.textContent = text;
+  dom.modemStatus.classList.toggle("connected", connected);
 }
 
-function chatDisplayName(phone) {
-  return phone || "Неизвестный номер";
+function updateComposerState() {
+  const ready = state.modemReady && Boolean(state.activeChatId);
+  dom.messageInput.disabled = !ready;
+  dom.sendBtn.disabled = !ready || state.isSending;
+  dom.disconnectBtn.disabled = !state.port;
+  dom.refreshInboxBtn.disabled = !state.modemReady;
 }
 
-function formatTimestamp(value) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit",
-    day: "2-digit",
-    month: "2-digit",
-  }).format(value);
+function switchTab(tab) {
+  state.currentTab = tab;
+  dom.tabButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.tab === tab);
+  });
+  dom.tabPanels.forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.panel === tab);
+  });
+  renderLists();
 }
 
 function ensureChat(phone) {
@@ -76,8 +172,8 @@ function ensureChat(phone) {
       id: normalized,
       phone: normalized,
       unread: 0,
-      messages: [],
       updatedAt: new Date(),
+      messages: [],
     });
   }
 
@@ -92,7 +188,8 @@ function setActiveChat(phone) {
 
   state.activeChatId = chat.id;
   chat.unread = 0;
-  renderChats();
+  persistState();
+  renderLists();
   renderMessages();
   updateComposerState();
 }
@@ -104,11 +201,11 @@ function addMessage({ phone, text, direction, timestamp = new Date(), index = nu
   }
 
   const duplicate = chat.messages.find(
-    (item) =>
-      item.direction === direction &&
-      item.text === text &&
-      Math.abs(new Date(item.timestamp).getTime() - new Date(timestamp).getTime()) < 1000 &&
-      item.index === index
+    (message) =>
+      message.direction === direction &&
+      message.index === index &&
+      message.text === text &&
+      Math.abs(new Date(message.timestamp).getTime() - new Date(timestamp).getTime()) < 1000
   );
 
   if (duplicate) {
@@ -124,8 +221,8 @@ function addMessage({ phone, text, direction, timestamp = new Date(), index = nu
     index,
     status,
   });
+  chat.messages.sort((left, right) => new Date(left.timestamp) - new Date(right.timestamp));
   chat.updatedAt = new Date(timestamp);
-  chat.messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
   if (direction === "incoming" && state.activeChatId !== chat.id) {
     chat.unread += 1;
@@ -135,32 +232,40 @@ function addMessage({ phone, text, direction, timestamp = new Date(), index = nu
     state.activeChatId = chat.id;
   }
 
-  renderChats();
+  persistState();
+  renderLists();
   renderMessages();
 }
 
 function renderChats() {
-  const chats = [...state.chats.values()].sort((a, b) => b.updatedAt - a.updatedAt);
+  const query = state.searchQuery.toLowerCase();
+  const chats = [...state.chats.values()]
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+    .filter((chat) => {
+      const name = displayName(chat.phone).toLowerCase();
+      const lastText = (chat.messages.at(-1)?.text || "").toLowerCase();
+      return !query || name.includes(query) || chat.phone.includes(query) || lastText.includes(query);
+    });
+
   dom.chatCount.textContent = String(chats.length);
 
   if (!chats.length) {
-    dom.chatList.className = "chat-list empty-state";
-    dom.chatList.innerHTML = "<p>Пока нет диалогов. Подключите модем и создайте чат.</p>";
+    dom.chatList.className = "entity-list empty-state";
+    dom.chatList.innerHTML = "<p>Подходящие чаты не найдены.</p>";
     return;
   }
 
-  dom.chatList.className = "chat-list";
+  dom.chatList.className = "entity-list";
   dom.chatList.innerHTML = "";
 
   for (const chat of chats) {
     const node = dom.chatItemTemplate.content.firstElementChild.cloneNode(true);
     node.classList.toggle("active", chat.id === state.activeChatId);
-    node.querySelector(".chat-item-title").textContent = chatDisplayName(chat.phone);
-    node.querySelector(".chat-item-preview").textContent =
-      chat.messages.at(-1)?.text ?? "Нет сообщений";
-    node.querySelector(".chat-item-time").textContent = formatTimestamp(chat.updatedAt);
+    node.querySelector(".entity-title").textContent = displayName(chat.phone);
+    node.querySelector(".entity-subtitle").textContent = chat.messages.at(-1)?.text || chat.phone;
+    node.querySelector(".entity-time").textContent = formatTime(chat.updatedAt);
 
-    const badge = node.querySelector(".chat-item-badge");
+    const badge = node.querySelector(".entity-badge");
     if (chat.unread > 0) {
       badge.textContent = String(chat.unread);
       badge.classList.remove("hidden");
@@ -171,17 +276,48 @@ function renderChats() {
   }
 }
 
-function renderMessages() {
-  const chat = state.activeChatId ? state.chats.get(state.activeChatId) : null;
+function renderContacts() {
+  const query = state.searchQuery.toLowerCase();
+  const contacts = [...state.contacts.values()].filter((contact) => {
+    return !query || contact.name.toLowerCase().includes(query) || contact.phone.includes(query);
+  });
 
-  if (!chat) {
-    dom.activeChatTitle.textContent = "Выберите чат";
-    dom.messageList.className = "message-list empty-state";
-    dom.messageList.innerHTML = "<p>Здесь будут сообщения выбранного диалога.</p>";
+  dom.contactCount.textContent = String(contacts.length);
+
+  if (!contacts.length) {
+    dom.contactList.className = "entity-list empty-state";
+    dom.contactList.innerHTML = "<p>Контакты не найдены.</p>";
     return;
   }
 
-  dom.activeChatTitle.textContent = chatDisplayName(chat.phone);
+  dom.contactList.className = "entity-list";
+  dom.contactList.innerHTML = "";
+
+  for (const contact of contacts) {
+    const node = dom.contactItemTemplate.content.firstElementChild.cloneNode(true);
+    node.querySelector(".entity-title").textContent = contact.name;
+    node.querySelector(".entity-subtitle").textContent = contact.phone;
+    node.addEventListener("click", () => {
+      ensureChat(contact.phone);
+      setActiveChat(contact.phone);
+      switchTab("chats");
+    });
+    dom.contactList.append(node);
+  }
+}
+
+function renderMessages() {
+  const chat = state.activeChatId ? state.chats.get(state.activeChatId) : null;
+  if (!chat) {
+    dom.activeChatTitle.textContent = "Выберите чат";
+    dom.activeChatMeta.textContent = "История сообщений появится здесь.";
+    dom.messageList.className = "message-list empty-state";
+    dom.messageList.innerHTML = "<p>Откройте чат слева, чтобы увидеть историю SMS.</p>";
+    return;
+  }
+
+  dom.activeChatTitle.textContent = displayName(chat.phone);
+  dom.activeChatMeta.textContent = chat.phone;
   dom.messageList.className = "message-list";
   dom.messageList.innerHTML = "";
 
@@ -189,8 +325,8 @@ function renderMessages() {
     const node = dom.messageTemplate.content.firstElementChild.cloneNode(true);
     node.classList.add(message.direction);
     node.querySelector(".message-direction").textContent =
-      message.direction === "incoming" ? "Входящее" : "Исходящее";
-    node.querySelector(".message-time").textContent = formatTimestamp(message.timestamp);
+      message.direction === "incoming" ? "Входящее SMS" : "Исходящее SMS";
+    node.querySelector(".message-time").textContent = formatTime(message.timestamp);
     node.querySelector(".message-text").textContent = message.text;
     dom.messageList.append(node);
   }
@@ -198,12 +334,14 @@ function renderMessages() {
   dom.messageList.scrollTop = dom.messageList.scrollHeight;
 }
 
-function updateComposerState() {
-  const ready = state.modemReady && Boolean(state.activeChatId);
-  dom.messageInput.disabled = !ready;
-  dom.sendBtn.disabled = !ready || state.isSending;
-  dom.refreshInboxBtn.disabled = !state.modemReady;
-  dom.disconnectBtn.disabled = !state.port;
+function renderLists() {
+  renderChats();
+  renderContacts();
+}
+
+function applyLogVisibility() {
+  dom.logOutput.classList.toggle("hidden", !state.logVisible);
+  dom.toggleLogBtn.textContent = state.logVisible ? "Скрыть" : "Показать";
 }
 
 function supportsWebSerial() {
@@ -219,7 +357,7 @@ function splitModemLines(chunk) {
 
 function extractPromptFromBuffer() {
   const trimmed = state.readBuffer.trim();
-  if (trimmed === ">") {
+  if (trimmed === ">" || trimmed.endsWith(">")) {
     state.readBuffer = "";
     return ">";
   }
@@ -229,7 +367,7 @@ function extractPromptFromBuffer() {
 function settleResponse(line) {
   const waiter = state.responseWaiter;
   if (!waiter) {
-    return false;
+    return;
   }
 
   waiter.lines.push(line);
@@ -237,16 +375,13 @@ function settleResponse(line) {
   if (line === "OK" || line.includes(">")) {
     state.responseWaiter = null;
     waiter.resolve(waiter.lines);
-    return true;
+    return;
   }
 
   if (line === "ERROR" || line.startsWith("+CMS ERROR") || line.startsWith("+CME ERROR")) {
     state.responseWaiter = null;
     waiter.reject(new Error(waiter.lines.join("\n")));
-    return true;
   }
-
-  return true;
 }
 
 function decodeUcs2(hex) {
@@ -267,6 +402,14 @@ function encodeUcs2(text) {
     .join("");
 }
 
+function decodePhoneIfNeeded(raw) {
+  const value = raw.replace(/^"|"$/g, "");
+  if (/^[0-9A-F]+$/i.test(value) && value.length % 4 === 0) {
+    return decodeUcs2(value);
+  }
+  return value;
+}
+
 function decodeSmsTimestamp(headerValue) {
   if (!headerValue) {
     return new Date();
@@ -282,32 +425,20 @@ function decodeSmsTimestamp(headerValue) {
   return new Date(2000 + Number(yy), Number(mm) - 1, Number(dd), Number(hh), Number(mi), Number(ss));
 }
 
-function decodePhoneIfNeeded(raw) {
-  const value = raw.replace(/^"|"$/g, "");
-  if (/^[0-9A-F]+$/i.test(value) && value.length % 4 === 0) {
-    return decodeUcs2(value);
-  }
-  return value;
-}
-
 function parseCmgrResponse(lines) {
   const header = lines.find((line) => line.startsWith("+CMGR:"));
-  const messageBody = lines.find((line) => !line.startsWith("+CMGR:") && line !== "OK");
+  const body = lines.find((line) => !line.startsWith("+CMGR:") && line !== "OK");
 
-  if (!header || !messageBody) {
+  if (!header || !body) {
     return null;
   }
 
   const headerValues = [...header.matchAll(/"([^"]*)"/g)].map((match) => match[1]);
-  const status = headerValues[0] ?? "";
-  const phone = decodePhoneIfNeeded(headerValues[1] ?? "");
-  const timestamp = decodeSmsTimestamp(headerValues.at(-1));
-
   return {
-    status,
-    phone,
-    text: decodeUcs2(messageBody.trim()),
-    timestamp,
+    status: headerValues[0] ?? "",
+    phone: decodePhoneIfNeeded(headerValues[1] ?? ""),
+    timestamp: decodeSmsTimestamp(headerValues.at(-1)),
+    text: decodeUcs2(body.trim()),
   };
 }
 
@@ -319,16 +450,15 @@ function parseCmglEntries(lines) {
       continue;
     }
 
-    const indexMatch = line.match(/^\+CMGL:\s*(\d+)/);
-    const entryIndex = indexMatch ? Number.parseInt(indexMatch[1], 10) : null;
     const body = lines[index + 1]?.trim();
     if (!body) {
       continue;
     }
 
     const headerValues = [...line.matchAll(/"([^"]*)"/g)].map((match) => match[1]);
+    const indexMatch = line.match(/^\+CMGL:\s*(\d+)/);
     entries.push({
-      index: entryIndex,
+      index: indexMatch ? Number.parseInt(indexMatch[1], 10) : null,
       status: headerValues[0] ?? "",
       phone: decodePhoneIfNeeded(headerValues[1] ?? ""),
       timestamp: decodeSmsTimestamp(headerValues.at(-1)),
@@ -338,27 +468,41 @@ function parseCmglEntries(lines) {
   return entries;
 }
 
-function handleUnsolicited(line) {
-  if (line.startsWith("+CMTI:")) {
-    const match = line.match(/,(\d+)$/);
-    const index = match ? Number.parseInt(match[1], 10) : null;
-    logLine("rx", `Новая SMS в памяти модема${index !== null ? `, слот ${index}` : ""}`);
-    if (index !== null) {
-      readMessageByIndex(index).catch((error) => logLine("error", error.message));
-    }
-    return true;
-  }
+function encodePhoneSemiOctet(phone) {
+  const digits = digitsOnly(phone);
+  const padded = digits.length % 2 === 0 ? digits : `${digits}F`;
+  return padded.replace(/(..)/g, (pair) => `${pair[1]}${pair[0]}`);
+}
 
-  if (line.startsWith("^")) {
-    return true;
-  }
+function buildSubmitPdu(phone, text) {
+  const digits = digitsOnly(phone);
+  const toa = phone.startsWith("+") ? "91" : "81";
+  const address = encodePhoneSemiOctet(phone);
+  const payload = encodeUcs2(text);
+  const userDataLength = (payload.length / 2).toString(16).toUpperCase().padStart(2, "0");
 
-  return false;
+  const pdu = [
+    "00",
+    "11",
+    "00",
+    digits.length.toString(16).toUpperCase().padStart(2, "0"),
+    toa,
+    address,
+    "00",
+    "08",
+    "AA",
+    userDataLength,
+    payload,
+  ].join("");
+
+  return {
+    pdu,
+    tpduLength: pdu.length / 2 - 1,
+  };
 }
 
 async function processIncomingChunk(chunk) {
-  const text = chunk;
-  const lines = splitModemLines(text);
+  const lines = splitModemLines(chunk);
   const prompt = extractPromptFromBuffer();
   if (prompt) {
     lines.push(prompt);
@@ -367,7 +511,11 @@ async function processIncomingChunk(chunk) {
   for (const line of lines) {
     logLine("rx", line);
 
-    if (handleUnsolicited(line)) {
+    if (line.startsWith("+CMTI:")) {
+      const match = line.match(/,(\d+)$/);
+      if (match && state.autoSync) {
+        readMessageByIndex(Number.parseInt(match[1], 10)).catch((error) => logLine("error", error.message));
+      }
       continue;
     }
 
@@ -403,7 +551,7 @@ async function sendCommand(command, { timeout = 7000 } = {}) {
 
   logLine("tx", command);
 
-  const promise = new Promise((resolve, reject) => {
+  const responsePromise = new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       if (state.responseWaiter?.timer === timer) {
         state.responseWaiter = null;
@@ -426,7 +574,7 @@ async function sendCommand(command, { timeout = 7000 } = {}) {
   });
 
   await writeRaw(`${command}\r`);
-  return promise;
+  return responsePromise;
 }
 
 async function sendSms(phone, text) {
@@ -434,23 +582,25 @@ async function sendSms(phone, text) {
   if (!normalizedPhone) {
     throw new Error("Введите корректный номер телефона");
   }
-
-  const payload = encodeUcs2(text);
-  if (!payload) {
-    throw new Error("Сообщение пустое");
+  if (!text.trim()) {
+    throw new Error("Нельзя отправить пустое сообщение");
   }
 
+  const { pdu, tpduLength } = buildSubmitPdu(normalizedPhone, text);
   state.isSending = true;
   updateComposerState();
 
   try {
-    const promptLines = await sendCommand(`AT+CMGS="${normalizedPhone}"`, { timeout: 5000 });
+    await sendCommand("AT+CMGF=0");
+    const promptLines = await sendCommand(`AT+CMGS=${tpduLength}`, { timeout: 7000 });
+
     if (!promptLines.some((line) => line.includes(">"))) {
-      throw new Error(`Модем не выдал приглашение для текста SMS:\n${promptLines.join("\n")}`);
+      throw new Error(`Модем не выдал приглашение для PDU-отправки:\n${promptLines.join("\n")}`);
     }
 
-    logLine("tx", `${payload}<Ctrl+Z>`);
-    const response = new Promise((resolve, reject) => {
+    logLine("tx", `${pdu}<Ctrl+Z>`);
+
+    const submitResult = new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         if (state.responseWaiter?.timer === timer) {
           state.responseWaiter = null;
@@ -472,33 +622,43 @@ async function sendSms(phone, text) {
       };
     });
 
-    await writeRaw(`${payload}\u001A`);
-    await response;
+    await writeRaw(`${pdu}\u001A`);
+    await submitResult;
+    addMessage({
+      phone: normalizedPhone,
+      text,
+      direction: "outgoing",
+      timestamp: new Date(),
+      status: "SENT",
+    });
   } finally {
+    try {
+      await sendCommand("AT+CMGF=1");
+      await sendCommand('AT+CSCS="UCS2"');
+    } catch (error) {
+      logLine("error", `Не удалось вернуть текстовый режим: ${error.message}`);
+    }
+
     state.isSending = false;
     updateComposerState();
   }
-
-  addMessage({
-    phone: normalizedPhone,
-    text,
-    direction: "outgoing",
-    timestamp: new Date(),
-    status: "SENT",
-  });
 }
 
 async function configureModem() {
+  const storage = dom.storageSelect.value;
   await sendCommand("AT");
   await sendCommand("ATE0");
   await sendCommand("AT+CMGF=1");
   await sendCommand('AT+CSCS="UCS2"');
   await sendCommand("AT+CSMP=17,167,0,8");
-  await sendCommand('AT+CPMS="SM","SM","SM"');
+  await sendCommand(`AT+CPMS="${storage}","${storage}","${storage}"`);
   await sendCommand("AT+CNMI=2,1,0,0,0");
+  state.storage = storage;
   state.modemReady = true;
+  setStatus("Модем подключен", true);
+  logLine("rx", "Модем инициализирован. Прием SMS работает в текстовом UCS2, отправка в PDU/UCS2.");
+  persistState();
   updateComposerState();
-  logLine("rx", "Модем инициализирован в текстовом режиме UCS2");
 }
 
 async function readMessageByIndex(index) {
@@ -531,7 +691,6 @@ async function refreshInbox() {
     if (entry.index !== null) {
       state.knownIndexes.add(entry.index);
     }
-
     addMessage({
       phone: entry.phone,
       text: entry.text,
@@ -547,7 +706,7 @@ async function refreshInbox() {
 
 async function connectModem() {
   if (!supportsWebSerial()) {
-    throw new Error("Ваш браузер не поддерживает Web Serial API");
+    throw new Error("Web Serial API недоступен. Используйте Chromium-браузер и localhost/https.");
   }
 
   const baudRate = Number.parseInt(dom.baudRate.value, 10);
@@ -556,15 +715,14 @@ async function connectModem() {
 
   const decoder = new TextDecoderStream();
   const encoder = new TextEncoderStream();
-
   state.inputClosed = state.port.readable.pipeTo(decoder.writable);
   state.reader = decoder.readable.getReader();
   state.outputClosed = encoder.readable.pipeTo(state.port.writable);
   state.writer = encoder.writable.getWriter();
   state.keepReading = true;
 
-  readLoop().catch((error) => logLine("error", `Ошибка чтения: ${error.message}`));
-  updateComposerState();
+  readLoop().catch((error) => logLine("error", `Ошибка чтения порта: ${error.message}`));
+  setStatus("COM-порт открыт", true);
   logLine("rx", "COM-порт открыт");
 
   await configureModem();
@@ -596,10 +754,64 @@ async function disconnectModem() {
     state.outputClosed = null;
     state.responseWaiter = null;
     state.modemReady = false;
+    setStatus("Модем не подключен", false);
     updateComposerState();
     logLine("rx", "Модем отключен");
   }
 }
+
+function saveContact() {
+  const name = dom.contactNameInput.value.trim();
+  const phone = normalizePhone(dom.contactPhoneInput.value);
+
+  if (!name || !phone) {
+    logLine("error", "Для контакта нужны имя и номер");
+    return;
+  }
+
+  state.contacts.set(phone, { name, phone });
+  dom.contactNameInput.value = "";
+  dom.contactPhoneInput.value = "";
+  persistState();
+  renderLists();
+}
+
+function initializeUi() {
+  dom.storageSelect.value = state.storage;
+  dom.autoSyncCheckbox.checked = state.autoSync;
+  applyLogVisibility();
+  renderLists();
+  renderMessages();
+  setStatus("Модем не подключен", false);
+  updateComposerState();
+}
+
+dom.tabButtons.forEach((button) => {
+  button.addEventListener("click", () => switchTab(button.dataset.tab));
+});
+
+dom.searchInput.addEventListener("input", () => {
+  state.searchQuery = dom.searchInput.value.trim();
+  renderLists();
+});
+
+dom.createChatBtn.addEventListener("click", () => {
+  const phone = normalizePhone(dom.newChatNumber.value);
+  if (!phone) {
+    logLine("error", "Введите номер для открытия чата");
+    return;
+  }
+  ensureChat(phone);
+  setActiveChat(phone);
+  dom.newChatNumber.value = "";
+});
+
+dom.saveContactBtn.addEventListener("click", saveContact);
+
+dom.autoSyncCheckbox.addEventListener("change", () => {
+  state.autoSync = dom.autoSyncCheckbox.checked;
+  persistState();
+});
 
 dom.connectBtn.addEventListener("click", async () => {
   try {
@@ -607,6 +819,7 @@ dom.connectBtn.addEventListener("click", async () => {
     await connectModem();
   } catch (error) {
     logLine("error", error.message);
+    setStatus("Ошибка подключения", false);
   } finally {
     dom.connectBtn.disabled = false;
     updateComposerState();
@@ -621,48 +834,35 @@ dom.disconnectBtn.addEventListener("click", async () => {
   }
 });
 
-dom.createChatBtn.addEventListener("click", () => {
-  const phone = normalizePhone(dom.newChatNumber.value);
-  if (!phone) {
-    logLine("error", "Введите номер телефона для нового чата");
-    return;
-  }
-
-  setActiveChat(phone);
-  dom.newChatNumber.value = "";
-});
-
-dom.composerForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const chat = state.activeChatId ? state.chats.get(state.activeChatId) : null;
-  const text = dom.messageInput.value.trim();
-
-  if (!chat) {
-    logLine("error", "Сначала выберите чат");
-    return;
-  }
-
-  if (!text) {
-    logLine("error", "Нельзя отправить пустое сообщение");
-    return;
-  }
-
-  try {
-    await sendSms(chat.phone, text);
-    dom.messageInput.value = "";
-    renderMessages();
-  } catch (error) {
-    logLine("error", error.message);
-  }
-});
-
 dom.refreshInboxBtn.addEventListener("click", async () => {
   try {
     await refreshInbox();
   } catch (error) {
     logLine("error", error.message);
   }
+});
+
+dom.composerForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const chat = state.activeChatId ? state.chats.get(state.activeChatId) : null;
+  if (!chat) {
+    logLine("error", "Сначала выберите чат");
+    return;
+  }
+
+  try {
+    await sendSms(chat.phone, dom.messageInput.value.trim());
+    dom.messageInput.value = "";
+  } catch (error) {
+    logLine("error", error.message);
+  }
+});
+
+dom.toggleLogBtn.addEventListener("click", () => {
+  state.logVisible = !state.logVisible;
+  applyLogVisibility();
+  persistState();
 });
 
 dom.clearLogBtn.addEventListener("click", () => {
@@ -675,8 +875,11 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
+loadPersistedState();
+initializeUi();
+
 if (!supportsWebSerial()) {
-  logLine("error", "Web Serial API недоступен. Используйте Chromium-браузер и HTTPS/localhost.");
+  logLine("error", "Web Serial API недоступен. Откройте SmartSMS в Chromium-браузере через localhost или https.");
 } else {
-  logLine("rx", "Приложение готово. Подключите GSM-модем к COM-порту.");
+  logLine("rx", "SmartSMS готов. Подключите GSM-модем в настройках слева.");
 }
