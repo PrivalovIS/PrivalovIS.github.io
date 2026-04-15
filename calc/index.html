@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -17,10 +17,11 @@
             --success: #10b981;
             --error: #ef4444;
             --warning: #f59e0b;
+            --font-ui: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: var(--font-ui);
             background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
             color: var(--text);
             min-height: 100vh;
@@ -101,6 +102,7 @@
         }
         input, select, textarea {
             width: 100%;
+            font-family: inherit;
             font-size: 1.6rem;
             padding: 14px 18px;
             border: 2px solid #d1d5db;
@@ -120,7 +122,7 @@
         .alert {
             padding: 12px 16px;
             border-radius: 10px;
-            margin: 24px 0 16px 0;          /* ← увеличен отступ сверху */
+            margin: 24px 0 16px 0;
             font-size: 0.95rem;
             line-height: 1.45;
         }
@@ -154,6 +156,11 @@
             background: linear-gradient(90deg, transparent, rgba(59,130,246,0.04), transparent);
             opacity: 0;
             transition: opacity 0.4s;
+            pointer-events: none;
+        }
+        .card > * {
+            position: relative;
+            z-index: 1;
         }
         .card.copied::before {
             opacity: 1;
@@ -177,6 +184,7 @@
         .model.fobos      { color: #b45309; }
         .model.mirtek     { color: #059669; }
         .model.energomera { color: #047857; }
+        .model.neva       { color: #be185d; }
         .controls {
             display: flex;
             align-items: center;
@@ -184,7 +192,7 @@
             flex-wrap: wrap;
         }
         .value {
-            font-family: ui-monospace, monospace;
+            font-family: inherit;
             font-size: 1.4rem;
             font-weight: 700;
             min-width: 88px;
@@ -194,8 +202,10 @@
             border-radius: 10px;
             border: 1px solid #e2e8f0;
             color: #1e293b;
+            font-variant-numeric: tabular-nums;
         }
         .btn-copy {
+            font-family: inherit;
             background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
             border: 1px solid #d1d5db;
             border-radius: 10px;
@@ -218,6 +228,12 @@
             border-color: #059669;
             box-shadow: 0 2px 10px rgba(16,185,129,0.3);
         }
+        .btn-copy:disabled {
+            opacity: 0.5;
+            cursor: default;
+            transform: none;
+            box-shadow: none;
+        }
         .rule {
             font-size: 0.88rem;
             color: var(--text2);
@@ -225,18 +241,8 @@
             margin-top: 4px;
         }
         /* Массовый режим */
-        textarea {
-            min-height: 180px;
-            font-family: monospace;
-            resize: vertical;
-            line-height: 1.5;
-        }
-        .mass-controls {
-            display: flex;
-            gap: 12px;
-            margin-top: 12px;
-        }
         .btn-mass {
+            font-family: inherit;
             flex: 1;
             padding: 14px;
             font-size: 1.05rem;
@@ -246,66 +252,22 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .btn-mass.calc {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: white;
-        }
         .btn-mass.clear {
             background: #f1f5f9;
             color: #475569;
         }
-        .mass-result {
-            margin-top: 20px;
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 16px;
-            border: 1px solid #e2e8f0;
-            max-height: 420px;
-            overflow-y: auto;
-            display: none;
-        }
-        .mass-result.show {
-            display: block;
-        }
-        .result-line {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 12px;
-            background: white;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            border: 1px solid #e2e8f0;
-            font-family: monospace;
-            font-size: 1.05rem;
-            transition: background-color 0.2s;
-        }
-        .result-line.dup-sn {
-            background: #fee2e2;
-            border-color: #fecaca;
-        }
-        .result-line.dup-linked {
-            background: #fef3c7;
-            border-color: #fde68a;
-        }
-        .result-line:last-child { margin-bottom: 0; }
-        .sn { color: #64748b; width: 140px; flex-shrink: 0; }
-        .arrow { color: #94a3b8; margin: 0 12px; flex-shrink: 0; }
-        .linked { font-weight: 700; color: #1e293b; min-width: 80px; flex-shrink: 0; }
-        .copy-line {
-            background: #f1f5f9;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
         .mass-footer {
             margin-top: 16px;
-            text-align: center;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            align-items: stretch;
+            gap: 12px;
+            max-width: 780px;
+            margin-left: auto;
+            margin-right: auto;
         }
         .btn-all {
+            font-family: inherit;
             padding: 12px 28px;
             background: var(--success);
             color: white;
@@ -314,24 +276,192 @@
             font-weight: 600;
             cursor: pointer;
             font-size: 1.05rem;
+            min-height: 64px;
         }
-        footer {
-            padding: 18px 24px;
+        #btn-copy-all {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        #btn-copy-linked {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+        #btn-clear-mass {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: 1px solid #dc2626;
+            border-radius: 10px;
+            font-weight: 600;
+            min-height: 64px;
+        }
+        .mass-footer .btn-all,
+        .mass-footer .btn-mass {
+            width: 100%;
+            min-width: 0;
             text-align: center;
-            font-size: 0.82rem;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
+            margin: 0;
+        }
+        .mass-grid-editor {
+            margin-top: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            --mass-grid-row-height: 42px;
+        }
+        .mass-grid-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        .mass-grid-table colgroup col:nth-child(1) { width: 56%; }
+        .mass-grid-table colgroup col:nth-child(2) { width: 24%; }
+        .mass-grid-table colgroup col:nth-child(3) { width: 20%; }
+        .mass-grid-table thead {
             background: #f8fafc;
         }
-        @media (max-width: 480px) {
+        .mass-grid-table th {
+            padding: 12px 14px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            color: #64748b;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .mass-grid-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+        .mass-grid-table th.sortable:hover {
+            color: #334155;
+            background: #f1f5f9;
+        }
+        .mass-grid-table th.sortable.active {
+            color: #1d4ed8;
+        }
+        .mass-grid-sort {
+            margin-left: 6px;
+            font-size: 0.72rem;
+        }
+        .mass-grid-row td {
+            height: var(--mass-grid-row-height);
+            border-bottom: 1px solid #e2e8f0;
+            background: white;
+        }
+        .mass-grid-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .mass-grid-row.invalid td {
+            background: #fee2e2;
+        }
+        .mass-grid-row.dup-sn td {
+            background: #fee2e2;
+        }
+        .mass-grid-row.dup-linked td {
+            background: #fef3c7;
+        }
+        .mass-grid-sn-cell {
+            padding: 0;
+        }
+        .mass-grid-sn-input {
+            width: 100%;
+            height: var(--mass-grid-row-height);
+            border: none;
+            border-radius: 0;
+            padding: 0 16px;
+            font-size: 1.05rem;
+            line-height: var(--mass-grid-row-height);
+            color: #1e293b;
+            background: transparent;
+        }
+        .mass-grid-sn-input:focus {
+            outline: none;
+            box-shadow: inset 0 0 0 2px rgba(59,130,246,0.18);
+        }
+        .mass-grid-linked-cell {
+            padding: 0 14px;
+            font-size: 1.05rem;
+            line-height: var(--mass-grid-row-height);
+            font-weight: 700;
+            color: #1e293b;
+            font-variant-numeric: tabular-nums;
+        }
+        .mass-grid-linked-cell.empty {
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        .mass-grid-copy-cell {
+            padding: 0 10px;
+        }
+        .mass-grid-copy-btn {
+            width: 100%;
+            height: calc(var(--mass-grid-row-height) - 8px);
+            font-family: inherit;
+            background: #f1f5f9;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #374151;
+            transition: all 0.16s;
+            white-space: nowrap;
+        }
+        .mass-grid-copy-btn:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+        .mass-grid-copy-btn.copied {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            border-color: #059669;
+        }
+        @media (max-width: 520px) {
             body { padding: 12px; }
-            main { padding: 18px 20px; }
-            .tabs { flex-direction: column; }
-            .tab { padding: 14px; }
-            .mass-controls { flex-direction: column; }
-            .btn-mass { width: 100%; }
-            .result-line { flex-wrap: wrap; gap: 8px; padding: 12px; }
-            .sn { width: auto; }
+            main { padding: 18px 16px; }
+            header { padding: 22px 18px 14px; }
+            h1 { font-size: 1.35rem; }
+            .hint { font-size: 0.82rem; }
+            .tab { padding: 14px 10px; font-size: 0.95rem; }
+            select, input, textarea { font-size: 1.05rem; padding: 12px 14px; }
+            .mass-footer {
+                grid-template-columns: 1fr;
+                max-width: none;
+                width: 100%;
+            }
+            .mass-footer .btn-all,
+            .mass-footer .btn-mass {
+                width: 100%;
+                min-width: 0;
+            }
+            .mass-grid-editor { overflow-x: auto; }
+            .mass-grid-table { min-width: 430px; }
+            .mass-grid-table colgroup col:nth-child(1) { width: 46%; }
+            .mass-grid-table colgroup col:nth-child(2) { width: 18%; }
+            .mass-grid-table colgroup col:nth-child(3) { width: 36%; }
+            .mass-grid-table th { padding: 10px 10px; font-size: 0.72rem; }
+            .mass-grid-sort { margin-left: 4px; font-size: 0.66rem; }
+            .mass-grid-sn-input { padding: 0 10px; font-size: 0.98rem; }
+            .mass-grid-linked-cell { padding: 0 10px; font-size: 0.98rem; }
+            .mass-grid-copy-cell { padding: 0 6px; }
+            .mass-grid-copy-btn { padding: 0 10px; font-size: 0.8rem; }
+        }
+        @media (max-width: 480px) {
+            .container { border-radius: 16px; }
+            .tabs { display: flex; }
+            .tab { padding: 12px 8px; font-size: 0.9rem; }
+            .mass-grid-table { min-width: 400px; }
+            .mass-grid-table colgroup col:nth-child(1) { width: 44%; }
+            .mass-grid-table colgroup col:nth-child(2) { width: 17%; }
+            .mass-grid-table colgroup col:nth-child(3) { width: 39%; }
+            .mass-grid-table th { padding: 9px 8px; font-size: 0.69rem; }
+            .mass-grid-sn-input { font-size: 0.94rem; }
+            .mass-grid-linked-cell { font-size: 0.94rem; }
+            .mass-grid-copy-btn { font-size: 0.78rem; }
         }
     </style>
 </head>
@@ -351,11 +481,7 @@
         <!-- ОДИНОЧНЫЙ РАСЧЁТ -->
         <div class="mode active" id="mode-single">
             <div class="input-group">
-                <label for="sn">Серийный номер прибора учета</label>
-                <input id="sn" type="text" inputmode="numeric" maxlength="14" autofocus placeholder="000000000000">
-                <div class="hint" style="margin-top:8px; font-size:0.82rem; color:#64748b;">
-                    Результат появляется мгновенно
-                </div>
+                <input id="sn" type="text" inputmode="numeric" maxlength="32" autofocus placeholder="Серийный номер">
             </div>
             <div class="results" id="results">
                 <div class="card">
@@ -366,7 +492,7 @@
                             <button class="btn-copy" data-model="mercury">Копировать</button>
                         </div>
                     </div>
-                    <div class="rule">Три последние цифры. Если > 239 → две последние. 00 → 1</div>
+                    <div class="rule">Три последние цифры. Если больше 239, взять две последние. 0 → 1.</div>
                 </div>
                 <div class="card">
                     <div class="header-row">
@@ -376,7 +502,7 @@
                             <button class="btn-copy" data-model="mercury-spodes">Копировать</button>
                         </div>
                     </div>
-                    <div class="rule">Три последние цифры. Если > 124 → две последние. Если ≤ 16 → +10 до ≥ 17</div>
+                    <div class="rule">Три последние цифры. Если больше 124, взять две последние. Если меньше 17, прибавлять 10 до значения больше 17.</div>
                 </div>
                 <div class="card">
                     <div class="header-row">
@@ -386,7 +512,7 @@
                             <button class="btn-copy" data-model="iprom">Копировать</button>
                         </div>
                     </div>
-                    <div class="rule">Последние 4 цифры + 16</div>
+                    <div class="rule">Последние 4 цифры + 16.</div>
                 </div>
                 <div class="card">
                     <div class="header-row">
@@ -396,7 +522,7 @@
                             <button class="btn-copy" data-model="fobos">Копировать</button>
                         </div>
                     </div>
-                    <div class="rule">Номер + 16 → остаток от деления на 16365</div>
+                    <div class="rule">Серийный номер + 16. Взять остаток от деления на 16365.</div>
                 </div>
                 <div class="card">
                     <div class="header-row">
@@ -406,7 +532,7 @@
                             <button class="btn-copy" data-model="mirtek">Копировать</button>
                         </div>
                     </div>
-                    <div class="rule">Последние 5 цифр номера (0 → 1)</div>
+                    <div class="rule">Последние 5 цифр номера. 0 → 1.</div>
                 </div>
                 <div class="card">
                     <div class="header-row">
@@ -416,7 +542,17 @@
                             <button class="btn-copy" data-model="energomera">Копировать</button>
                         </div>
                     </div>
-                    <div class="rule">Последние 5 цифр номера (0 → 1)</div>
+                    <div class="rule">Последние 5 цифр номера. 0 → 1.</div>
+                </div>
+                <div class="card">
+                    <div class="header-row">
+                        <div class="model neva">Нева</div>
+                        <div class="controls">
+                            <span class="value" id="neva">—</span>
+                            <button class="btn-copy" data-model="neva">Копировать</button>
+                        </div>
+                    </div>
+                    <div class="rule">Последние 4 цифры + 20.</div>
                 </div>
             </div>
         </div>
@@ -432,17 +568,17 @@
                     <option value="fobos">Фобос</option>
                     <option value="mirtek">Миртек</option>
                     <option value="energomera">Энергомера</option>
+                    <option value="neva">Нева</option>
                 </select>
             </div>
 
             <div class="input-group">
-                <label for="mass-input">Серийные номера (по одному в строке)</label>
                 <textarea id="mass-input" placeholder="000123456789&#10;987654321000&#10;..."></textarea>
             </div>
 
             <div class="mass-controls">
                 <button class="btn-mass calc" id="btn-calc-mass">Рассчитать</button>
-                <button class="btn-mass clear" id="btn-clear-mass">Очистить</button>
+                <button class="btn-mass clear" id="btn-clear-mass" style="display:none;">Очистить</button>
             </div>
 
             <div id="mass-alerts"></div>
@@ -454,102 +590,140 @@
             </div>
         </div>
     </main>
-
-    <footer>
-        Нажмите «Копировать» рядом с нужным значением
-    </footer>
 </div>
 
 <script>
 (function () {
-    // Переключение вкладок
     document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', () => {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.mode').forEach(m => m.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.mode').forEach(item => item.classList.remove('active'));
             tab.classList.add('active');
             document.getElementById(`mode-${tab.dataset.mode}`).classList.add('active');
         });
     });
 
-    // ──────────────────────────────────────────────
-    // Общие функции
-    // ──────────────────────────────────────────────
-    function norm(v) { return v === 0 ? 1 : v; }
+    function norm(v) {
+        return v === 0n ? 1n : v;
+    }
 
     function add10Until17orMore(v) {
-        while (v < 17) v += 10;
+        while (v < 17n) v += 10n;
         return v;
+    }
+
+    function copyText(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text);
+        }
+
+        return new Promise((resolve, reject) => {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.top = '-9999px';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+
+            try {
+                const ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+                if (ok) resolve();
+                else reject(new Error('copy failed'));
+            } catch (error) {
+                document.body.removeChild(ta);
+                reject(error);
+            }
+        });
     }
 
     const calculators = {
         mercury: n => {
-            const a = n % 1000;
-            const b = n % 100;
-            return norm(a > 239 ? b : a);
+            const a = n % 1000n;
+            const b = n % 100n;
+            return norm(a > 239n ? b : a);
         },
         'mercury-spodes': n => {
-            const a = n % 1000;
-            const b = n % 100;
-            const base = a > 124 ? b : a;
+            const a = n % 1000n;
+            const b = n % 100n;
+            const base = a > 124n ? b : a;
             return add10Until17orMore(base);
         },
-        iprom: n => norm((n % 10000) + 16),
+        iprom: n => norm((n % 10000n) + 16n),
         fobos: n => {
-            const res = (n + 16) % 16365;
-            return res === 0 ? 16365 : res;
+            const res = (n + 16n) % 16365n;
+            return res === 0n ? 16365n : res;
         },
-        mirtek: n => norm(n % 100000),
-        energomera: n => norm(n % 100000)
+        mirtek: n => norm(n % 100000n),
+        energomera: n => norm(n % 100000n),
+        neva: n => norm((n % 10000n) + 20n)
     };
 
-    // ──────────────────────────────────────────────
-    // Одиночный режим
-    // ──────────────────────────────────────────────
     const singleInput = document.getElementById('sn');
 
     function updateSingle() {
-        const v = singleInput.value.trim();
+        const value = singleInput.value.trim();
         singleInput.classList.remove('error');
 
-        if (!v) {
-            document.querySelectorAll('#mode-single .value').forEach(el => el.textContent = '—');
+        if (!value) {
+            document.querySelectorAll('#mode-single .value').forEach(el => {
+                el.textContent = '—';
+            });
+            setSingleCopyAvailability();
             return;
         }
 
-        if (!/^\d+$/.test(v)) {
+        if (!/^\d+$/.test(value)) {
             singleInput.classList.add('error');
-            document.querySelectorAll('#mode-single .value').forEach(el => el.textContent = '❗');
+            document.querySelectorAll('#mode-single .value').forEach(el => {
+                el.textContent = '❗';
+            });
+            setSingleCopyAvailability();
             return;
         }
 
-        const num = parseInt(v, 10);
+        const num = BigInt(value);
         Object.keys(calculators).forEach(key => {
-            const res = calculators[key](num);
+            const result = calculators[key](num);
             const el = document.getElementById(key);
-            if (el) el.textContent = res;
+            if (el) el.textContent = String(result);
         });
+        setSingleCopyAvailability();
     }
 
     function resetSingleCopyButtons() {
-        document.querySelectorAll('#mode-single .btn-copy').forEach(b => {
-            b.classList.remove('copied');
-            b.textContent = 'Копировать';
+        document.querySelectorAll('#mode-single .btn-copy').forEach(button => {
+            button.classList.remove('copied');
+            button.textContent = 'Копировать';
         });
-        document.querySelectorAll('#mode-single .card').forEach(c => c.classList.remove('copied'));
+        document.querySelectorAll('#mode-single .card').forEach(card => {
+            card.classList.remove('copied');
+        });
     }
 
-    document.querySelectorAll('#mode-single .btn-copy').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const model = btn.dataset.model;
+    function setSingleCopyAvailability() {
+        document.querySelectorAll('#mode-single .btn-copy').forEach(button => {
+            const model = button.dataset.model;
             const text = document.getElementById(model)?.textContent?.trim();
-            if (!text || text === '—' || text === '❗') return alert('Нет значения для копирования');
+            button.disabled = !text || text === '—' || text === '❗';
+        });
+    }
 
-            navigator.clipboard.writeText(text).then(() => {
+    document.querySelectorAll('#mode-single .btn-copy').forEach(button => {
+        button.addEventListener('click', () => {
+            const model = button.dataset.model;
+            const text = document.getElementById(model)?.textContent?.trim();
+
+            if (!text || text === '—' || text === '❗') return;
+
+            copyText(text).then(() => {
                 resetSingleCopyButtons();
-                btn.classList.add('copied');
-                btn.textContent = 'Скопировано ✓';
-                btn.closest('.card').classList.add('copied');
+                button.classList.add('copied');
+                button.textContent = 'Скопировано ✓';
+                button.closest('.card').classList.add('copied');
                 setTimeout(resetSingleCopyButtons, 2200);
             }).catch(() => alert('Не удалось скопировать'));
         });
@@ -562,146 +736,375 @@
 
     updateSingle();
 
-    // ──────────────────────────────────────────────
-    // Массовый режим
-    // ──────────────────────────────────────────────
-    const select = document.getElementById('model-select');
-    const textarea = document.getElementById('mass-input');
-    const btnCalc = document.getElementById('btn-calc-mass');
-    const btnClear = document.getElementById('btn-clear-mass');
-    const resultDiv = document.getElementById('mass-result');
-    const alertsDiv = document.getElementById('mass-alerts');
-    const footerDiv = document.getElementById('mass-footer');
-    const btnCopyAll = document.getElementById('btn-copy-all');
+    (function initMassMode() {
+        const inputGroup = document.querySelector('#mode-mass .input-group:nth-of-type(2)');
+        const alerts = document.getElementById('mass-alerts');
+        const footer = document.getElementById('mass-footer');
 
-    function showAlerts(dupSN, dupLinked) {
-        alertsDiv.innerHTML = '';
-        if (dupSN.length) {
-            const div = document.createElement('div');
-            div.className = 'alert error';
-            div.innerHTML = `<strong>Повторяющиеся серийные номера (${dupSN.length}):</strong><br>` +
-                            dupSN.map(([sn, cnt]) => `${sn} ×${cnt}`).join(', ');
-            alertsDiv.appendChild(div);
+        if (!inputGroup || !alerts || !footer) return;
+
+        function replaceControl(id) {
+            const oldNode = document.getElementById(id);
+            const newNode = oldNode.cloneNode(true);
+            oldNode.parentNode.replaceChild(newNode, oldNode);
+            return newNode;
         }
-        if (dupLinked.length) {
-            const div = document.createElement('div');
-            div.className = 'alert warning';
-            div.innerHTML = `<strong>Одинаковые связные номера (${dupLinked.length}):</strong><br>` +
-                            dupLinked.map(([ln, cnt, sns]) => `${ln} ×${cnt} (${sns.join(', ')})`).join('<br>');
-            alertsDiv.appendChild(div);
+
+        const modelSelect = replaceControl('model-select');
+        const clearButton = replaceControl('btn-clear-mass');
+        const copyAllButton = replaceControl('btn-copy-all');
+        document.getElementById('btn-calc-mass')?.remove();
+        document.querySelector('#mode-mass .mass-controls')?.remove();
+        document.getElementById('mass-result')?.remove();
+        clearButton.style.display = 'none';
+        copyAllButton.textContent = 'Скопировать все';
+
+        const copyLinkedButton = copyAllButton.cloneNode(true);
+        copyLinkedButton.id = 'btn-copy-linked';
+        copyLinkedButton.textContent = 'Скопировать связные номера';
+        copyAllButton.parentNode.appendChild(copyLinkedButton);
+        copyAllButton.parentNode.appendChild(clearButton);
+
+        inputGroup.querySelector('#mass-input')?.remove();
+
+        const editor = document.createElement('div');
+        editor.className = 'mass-grid-editor';
+        editor.innerHTML = `
+            <table class="mass-grid-table">
+                <colgroup>
+                    <col>
+                    <col>
+                    <col>
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort-column="sn">Серийный номер<span class="mass-grid-sort">↕</span></th>
+                        <th class="sortable" data-sort-column="linked" colspan="2">Связной номер<span class="mass-grid-sort">↕</span></th>
+                    </tr>
+                </thead>
+                <tbody id="mass-grid-body"></tbody>
+            </table>
+        `;
+        inputGroup.appendChild(editor);
+
+        const body = editor.querySelector('#mass-grid-body');
+        const sortableHeaders = Array.from(editor.querySelectorAll('[data-sort-column]'));
+        let rows = [''];
+        let sortColumn = null;
+        let sortDirection = 0;
+
+        function ensureTrailingEmptyRow() {
+            if (!rows.length || rows[rows.length - 1] !== '') {
+                rows.push('');
+            }
+            while (rows.length > 2 && rows[rows.length - 1] === '' && rows[rows.length - 2] === '') {
+                rows.pop();
+            }
         }
-    }
 
-    function calculateMass(modelKey, snList) {
-        const calc = calculators[modelKey];
-        if (!calc) return [];
+        function cleanupRows() {
+            rows = rows.filter((row, index) => row !== '' || index === rows.length - 1);
+            if (!rows.length) rows = [''];
+        }
 
-        return snList.map(sn => {
-            const trimmed = sn.trim();
-            const num = parseInt(trimmed, 10);
-            if (isNaN(num) || num < 0) return { sn: trimmed, linked: '❌' };
-            return { sn: trimmed, linked: String(calc(num)) };
-        });
-    }
+        function computeRow(sn) {
+            const value = sn.trim();
+            if (!value) return { sn, linked: '', invalid: false };
+            if (!/^\d+$/.test(value)) return { sn, linked: 'Ошибка', invalid: true };
 
-    function getDuplicates(results) {
-        const snCount = new Map();
-        results.forEach(r => snCount.set(r.sn, (snCount.get(r.sn) || 0) + 1));
-        const dupSN = Array.from(snCount.entries()).filter(([, c]) => c > 1);
+            const calculator = calculators[modelSelect.value];
+            if (!calculator) return { sn, linked: '', invalid: false };
 
-        const linkedMap = new Map();
-        results.forEach(r => {
-            if (r.linked !== '❌') {
-                if (!linkedMap.has(r.linked)) linkedMap.set(r.linked, []);
-                linkedMap.get(r.linked).push(r.sn);
-            }
-        });
-        const dupLinked = Array.from(linkedMap.entries())
-            .filter(([, sns]) => sns.length > 1)
-            .map(([ln, sns]) => [ln, sns.length, sns]);
+            return { sn, linked: String(calculator(BigInt(value))), invalid: false };
+        }
 
-        return { dupSN: new Set(dupSN.map(([sn]) => sn)), dupLinked: new Set(dupLinked.map(([ln]) => ln)) };
-    }
+        function getDuplicateSets(dataRows) {
+            const snCounts = new Map();
+            const linkedCounts = new Map();
 
-    function renderMassResults(items, dupSN, dupLinked) {
-        resultDiv.innerHTML = '';
-        if (!items.length) return;
-
-        items.forEach(item => {
-            const line = document.createElement('div');
-            line.className = 'result-line';
-
-            if (dupSN.has(item.sn)) {
-                line.classList.add('dup-sn');
-            } else if (dupLinked.has(item.linked)) {
-                line.classList.add('dup-linked');
-            }
-
-            line.innerHTML = `
-                <span class="sn">${item.sn}</span>
-                <span class="arrow">→</span>
-                <span class="linked">${item.linked}</span>
-                <button class="copy-line">Копировать</button>
-            `;
-
-            line.querySelector('.copy-line').addEventListener('click', () => {
-                navigator.clipboard.writeText(item.linked).then(() => {
-                    const btn = line.querySelector('.copy-line');
-                    const orig = btn.textContent;
-                    btn.textContent = '✓';
-                    setTimeout(() => btn.textContent = orig, 1400);
-                });
+            dataRows.forEach(row => {
+                const sn = row.sn.trim();
+                if (sn) snCounts.set(sn, (snCounts.get(sn) || 0) + 1);
+                if (row.linked && !row.invalid) {
+                    linkedCounts.set(row.linked, (linkedCounts.get(row.linked) || 0) + 1);
+                }
             });
 
-            resultDiv.appendChild(line);
+            return {
+                dupSN: new Set(Array.from(snCounts.entries()).filter(([, count]) => count > 1).map(([sn]) => sn)),
+                dupLinked: new Set(Array.from(linkedCounts.entries()).filter(([, count]) => count > 1).map(([linked]) => linked))
+            };
+        }
+
+        function compareNumericStrings(a, b) {
+            const left = (a || '').trim();
+            const right = (b || '').trim();
+            if (!left && !right) return 0;
+            if (!left) return 1;
+            if (!right) return -1;
+
+            const leftValid = /^\d+$/.test(left);
+            const rightValid = /^\d+$/.test(right);
+            if (leftValid && rightValid) {
+                if (left.length !== right.length) return left.length - right.length;
+                return left.localeCompare(right, 'ru');
+            }
+            return left.localeCompare(right, 'ru');
+        }
+
+        function getSortedRows(dataRows) {
+            const indexedRows = dataRows.map((row, index) => ({ ...row, sourceIndex: index }));
+            if (!sortColumn || sortDirection === 0) return indexedRows;
+
+            return indexedRows.slice().sort((a, b) => {
+                const aEmpty = a.sn === '';
+                const bEmpty = b.sn === '';
+                if (aEmpty && bEmpty) return a.sourceIndex - b.sourceIndex;
+                if (aEmpty) return 1;
+                if (bEmpty) return -1;
+
+                const result = sortColumn === 'sn'
+                    ? compareNumericStrings(a.sn, b.sn)
+                    : compareNumericStrings(a.linked, b.linked);
+
+                if (result !== 0) return result * sortDirection;
+                return a.sourceIndex - b.sourceIndex;
+            });
+        }
+
+        function updateSortHeaders() {
+            sortableHeaders.forEach(header => {
+                const isActive = header.dataset.sortColumn === sortColumn && sortDirection !== 0;
+                header.classList.toggle('active', isActive);
+                const indicator = header.querySelector('.mass-grid-sort');
+                if (!indicator) return;
+                if (!isActive) indicator.textContent = '↕';
+                else indicator.textContent = sortDirection === 1 ? '↑' : '↓';
+            });
+        }
+
+        function getDisplayedPopulatedRows() {
+            const dataRows = rows.map(computeRow);
+            return getSortedRows(dataRows).filter(row => row.sn.trim() !== '' && row.linked && !row.invalid);
+        }
+
+        function renderAlerts(dataRows, dupSN, dupLinked) {
+            alerts.innerHTML = '';
+
+            const dupSNList = Array.from(dupSN).map(sn => [sn, dataRows.filter(row => row.sn.trim() === sn).length]);
+            const dupLinkedList = Array.from(dupLinked).map(linked => [
+                linked,
+                dataRows.filter(row => row.linked === linked).length,
+                dataRows.filter(row => row.linked === linked).map(row => row.sn.trim())
+            ]);
+
+            if (dupSNList.length) {
+                const div = document.createElement('div');
+                div.className = 'alert error';
+                div.innerHTML = `<strong>Повторяющиеся серийные номера (${dupSNList.length}):</strong><br>` +
+                    dupSNList.map(([sn, count]) => `${sn} ×${count}`).join(', ');
+                alerts.appendChild(div);
+            }
+
+            if (dupLinkedList.length) {
+                const div = document.createElement('div');
+                div.className = 'alert warning';
+                div.innerHTML = `<strong>Одинаковые связные номера (${dupLinkedList.length}):</strong><br>` +
+                    dupLinkedList.map(([linked, count, sns]) => `${linked} ×${count} (${sns.join(', ')})`).join('<br>');
+                alerts.appendChild(div);
+            }
+        }
+
+        function renderTable(focusIndex = null, focusPos = null) {
+            cleanupRows();
+            ensureTrailingEmptyRow();
+
+            const dataRows = rows.map(computeRow);
+            const populatedRows = dataRows.filter(row => row.sn.trim() !== '');
+            const { dupSN, dupLinked } = getDuplicateSets(populatedRows);
+            const displayRows = getSortedRows(dataRows);
+
+            body.innerHTML = '';
+
+            displayRows.forEach(row => {
+                const index = row.sourceIndex;
+                const tr = document.createElement('tr');
+                tr.className = 'mass-grid-row';
+
+                const normalizedSN = row.sn.trim();
+                if (row.invalid) tr.classList.add('invalid');
+                else if (normalizedSN && dupSN.has(normalizedSN)) tr.classList.add('dup-sn');
+                else if (row.linked && dupLinked.has(row.linked)) tr.classList.add('dup-linked');
+
+                const safeValue = row.sn.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                tr.innerHTML = `
+                    <td class="mass-grid-sn-cell">
+                        <input class="mass-grid-sn-input" data-index="${index}" type="text" inputmode="numeric" value="${safeValue}" placeholder="${index === 0 ? 'Серийный номер' : ''}">
+                    </td>
+                    <td class="mass-grid-linked-cell${row.linked ? '' : ' empty'}">${row.linked || '—'}</td>
+                    <td class="mass-grid-copy-cell">
+                        <button class="mass-grid-copy-btn"${!row.linked || row.invalid ? ' disabled' : ''}>Копировать</button>
+                    </td>
+                `;
+
+                const input = tr.querySelector('.mass-grid-sn-input');
+                const copyBtn = tr.querySelector('.mass-grid-copy-btn');
+
+                input.addEventListener('input', () => {
+                    rows[index] = input.value;
+                    if (input.value === '' && index !== rows.length - 1) {
+                        rows.splice(index, 1);
+                        renderTable(Math.min(index, rows.length - 1), 0);
+                        return;
+                    }
+                    renderTable(index, input.selectionStart);
+                });
+
+                input.addEventListener('keydown', event => {
+                    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                        const direction = event.key === 'ArrowUp' ? -1 : 1;
+                        const targetIndex = index + direction;
+                        if (targetIndex >= 0 && targetIndex < rows.length) {
+                            event.preventDefault();
+                            const targetPos = input.selectionStart ?? input.value.length;
+                            renderTable(targetIndex, targetPos);
+                        }
+                        return;
+                    }
+
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        const start = input.selectionStart ?? input.value.length;
+                        const end = input.selectionEnd ?? input.value.length;
+                        const before = input.value.slice(0, start);
+                        const after = input.value.slice(end);
+                        rows[index] = before;
+                        rows.splice(index + 1, 0, after);
+                        renderTable(index + 1, 0);
+                        return;
+                    }
+
+                    if (event.key === 'Backspace' && (input.selectionStart ?? 0) === 0 && (input.selectionEnd ?? 0) === 0 && index > 0 && input.value === '') {
+                        event.preventDefault();
+                        rows.splice(index, 1);
+                        const prevValue = rows[index - 1] || '';
+                        renderTable(index - 1, prevValue.length);
+                    }
+                });
+
+                input.addEventListener('paste', event => {
+                    const pasted = event.clipboardData?.getData('text') || '';
+                    if (!pasted.includes('\n')) return;
+
+                    event.preventDefault();
+                    const values = pasted.replace(/\r/g, '').split('\n');
+                    const current = input.value;
+                    const start = input.selectionStart ?? current.length;
+                    const end = input.selectionEnd ?? current.length;
+                    const first = current.slice(0, start) + values[0];
+                    const last = values[values.length - 1] + current.slice(end);
+                    const middle = values.slice(1, -1);
+                    const inserted = [first, ...middle, last];
+
+                    rows.splice(index, 1, ...inserted);
+                    renderTable(index + inserted.length - 1, inserted[inserted.length - 1].length);
+                });
+
+                copyBtn.addEventListener('click', () => {
+                    if (!row.linked || row.invalid) return;
+
+                    copyText(row.linked).then(() => {
+                        copyBtn.classList.add('copied');
+                        copyBtn.textContent = 'Скопировано';
+                        setTimeout(() => {
+                            copyBtn.classList.remove('copied');
+                            copyBtn.textContent = 'Копировать';
+                        }, 1400);
+                    }).catch(() => alert('Не удалось скопировать'));
+                });
+
+                body.appendChild(tr);
+            });
+
+            renderAlerts(populatedRows, dupSN, dupLinked);
+            updateSortHeaders();
+            footer.style.display = populatedRows.length ? 'grid' : 'none';
+            clearButton.style.display = populatedRows.length ? '' : 'none';
+
+            if (focusIndex !== null) {
+                const nextInput = body.querySelector(`.mass-grid-sn-input[data-index="${focusIndex}"]`);
+                if (nextInput) {
+                    nextInput.focus();
+                    if (typeof focusPos === 'number') {
+                        const pos = Math.min(focusPos, nextInput.value.length);
+                        nextInput.setSelectionRange(pos, pos);
+                    }
+                }
+            }
+        }
+
+        clearButton.addEventListener('click', () => {
+            rows = [''];
+            alerts.innerHTML = '';
+            renderTable(0, 0);
         });
 
-        resultDiv.classList.add('show');
-        footerDiv.style.display = 'block';
-    }
+        modelSelect.addEventListener('change', () => {
+            const active = document.activeElement;
+            const index = active?.dataset?.index ? Number(active.dataset.index) : null;
+            const pos = typeof active?.selectionStart === 'number' ? active.selectionStart : null;
+            renderTable(index, pos);
+        });
 
-    btnCalc.addEventListener('click', () => {
-        const modelKey = select.value;
-        if (!modelKey) return alert('Выберите модель');
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const column = header.dataset.sortColumn;
+                if (sortColumn !== column) {
+                    sortColumn = column;
+                    sortDirection = 1;
+                } else if (sortDirection === 1) {
+                    sortDirection = -1;
+                } else if (sortDirection === -1) {
+                    sortColumn = null;
+                    sortDirection = 0;
+                } else {
+                    sortDirection = 1;
+                }
 
-        const lines = textarea.value.split(/\n/).map(s => s.trim()).filter(Boolean);
-        if (!lines.length) return alert('Вставьте хотя бы один номер');
+                renderTable();
+            });
+        });
 
-        const results = calculateMass(modelKey, lines);
-        const { dupSN, dupLinked } = getDuplicates(results);
+        copyAllButton.addEventListener('click', () => {
+            const populatedRows = getDisplayedPopulatedRows();
+            if (!populatedRows.length) return;
 
-        showAlerts(
-            Array.from(dupSN).map(sn => [sn, results.filter(r => r.sn === sn).length]),
-            Array.from(dupLinked).map(ln => [ln, results.filter(r => r.linked === ln).length, results.filter(r => r.linked === ln).map(r => r.sn)])
-        );
+            const text = populatedRows.map(row => `${row.sn.trim()}\t${row.linked}`).join('\n');
+            copyText(text).then(() => {
+                copyAllButton.textContent = 'Скопировано!';
+                setTimeout(() => {
+                    copyAllButton.textContent = 'Скопировать все';
+                }, 2200);
+            }).catch(() => alert('Не удалось скопировать'));
+        });
 
-        renderMassResults(results, dupSN, dupLinked);
-    });
+        copyLinkedButton.addEventListener('click', () => {
+            const populatedRows = getDisplayedPopulatedRows();
+            if (!populatedRows.length) return;
 
-    btnClear.addEventListener('click', () => {
-        textarea.value = '';
-        resultDiv.innerHTML = '';
-        resultDiv.classList.remove('show');
-        footerDiv.style.display = 'none';
-        alertsDiv.innerHTML = '';
-    });
+            const text = populatedRows.map(row => row.linked).join('\n');
+            copyText(text).then(() => {
+                copyLinkedButton.textContent = 'Скопировано!';
+                setTimeout(() => {
+                    copyLinkedButton.textContent = 'Скопировать связные номера';
+                }, 2200);
+            }).catch(() => alert('Не удалось скопировать'));
+        });
 
-    btnCopyAll.addEventListener('click', () => {
-        const lines = Array.from(resultDiv.querySelectorAll('.result-line'));
-        if (!lines.length) return;
-
-        const text = lines.map(line => {
-            const sn = line.querySelector('.sn').textContent;
-            const linked = line.querySelector('.linked').textContent;
-            return `${sn} → ${linked}`;
-        }).join('\n');
-
-        navigator.clipboard.writeText(text).then(() => {
-            btnCopyAll.textContent = '✅ Скопировано!';
-            setTimeout(() => btnCopyAll.textContent = 'Скопировать все результаты', 2200);
-        }).catch(() => alert('Не удалось скопировать'));
-    });
+        renderTable(0, 0);
+    })();
 })();
 </script>
 </body>
 </html>
+
