@@ -1,0 +1,8 @@
+export const CONFIG = {
+    MIN_RADIUS: 10,
+    MAX_RADIUS: 5000,
+    DEFAULT_RADIUS: 750,
+    MIN_BS_RADIUS: 10,
+    MAX_BS_RADIUS: 15000,
+    DEFAULT_BS_RADIUS: 500
+};
